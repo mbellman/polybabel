@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
-import assert from './assert';
-import Logger from './Logger';
+import assert from './system/assert';
+import Logger from './system/Logger';
 import parse from './parsers/parse';
 import tokenize from './tokenizer/tokenize';
-import { getFlags, IFlags } from './flags';
-import { IConfiguration, resolveConfiguration } from './configuration';
-import { Language } from './constants';
-import { resolveFilesDeep, getFileContents } from './file';
+import { getFileContents, resolveFilesDeep } from './system/file';
+import { getFlags, IFlags } from './system/flags';
+import { IConfiguration, resolveConfiguration } from './system/configuration';
 import { ISyntaxTree } from 'parsers/common/syntax';
+import { Language } from './system/constants';
 
 /**
  * @internal

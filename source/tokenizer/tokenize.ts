@@ -1,4 +1,4 @@
-import assert from '../assert';
+import assert from '../system/assert';
 import createTokenizer from './createTokenizer';
 import { IToken, Tokenizer, TokenType } from './types';
 

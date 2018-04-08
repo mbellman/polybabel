@@ -28,12 +28,4 @@ export default class Logger {
   private static _logWithColor (message: string, colorCode: ColorCode): void {
     console.log(colorCode, message, ColorCode.RESET);
   }
-
-  private static _resetColor (): void {
-    Logger._setColor(ColorCode.RESET);
-  }
-
-  private static _setColor (colorCode: ColorCode): void {
-    console.log(colorCode);
-  }
 }

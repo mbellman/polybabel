@@ -3,7 +3,7 @@ import JavaParsingStrategy from './java/JavaParsingStrategy';
 import { IJavaSyntaxTree } from './java/syntax';
 import { ISyntaxTree } from './common/syntax';
 import { IToken } from '../tokenizer/types';
-import { Language } from '../constants';
+import { Language } from '../system/constants';
 
 /**
  * Parses a stream of tokens using a parsing strategy determined
