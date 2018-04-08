@@ -3,8 +3,8 @@
 	"version": "0.0.1",
 	"scripts": {
 		"build": "rm -f -r dist/* && tsc",
-		"checkin": "scripts/checkin.sh",
-		"deploy": "scripts/deploy.sh",
+		"checkin": "sh scripts/checkin.sh",
+		"deploy": "sh scripts/deploy.sh",
 		"setup": "yarn install && npm link"
 	},
 	"devDependencies": {
