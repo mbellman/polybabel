@@ -1,6 +1,8 @@
 source/
 test/
 coverage/
+in/
+out/
 .nyc_output/
 checkin.sh
 deploy.sh
@@ -10,4 +12,5 @@ yarn.lock
 yarn-error.log
 .eslintignore
 .eslintrc
+.polybabelrc
 .yarnrc

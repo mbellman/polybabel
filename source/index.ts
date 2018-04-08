@@ -1,5 +1,26 @@
 #!/usr/bin/env node
 
-const message: string = 'test';
+import assert from './assert';
+import tokenizer from './tokenizer/tokenize';
+import { getFlags, IFlags } from './flags';
+import { IConfiguration, resolveConfiguration } from './configuration';
+import { resolveFilesDeep } from './file';
 
-console.log(message);
+async function main (args: string[]) {
+  const flags = getFlags(args);
+
+  try {
+    const { inputFolderName } = await resolveConfiguration(flags);
+    const inputFiles = await resolveFilesDeep(inputFolderName);
+
+    for (const inputFile of inputFiles) {
+      const extension = inputFile.split('.').pop();
+    }
+
+    console.log(inputFiles);
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+main(process.argv);

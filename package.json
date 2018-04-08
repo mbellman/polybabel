@@ -1,5 +1,6 @@
 {
 	"name": "polybabel",
+	"license": "MIT",
 	"version": "0.0.1",
 	"scripts": {
 		"build": "rm -f -r dist/* && tsc",
