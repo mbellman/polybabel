@@ -4,18 +4,14 @@ import { Callback } from './types';
 /**
  * @internal
  */
-function isDirectory (
-  file: string
-): boolean {
+function isDirectory (file: string): boolean {
   return fs.statSync(file).isDirectory();
 }
 
 /**
  * Resolves the contents of a file.
  */
-export function getFileContents (
-  filePath: string
-): Promise<string> {
+export function getFileContents (filePath: string): Promise<string> {
   return new Promise((resolve: Callback<string>, reject: Callback<NodeJS.ErrnoException>) => {
     fs.readFile(filePath, (err: NodeJS.ErrnoException, buffer: Buffer) => {
       if (err) {
@@ -28,22 +24,9 @@ export function getFileContents (
 }
 
 /**
- * Resolves the contents of a file from the current working directory.
- */
-export async function getFileContentsFromCwd (
-  filePathFromCwd: string
-): Promise<string> {
-  const fileContents: string = await getFileContents(`${process.cwd()}/${filePathFromCwd}`);
-
-  return fileContents;
-}
-
-/**
  * Recursively resolves all non-directory files in a target {directory}.
  */
-export async function resolveFilesDeep (
-  directory: string
-): Promise<string[]> {
+export async function resolveFilesDeep (directory: string): Promise<string[]> {
   return new Promise((resolve: Callback<string[]>, reject: Callback<NodeJS.ErrnoException>) => {
     fs.readdir(directory, async (err: NodeJS.ErrnoException, files: string[]) => {
       if (err) {

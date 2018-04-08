@@ -17,9 +17,7 @@ export interface IFlags {
 /**
  * Resolves an IFlags object from node process arguments.
  */
-export function getFlags (
-  args: string[]
-): IFlags {
+export function getFlags (args: string[]): IFlags {
   const flags: IFlags = {};
   let i: number = 0;
 

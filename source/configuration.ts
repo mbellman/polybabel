@@ -1,4 +1,4 @@
-import { getFileContentsFromCwd } from './file';
+import { getFileContents } from './file';
 import { IFlags } from './flags';
 
 /**
@@ -19,15 +19,15 @@ export interface IConfiguration {
  * Resolves a configuration object from defaults, a .polybabelrc file
  * if one exists, and an optionally provided {flags} object.
  */
-export async function resolveConfiguration (
-  flags: IFlags = {}
-): Promise<IConfiguration> {
+export async function resolveConfiguration (flags: IFlags = {}): Promise<IConfiguration> {
   let polybabelConfig: IPolybabelConfig;
 
   try {
-    polybabelConfig =
-      JSON.parse(await getFileContentsFromCwd('.polybabelrc')) ||
-      JSON.parse(await getFileContentsFromCwd('polybabel.json'));
+    const polybabelConfigJson =
+      await getFileContents(`${process.cwd()}/.polybabelrc`) ||
+      await getFileContents(`${process.cwd()}/polybabel.json`);
+
+    polybabelConfig = JSON.parse(polybabelConfigJson);
   } catch (e) {
     polybabelConfig = {};
   }

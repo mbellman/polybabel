@@ -26,9 +26,7 @@ const tokenizers: Tokenizer[] = [
  * Tokenizes an {input} string and returns an array of all
  * non-whitespace tokens.
  */
-export default function tokenize (
-  input: string
-): IToken[] {
+export default function tokenize (input: string): IToken[] {
   const tokens: IToken[] = [];
   let offset: number = 0;
 

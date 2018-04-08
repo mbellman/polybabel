@@ -1,7 +1,7 @@
 /**
  * Token type constants.
  */
-export enum TokenType {
+export const enum TokenType {
   WORD,
   NUMBER,
   OPEN_BRACKET,
