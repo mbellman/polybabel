@@ -1,0 +1,23 @@
+{
+	"compilerOptions": {
+		"baseUrl": "./source",
+		"downlevelIteration": true,
+		"experimentalDecorators": true,
+		"lib": [
+			"dom",
+			"es2015"
+		],
+		"module": "commonjs",
+		"moduleResolution": "node",
+		"noEmitOnError": true,
+		"noImplicitAny": true,
+		"outDir": "dist",
+		"target": "es6"
+	},
+	"include": [
+		"source/index.ts"
+	],
+	"exclude": [
+		"node_modules"
+	]
+}
