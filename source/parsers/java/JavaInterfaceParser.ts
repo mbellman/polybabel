@@ -2,6 +2,7 @@ import AbstractParser from '../common/AbstractParser';
 import SyntaxNodeBuilder from '../common/SyntaxNodeBuilder';
 import { IToken } from '../../tokenizer/types';
 import { JavaSyntax } from './java-syntax';
+import { JavaConstants } from './java-constants';
 
 export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJavaInterface> {
   private _currentMemberName: string;
@@ -51,11 +52,16 @@ export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJava
   protected handleWord ({ value, lastToken, nextToken }: IToken): void {
     if (this.isStartOfLine) {
       if (this.isFirstLine) {
+        const isAccessModifier = JavaConstants.AccessModifierKeywords.indexOf(value) > -1;
 
+        const interfaceName = isAccessModifier
+          ? nextToken.nextToken.value
+          : nextToken.value;
+
+        this._syntaxNodeBuilder.update('name', interfaceName);
       } else {
         this._currentMemberType = value;
         this._currentMemberName = nextToken.value;
-        this.currentTokenIndex += 2;
       }
     }
   }

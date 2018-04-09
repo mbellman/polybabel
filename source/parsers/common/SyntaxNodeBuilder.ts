@@ -10,7 +10,7 @@ export default class SyntaxNodeBuilder<N extends ISyntaxNode = ISyntaxNode> {
   public add <K extends keyof N>(key: K, values: N[K]): void {
     const existingValues = this._syntaxNode[key];
 
-    this._syntaxNode[key] = existingValues.concat(values);
+    this._syntaxNode[key] = existingValues ? existingValues.concat(values) : values;
   }
 
   public getSyntaxNode (): N {

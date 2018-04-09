@@ -51,7 +51,7 @@ export default abstract class AbstractParser<P extends ISyntaxTree | ISyntaxNode
   protected processTokens (tokens: IToken[]): void {
     let token: IToken;
 
-    while ((token = tokens[this.currentTokenIndex++]) && !this._isFinished) {
+    while (!this._isFinished && (token = tokens[this.currentTokenIndex])) {
       if (token.type === TokenType.NEWLINE) {
         this._handleNewline();
       } else {
@@ -69,6 +69,8 @@ export default abstract class AbstractParser<P extends ISyntaxTree | ISyntaxNode
 
         this.isStartOfLine = false;
       }
+
+      this.currentTokenIndex++;
     }
   }
 

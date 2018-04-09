@@ -22,15 +22,23 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
         this._blockLevel++;
         break;
       case '}':
-        this._blockLevel--;
-
-        if (this._blockLevel === 0) {
+        if (--this._blockLevel === 0) {
           this.finish();
         }
     }
   }
 
   protected handleWord ({ value, lastToken, nextToken }: IToken): void {
+    if (this.isStartOfLine) {
+      const isAccessModifier = JavaConstants.AccessModifierKeywords.indexOf(value) > -1;
 
+      if (this.isFirstLine) {
+        const className = isAccessModifier
+          ? nextToken.nextToken.value
+          : nextToken.value;
+
+        this._syntaxNodeBuilder.update('name', className);
+      }
+    }
   }
 }

@@ -53,7 +53,7 @@ export default class JavaParser extends AbstractParser<JavaSyntax.IJavaSyntaxTre
       const isValidStartingKeyword = JavaParser.AcceptedKeywords.indexOf(value) > -1;
 
       if (!isValidStartingKeyword) {
-        this.haltWithMessage(`Invalid start of line keyword '${value}'`);
+        this.haltWithMessage(`Invalid starting keyword '${value}'`);
       }
     }
 
