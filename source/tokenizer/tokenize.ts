@@ -10,16 +10,9 @@ import { IToken, Tokenizer, TokenType } from './types';
 const tokenizers: Tokenizer[] = [
   createTokenizer(TokenType.WORD, /\w/),
   createTokenizer(TokenType.NUMBER, /\d/),
-  createTokenizer(TokenType.OPEN_BRACKET, /\[/),
-  createTokenizer(TokenType.OPEN_CURLY_BRACE, /\{/),
-  createTokenizer(TokenType.OPEN_PARENTHESIS, /\(/),
-  createTokenizer(TokenType.CLOSE_BRACKET, /\]/),
-  createTokenizer(TokenType.CLOSE_CURLY_BRACE, /\}/),
-  createTokenizer(TokenType.CLOSE_PARENTHESIS, /\)/),
-  createTokenizer(TokenType.OPERATOR, /[-*+\/%&!^~]/),
-  createTokenizer(TokenType.QUOTE, /["']/),
-  createTokenizer(TokenType.SYMBOLS, /[$_|=`:;<>?,.]/),
-  createTokenizer(TokenType.WHITESPACE, /[\s\t\r\n]/),
+  createTokenizer(TokenType.SYMBOL, /[$_|=`:;<>?,.\-*+\/%&!^~\[\]{}()'"]/),
+  createTokenizer(TokenType.NEWLINE, /[\r\n]/),
+  createTokenizer(TokenType.WHITESPACE, /[\s\t]/),
 ];
 
 /**
@@ -39,6 +32,13 @@ export default function tokenize (input: string): IToken[] {
 
       if (value) {
         if (type !== TokenType.WHITESPACE) {
+          const lastToken = tokens[tokens.length - 1];
+
+          if (lastToken) {
+            token.lastToken = lastToken;
+            lastToken.nextToken = token;
+          }
+
           tokens.push(token);
         }
 

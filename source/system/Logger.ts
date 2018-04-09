@@ -8,24 +8,33 @@ const enum ColorCode {
 }
 
 /**
- * A logging utility.
+ * A generic logging utility.
  */
-export default class Logger {
-  public static error (message: string): void {
-    Logger._logWithColor(message, ColorCode.FG_RED);
+export interface ILogger {
+  error (message: string): void;
+  log (message: string): void;
+  warn (message: string): void;
+}
+
+/**
+ * A logging utility with color output features.
+ */
+export default class Logger implements ILogger {
+  public error (message: string): void {
+    this._logWithColor(message, ColorCode.FG_RED);
 
     process.exit(0);
   }
 
-  public static log (message: string): void {
+  public log (message: string): void {
     console.log(message);
   }
 
-  public static warn (message: string): void {
-    Logger._logWithColor(message, ColorCode.FG_YELLOW);
+  public warn (message: string): void {
+    this._logWithColor(message, ColorCode.FG_YELLOW);
   }
 
-  private static _logWithColor (message: string, colorCode: ColorCode): void {
+  private _logWithColor (message: string, colorCode: ColorCode): void {
     console.log(colorCode, message, ColorCode.RESET);
   }
 }

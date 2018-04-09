@@ -4,15 +4,8 @@
 export const enum TokenType {
   WORD,
   NUMBER,
-  OPEN_BRACKET,
-  OPEN_CURLY_BRACE,
-  OPEN_PARENTHESIS,
-  CLOSE_BRACKET,
-  CLOSE_CURLY_BRACE,
-  CLOSE_PARENTHESIS,
-  OPERATOR,
-  QUOTE,
-  SYMBOLS,
+  SYMBOL,
+  NEWLINE,
   WHITESPACE
 }
 
@@ -22,6 +15,8 @@ export const enum TokenType {
 export interface IToken {
   type: TokenType;
   value: string;
+  lastToken?: IToken;
+  nextToken?: IToken;
 }
 
 /**

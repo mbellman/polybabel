@@ -4,10 +4,7 @@ import { IToken, Tokenizer, TokenType } from './types';
  * Returns a tokenizer function which associates tokens matching
  * a token type to a specific {pattern}.
  */
-export default function createTokenizer (
-  tokenType: TokenType,
-  pattern: RegExp
-): Tokenizer {
+export default function createTokenizer (tokenType: TokenType, pattern: RegExp): Tokenizer {
   return (input: string, offset: number): IToken => {
     let incomingChar: string = input[offset];
     let value: string;
@@ -18,6 +15,13 @@ export default function createTokenizer (
       while (pattern.test(incomingChar)) {
         value += incomingChar;
         incomingChar = input[++offset];
+
+        if (tokenType === TokenType.SYMBOL || value === '\r\n') {
+          // Terminate symbol tokens after a single character, and
+          // newline tokens after a single full newline, so they
+          // can be tokenized individually
+          break;
+        }
       }
     }
 

@@ -1,10 +1,8 @@
-import goodbye.GoodbyeWorld;
-
 interface HTMLElement {
-  innerHTML: String;
+  String innerHTML;
 }
 
-public class HelloWorld {
+class HelloWorld {
   public static void main (String[] args) {
     console.log('Hello!');
 
