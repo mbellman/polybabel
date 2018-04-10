@@ -1,99 +1,150 @@
-import AbstractParser from '../common/AbstractParser';
-import SyntaxNodeBuilder from '../common/SyntaxNodeBuilder';
+import { AbstractBlockParser, ISymbolParser, IWordParser, Matcher } from '../common/parsers';
 import { IToken } from '../../tokenizer/types';
-import { JavaSyntax } from './java-syntax';
 import { JavaConstants } from './java-constants';
+import { JavaSyntax } from './java-syntax';
+import { isAccessModifierKeyword } from './java-utils';
 
-export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJavaInterface> {
-  private _currentMemberName: string;
-  private _currentMemberParameters: JavaSyntax.IJavaParameter[] = [];
-  private _currentMemberType: string;
-  private _isAddingMemberParameters: boolean = false;
-  private _syntaxNodeBuilder: SyntaxNodeBuilder<JavaSyntax.IJavaInterface> = new SyntaxNodeBuilder(JavaSyntax.JavaSyntaxNodeType.INTERFACE);
-
-  public getParsed (): JavaSyntax.IJavaInterface {
-    return this._syntaxNodeBuilder.getSyntaxNode();
-  }
-
-  protected handleNumber (token: IToken): void {
-
-  }
-
-  protected handleSymbol ({ value, nextToken }: IToken): void {
-    switch (value) {
-      case ';':
-        this._addMember();
-        break;
-      case '{':
-        break;
-      case '}':
-        this.finish();
-        break;
-      case '(':
-        if (!this._currentMemberType || !this._currentMemberName) {
-          this.haltWithMessage(`Unexpected character '('`);
-        }
-
+export default class JavaInterfaceParser extends AbstractBlockParser<JavaSyntax.IJavaInterface> implements ISymbolParser, IWordParser {
+  public readonly symbols: Matcher[] = [
+    [';', this._onMemberDeclarationEnd],
+    ['{', this.onBlockEnter],
+    ['}', this.onBlockExit],
+    ['(', () => {
+      if (this._isAddingMember()) {
         this._isAddingMemberParameters = true;
-
-        break;
-      case ')':
-        if (nextToken.value !== ';') {
-          this.haltWithMessage(`Unexpected character ')'`);
-        }
-
-        break;
-      default:
-        this.haltWithMessage(`Unexpected character ${value}`);
-        break;
-    }
-  }
-
-  protected handleWord ({ value, lastToken, nextToken }: IToken): void {
-    if (this.isStartOfLine) {
-      if (this.isFirstLine) {
-        const isAccessModifier = JavaConstants.AccessModifierKeywords.indexOf(value) > -1;
-
-        const interfaceName = isAccessModifier
-          ? nextToken.nextToken.value
-          : nextToken.value;
-
-        this._syntaxNodeBuilder.update('name', interfaceName);
       } else {
-        this._currentMemberType = value;
-        this._currentMemberName = nextToken.value;
+        this.halt();
       }
-    }
+    }],
+    [')', () => {
+      if (!this._isAddingMemberParameters || this.currentToken.nextToken.value !== ';') {
+        this.halt();
+      }
+    }],
+    [',', () => {
+      if (this._isAddingMemberParameters) {
+        this.skip(1);
+        this._onParameterDeclaration();
+      }
+    }]
+  ];
+
+  public readonly words: Matcher[] = [
+    [
+      [
+        JavaConstants.Keyword.INTERFACE,
+        JavaConstants.Keyword.PUBLIC,
+        JavaConstants.Keyword.PROTECTED,
+        JavaConstants.Keyword.PRIVATE
+      ], () => {
+        if (this.isFirstToken) {
+          this._onFirstToken();
+        } else {
+          this.halt('keyword');
+        }
+      }
+    ],
+    [/./, () => {
+      if (!this.isFirstToken && this.isStartOfLine) {
+        this._onMemberDeclarationStart();
+      } else if (this._isAddingMemberParameters) {
+        this._onParameterDeclaration();
+      } else {
+        this.halt('word');
+      }
+    }]
+  ];
+
+  private _incomingMemberName: string;
+  private _incomingMemberParameters: JavaSyntax.IJavaParameter[] = [];
+  private _incomingMemberType: string;
+  private _isAddingMemberParameters: boolean = false;
+
+  protected getDefault (): JavaSyntax.IJavaInterface {
+    return {
+      nodeType: JavaSyntax.JavaSyntaxNodeType.INTERFACE,
+      accessModifier: JavaSyntax.JavaAccessModifier.PACKAGE,
+      name: null,
+      fields: [],
+      methods: []
+    };
   }
 
-  private _addMember (): void {
-    if (this._currentMemberParameters.length > 0) {
+  private _addField (): void {
+    this.parsed.fields.push({
+      nodeType: JavaSyntax.JavaSyntaxNodeType.INTERFACE_FIELD,
+      accessModifier: JavaSyntax.JavaAccessModifier.PUBLIC,
+      type: this._incomingMemberType,
+      name: this._incomingMemberName
+    });
+  }
+
+  private _addMethod (): void {
+    this.parsed.methods.push({
+      nodeType: JavaSyntax.JavaSyntaxNodeType.INTERFACE_METHOD,
+      accessModifier: JavaSyntax.JavaAccessModifier.PUBLIC,
+      type: this._incomingMemberType,
+      name: this._incomingMemberName,
+      parameters: [ ...this._incomingMemberParameters ]
+    });
+  }
+
+  private _isAddingMember (): boolean {
+    return !!(this._incomingMemberName && this._incomingMemberType);
+  }
+
+  private _onFirstToken (): void {
+    const { value, nextToken } = this.currentToken;
+    const isAccessModifier = isAccessModifierKeyword(value);
+
+    const interfaceName = isAccessModifier
+      ? nextToken.nextToken.value
+      : nextToken.value;
+
+    this.parsed.name = interfaceName;
+
+    this.skip(isAccessModifier ? 2 : 1);
+  }
+
+  private _onMemberDeclarationEnd (): void {
+    if (!this._isAddingMember()) {
+      this.halt();
+    }
+
+    if (this._incomingMemberParameters.length > 0) {
       this._addMethod();
     } else {
       this._addField();
     }
 
-    this._currentMemberName = null;
-    this._currentMemberType = null;
-    this._currentMemberParameters.length = 0;
+    this._incomingMemberName = null;
+    this._incomingMemberType = null;
+    this._incomingMemberParameters.length = 0;
+    this._isAddingMemberParameters = false;
   }
 
-  private _addField (): void {
-    this._syntaxNodeBuilder.add('fields', [{
-      nodeType: JavaSyntax.JavaSyntaxNodeType.INTERFACE_FIELD,
-      accessModifier: JavaSyntax.JavaAccessModifier.PUBLIC,
-      type: this._currentMemberType,
-      name: this._currentMemberName
-    }]);
+  private _onMemberDeclarationStart (): void {
+    const { value, nextToken } = this.currentToken;
+
+    this._incomingMemberType = value;
+    this._incomingMemberName = nextToken.value;
+
+    this.skip(1);
   }
 
-  private _addMethod (): void {
-    this._syntaxNodeBuilder.add('methods', [{
-      nodeType: JavaSyntax.JavaSyntaxNodeType.INTERFACE_METHOD,
-      accessModifier: JavaSyntax.JavaAccessModifier.PUBLIC,
-      type: this._currentMemberType,
-      name: this._currentMemberName,
-      parameters: this._currentMemberParameters
-    }]);
+  private _onParameterDeclaration (): void {
+    const { lastToken, value, nextToken } = this.currentToken;
+
+    if (lastToken.value !== '(' && lastToken.value !== ',') {
+      this.halt('parameter');
+    }
+
+    this._incomingMemberParameters.push({
+      nodeType: JavaSyntax.JavaSyntaxNodeType.PARAMETER,
+      type: value,
+      name: nextToken.value
+    });
+
+    this.skip(1);
   }
 }

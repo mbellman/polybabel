@@ -15,6 +15,7 @@ export const enum TokenType {
 export interface IToken {
   type: TokenType;
   value: string;
+  line?: number;
   lastToken?: IToken;
   nextToken?: IToken;
 }

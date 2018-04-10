@@ -20,7 +20,8 @@ export namespace JavaSyntax {
     INTERFACE_METHOD,
     CLASS,
     CLASS_FIELD,
-    CLASS_METHOD
+    CLASS_METHOD,
+    PARAMETER
   }
 
   export const enum JavaAccessModifier {

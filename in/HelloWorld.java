@@ -1,5 +1,8 @@
-interface HTMLElement {
-  String innerHTML;
+interface ITest {
+  String string;
+  Bool boolean;
+  Object object;
+  Thing getThing (String key, Number id);
 }
 
 class HelloWorld {

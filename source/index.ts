@@ -31,10 +31,12 @@ async function processFiles (directory: string, files: string[]): Promise<void> 
     const language = getLanguageByExtension(extension);
     const fileContents = await getFileContents(`${process.cwd()}/${directory}/${file}`);
     const tokens = tokenize(fileContents);
-    const syntaxTree: ISyntaxTree = parse(file, tokens, language);
 
-    console.log(`\nSyntax tree for ${file}:`);
-    console.log(syntaxTree);
+    try {
+      const syntaxTree: ISyntaxTree = parse(tokens, language);
+    } catch (e) {
+      Logger.error(`[${file}] | ${e.message}`);
+    }
   }
 }
 
@@ -42,7 +44,6 @@ async function processFiles (directory: string, files: string[]): Promise<void> 
  * Polybabel entry point.
  */
 async function main (args: string[]) {
-  const logger = new Logger();
   const startTime = Date.now();
   const flags = getFlags(args);
 
@@ -52,11 +53,11 @@ async function main (args: string[]) {
 
     await processFiles(inputFolderName, inputFiles);
   } catch (e) {
-    logger.warn('Failed to compile:');
-    logger.error(e.toString());
+    Logger.warn('Failed to compile:');
+    Logger.error(e.toString());
   }
 
-  console.log(`Compiled in ${Date.now() - startTime} ms!`);
+  Logger.log(`Compiled in ${Date.now() - startTime} ms!`);
 }
 
 main(process.argv);

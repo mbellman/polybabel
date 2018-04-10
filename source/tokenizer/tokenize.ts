@@ -22,6 +22,7 @@ const tokenizers: Tokenizer[] = [
 export default function tokenize (input: string): IToken[] {
   const tokens: IToken[] = [];
   let offset: number = 0;
+  let line: number = 1;
 
   while (offset < input.length) {
     let totalFailedTokenizers: number = 0;
@@ -33,11 +34,14 @@ export default function tokenize (input: string): IToken[] {
       if (value) {
         if (type !== TokenType.WHITESPACE) {
           const lastToken = tokens[tokens.length - 1];
+          const isNewLine = type === TokenType.NEWLINE;
 
           if (lastToken) {
             token.lastToken = lastToken;
             lastToken.nextToken = token;
           }
+
+          token.line = isNewLine ? ++line : line;
 
           tokens.push(token);
         }

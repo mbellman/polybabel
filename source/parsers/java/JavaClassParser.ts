@@ -1,44 +1,59 @@
-import AbstractParser from '../common/AbstractParser';
-import SyntaxNodeBuilder from '../common/SyntaxNodeBuilder';
+import { AbstractBlockParser, ISymbolParser, IWordParser, Matcher } from '../common/parsers';
+import { isAccessModifierKeyword } from './java-utils';
 import { IToken } from '../../tokenizer/types';
-import { JavaSyntax } from './java-syntax';
 import { JavaConstants } from './java-constants';
+import { JavaSyntax } from './java-syntax';
 
-export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClass> {
-  private _blockLevel: number = 0;
-  private _syntaxNodeBuilder: SyntaxNodeBuilder<JavaSyntax.IJavaClass> = new SyntaxNodeBuilder(JavaSyntax.JavaSyntaxNodeType.CLASS);
+export default class JavaClassParser extends AbstractBlockParser<JavaSyntax.IJavaClass> implements ISymbolParser, IWordParser {
+  public readonly symbols: Matcher[] = [
+    ['{', this.onBlockEnter],
+    ['}', this.onBlockExit]
+  ];
 
-  public getParsed (): JavaSyntax.IJavaClass {
-    return this._syntaxNodeBuilder.getSyntaxNode();
-  }
-
-  protected handleNumber (token: IToken): void {
-
-  }
-
-  protected handleSymbol ({ value }: IToken): void {
-    switch (value) {
-      case '{':
-        this._blockLevel++;
-        break;
-      case '}':
-        if (--this._blockLevel === 0) {
-          this.finish();
+  public readonly words: Matcher[] = [
+    [
+      [
+        JavaConstants.Keyword.CLASS,
+        JavaConstants.Keyword.PUBLIC,
+        JavaConstants.Keyword.PROTECTED,
+        JavaConstants.Keyword.PRIVATE
+      ], () => {
+        if (this.isFirstToken) {
+          this._onFirstToken();
+        } else {
+          this._onNestedClassDeclaration();
         }
-    }
+      }
+    ]
+  ];
+
+  protected getDefault (): JavaSyntax.IJavaClass {
+    return {
+      nodeType: JavaSyntax.JavaSyntaxNodeType.CLASS,
+      accessModifier: JavaSyntax.JavaAccessModifier.PACKAGE,
+      name: null,
+      nestedClasses: [],
+      fields: [],
+      methods: []
+    };
   }
 
-  protected handleWord ({ value, lastToken, nextToken }: IToken): void {
-    if (this.isStartOfLine) {
-      const isAccessModifier = JavaConstants.AccessModifierKeywords.indexOf(value) > -1;
+  private _onFirstToken (): void {
+    const { value, nextToken } = this.currentToken;
+    const isAccessModifier = isAccessModifierKeyword(value);
 
-      if (this.isFirstLine) {
-        const className = isAccessModifier
-          ? nextToken.nextToken.value
-          : nextToken.value;
+    const className = isAccessModifier
+      ? nextToken.nextToken.value
+      : nextToken.value;
 
-        this._syntaxNodeBuilder.update('name', className);
-      }
-    }
+    this.parsed.name = className;
+
+    this.skip(isAccessModifier ? 2 : 1);
+  }
+
+  private _onNestedClassDeclaration (): void {
+    const javaClass = this.parseNextWith(JavaClassParser);
+
+    this.parsed.nestedClasses.push(javaClass);
   }
 }

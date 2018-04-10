@@ -1,4 +1,4 @@
-public class GoodbyeWorld {
+class GoodbyeWorld {
   public void printGoodbye () {
     console.log('Goodbye.');
   }
