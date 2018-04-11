@@ -40,6 +40,8 @@ export abstract class AbstractParser<P extends ISyntaxTree | ISyntaxNode> {
   protected abstract getDefault (): P;
 
   protected finish (): void {
+    this.skip(1);
+
     this._isFinished = true;
   }
 
@@ -91,18 +93,6 @@ export abstract class AbstractParser<P extends ISyntaxTree | ISyntaxNode> {
 
   protected nextSymbol (): string {
     return this._getNextTokenValueByType(TokenType.SYMBOL);
-  }
-
-  protected nextToken (): IToken {
-    while (this.currentToken && this.currentToken.type === TokenType.NEWLINE) {
-      if (!this.currentToken.nextToken) {
-        this.halt('end of file');
-      }
-
-      this.currentToken = this.currentToken.nextToken;
-    }
-
-    return this.currentToken;
   }
 
   protected nextWord (): string {
@@ -163,17 +153,20 @@ export abstract class AbstractParser<P extends ISyntaxTree | ISyntaxNode> {
     this.currentToken = token;
 
     while (!this._isFinished && this.currentToken) {
+
       if (isFirstToken && this.currentToken.type !== TokenType.NEWLINE) {
         this.onFirstToken();
 
         isFirstToken = false;
       }
 
-      this.isStartOfLine = this.currentToken.lastToken
-        ? this.currentToken.lastToken.type === TokenType.NEWLINE
-        : true;
+      const startingToken = this.currentToken;
+      const { lastToken, type, value } = this.currentToken;
 
-      const { type, value } = this.currentToken;
+      // TODO: Extract into its own method
+      this.isStartOfLine = lastToken
+        ? lastToken.type === TokenType.NEWLINE
+        : true;
 
       switch (type) {
         case TokenType.WORD:
@@ -187,7 +180,9 @@ export abstract class AbstractParser<P extends ISyntaxTree | ISyntaxNode> {
           break;
       }
 
-      this.skip(1);
+      if (this.currentToken === startingToken) {
+        this.skip(1);
+      }
     }
   }
 }

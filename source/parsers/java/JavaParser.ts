@@ -49,8 +49,6 @@ export default class JavaParser extends AbstractParser<JavaSyntax.IJavaSyntaxTre
   private _onInterfaceDeclaration (): void {
     const javaInterface = this.parseNextWith(JavaInterfaceParser);
 
-    console.log(javaInterface);
-
     this.parsed.nodes.push(javaInterface);
   }
 

@@ -17,15 +17,15 @@ export default class JavaParameterParser extends AbstractParser<JavaSyntax.IJava
   }
 
   protected onFirstToken (): void {
-    let { value, nextToken } = this.currentToken;
-    const isFinalParameter = value === JavaConstants.Keyword.FINAL;
+    const isFinalParameter = this.currentToken.value === JavaConstants.Keyword.FINAL;
 
     if (isFinalParameter) {
       this.parsed.isFinal = true;
 
-      nextToken = this.currentToken.nextToken;
-      value = nextToken.value;
+      this.skip(1);
     }
+
+    const { value, nextToken } = this.currentToken;
 
     if (isReservedWord(nextToken.value)) {
       this.halt('reserved word parameter name');
@@ -34,6 +34,6 @@ export default class JavaParameterParser extends AbstractParser<JavaSyntax.IJava
     this.parsed.type = value;
     this.parsed.name = nextToken.value;
 
-    this.skip(isFinalParameter ? 3 : 2);
+    this.skip(2);
   }
 }

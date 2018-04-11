@@ -34,7 +34,7 @@ export default class JavaObjectFieldParser extends AbstractParser<JavaSyntax.IJa
     }
 
     this.parsed.type = this.currentToken.value;
-    this.parsed.name = this.nextToken().value;
+    this.parsed.name = this.currentToken.nextToken.value;
 
     this.skip(2);
   }

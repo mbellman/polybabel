@@ -62,15 +62,11 @@ export default class JavaInterfaceParser extends AbstractBlockParser<JavaSyntax.
   }
 
   private _onMemberDeclaration (): void {
-    console.log('Declaring member', this.currentToken.value);
-
     const isMethodDeclaration = this.lineContains('(');
 
     const parsed = isMethodDeclaration
       ? this.parseNextWith(JavaObjectMethodParser)
       : this.parseNextWith(JavaObjectFieldParser);
-
-    console.log(parsed);
 
     if (isMethodDeclaration) {
       this.parsed.methods.push(parsed as JavaSyntax.IJavaObjectMethod);
