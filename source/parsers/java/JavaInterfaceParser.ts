@@ -53,11 +53,15 @@ export default class JavaInterfaceParser extends AbstractBlockParser<JavaSyntax.
 
   private _onExtendsDeclaration (): void {
     while (this.currentToken.value !== '{') {
-      const nextWord = this.nextWord();
-
-      this.parsed.extends.push(nextWord);
-
-      this.skip(1);
+      this.match(this.currentToken.value, [
+        [JavaConstants.Keyword.EXTENDS, () => this.skip(1)],
+        [',', () => this.skip(1)],
+        [/\w/, () => {
+          // TODO: Assert that base interface names are all comma-separated
+          this.parsed.extends.push(this.currentToken.value);
+          this.skip(1);
+        }]
+      ]);
     }
   }
 

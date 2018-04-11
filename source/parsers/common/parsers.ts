@@ -138,13 +138,13 @@ export abstract class AbstractParser<P extends ISyntaxTree | ISyntaxNode> {
   }
 
   private _getNextTokenValueByType (tokenType: TokenType): string {
-    let token = this.currentToken;
+    let nextToken = this.currentToken.nextToken;
 
-    while (token.nextToken.type !== tokenType) {
-      token = token.nextToken;
+    while (nextToken && nextToken.type !== tokenType) {
+      nextToken = nextToken.nextToken;
     }
 
-    return token ? token.value : null;
+    return nextToken ? nextToken.value : null;
   }
 
   private _stream (token: IToken): void {
@@ -153,7 +153,6 @@ export abstract class AbstractParser<P extends ISyntaxTree | ISyntaxNode> {
     this.currentToken = token;
 
     while (!this._isFinished && this.currentToken) {
-
       if (isFirstToken && this.currentToken.type !== TokenType.NEWLINE) {
         this.onFirstToken();
 

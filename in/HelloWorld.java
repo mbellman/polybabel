@@ -1,4 +1,4 @@
-interface ITest {
+interface ITest extends Div, Something, Else {
   String string;
   Bool boolean;
   Object object;
