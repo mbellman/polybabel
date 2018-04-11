@@ -35,7 +35,8 @@ async function processFiles (directory: string, files: string[]): Promise<void> 
     try {
       const syntaxTree: ISyntaxTree = parse(tokens, language);
     } catch (e) {
-      Logger.error(`[${file}] | ${e.message}`);
+      Logger.warn(`[${file}]`);
+      Logger.error(` ${e.message}\n`);
     }
   }
 }

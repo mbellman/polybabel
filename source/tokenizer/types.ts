@@ -22,6 +22,6 @@ export interface IToken {
 
 /**
  * A function which attempts to extract a token from a specific
- * {input} string starting at a particular {offset}.
+ * {input} string starting from an {offset}.
  */
 export type Tokenizer = (input: string, offset: number) => IToken;

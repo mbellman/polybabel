@@ -1,27 +1,47 @@
-import { IAccessible, INamed, ISyntaxNode, ISyntaxNodeContainer, ISyntaxTree, ITyped, IWithParameters } from '../common/syntax';
+import { IAccessible, INamed, ISyntaxNode, ISyntaxNodeContainer, ISyntaxTree, ITyped, IValued, IWithParameters } from '../common/syntax';
 
 export namespace JavaSyntax {
   /**
    * @internal
    */
-  interface IJavaNodeContainer extends ISyntaxNodeContainer<IJavaSyntaxNode> { }
+  interface IJavaSyntaxNode extends ISyntaxNode<JavaSyntaxNode> { }
+
+  /**
+   * @internal
+   */
+  interface IJavaSyntaxNodeContainer extends ISyntaxNodeContainer<IJavaSyntaxNode> { }
 
   /**
    * @internal
    */
   interface IJavaAccessible extends IAccessible<JavaAccessModifier> { }
 
-  interface IJavaObjectMember extends IJavaSyntaxNode, INamed, ITyped, IJavaAccessible { }
+  /**
+   * @internal
+   */
+  interface IJavaFinalizable {
+    isFinal?: true;
+  }
 
-  export const enum JavaSyntaxNodeType {
+  /**
+   * @internal
+   */
+  interface IJavaObjectMember extends IJavaSyntaxNode, INamed, ITyped, IJavaAccessible, IJavaFinalizable {
+    isAbstract?: true;
+    isStatic?: true;
+  }
+
+  export const enum JavaSyntaxNode {
+    PACKAGE,
     IMPORT,
-    INTERFACE,
-    INTERFACE_FIELD,
-    INTERFACE_METHOD,
     CLASS,
-    CLASS_FIELD,
-    CLASS_METHOD,
-    PARAMETER
+    INTERFACE,
+    OBJECT_FIELD,
+    OBJECT_METHOD,
+    PARAMETER,
+    VARIABLE,
+    REFERENCE,
+    EXPRESSION
   }
 
   export const enum JavaAccessModifier {
@@ -31,45 +51,51 @@ export namespace JavaSyntax {
     PACKAGE
   }
 
-  export interface IJavaSyntaxNode extends ISyntaxNode<JavaSyntaxNodeType> { }
-
   export interface IJavaImport extends IJavaSyntaxNode {
-    nodeType: JavaSyntaxNodeType.IMPORT;
+    node: JavaSyntaxNode.IMPORT;
     path: string;
     alias: string;
   }
 
   export interface IJavaInterface extends IJavaSyntaxNode, INamed, IJavaAccessible {
-    nodeType: JavaSyntaxNodeType.INTERFACE;
-    fields: IJavaInterfaceField[];
-    methods: IJavaInterfaceMethod[];
-  }
-
-  export interface IJavaInterfaceField extends IJavaObjectMember {
-    nodeType: JavaSyntaxNodeType.INTERFACE_FIELD;
-  }
-
-  export interface IJavaInterfaceMethod extends IJavaObjectMember, IWithParameters<INamed & ITyped> {
-    nodeType: JavaSyntaxNodeType.INTERFACE_METHOD;
+    node: JavaSyntaxNode.INTERFACE;
+    extends?: string[];
+    fields: IJavaObjectField[];
+    methods: IJavaObjectMethod[];
   }
 
   export interface IJavaClass extends IJavaSyntaxNode, INamed, IJavaAccessible {
-    nodeType: JavaSyntaxNodeType.CLASS;
+    node: JavaSyntaxNode.CLASS;
     extends?: string;
     implements?: string[];
     nestedClasses: IJavaClass[];
-    fields: IJavaClassField[];
-    methods: IJavaClassMethod[];
+    fields: IJavaObjectField[];
+    methods: IJavaObjectMethod[];
   }
 
-  export interface IJavaClassField extends IJavaObjectMember {
-    nodeType: JavaSyntaxNodeType.CLASS_FIELD;
+  export interface IJavaObjectField extends IJavaObjectMember, Partial<IValued<JavaSyntaxNode>> {
+    node: JavaSyntaxNode.OBJECT_FIELD;
   }
 
-  export interface IJavaClassMethod extends IJavaObjectMember, IWithParameters<INamed & ITyped>, IJavaNodeContainer {
-    nodeType: JavaSyntaxNodeType.CLASS_METHOD;
+  export interface IJavaObjectMethod extends IJavaObjectMember, IWithParameters<IJavaParameter>, IJavaSyntaxNodeContainer {
+    node: JavaSyntaxNode.OBJECT_METHOD;
   }
 
-  export interface IJavaParameter extends IJavaSyntaxNode, INamed, ITyped { }
+  export interface IJavaParameter extends IJavaSyntaxNode, INamed, ITyped, IJavaFinalizable {
+    node: JavaSyntaxNode.PARAMETER;
+  }
+
+  export interface IJavaVariable extends IJavaSyntaxNode, INamed, ITyped, IJavaFinalizable, Partial<IValued<JavaSyntaxNode>> {
+    node: JavaSyntaxNode.VARIABLE;
+  }
+
+  export interface IJavaReference extends IJavaSyntaxNode, INamed {
+    node: JavaSyntaxNode.REFERENCE;
+  }
+
+  export interface IJavaExpression extends IJavaSyntaxNode, IJavaSyntaxNodeContainer {
+    node: JavaSyntaxNode.EXPRESSION;
+  }
+
   export interface IJavaSyntaxTree extends ISyntaxTree<IJavaSyntaxNode> { }
 }

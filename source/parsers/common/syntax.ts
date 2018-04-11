@@ -1,12 +1,11 @@
 import { Language } from '../../system/constants';
 
 /**
- * A base syntax tree node. The provided generic parameter T
- * should be an enum of language-specific syntax node type
- * constants.
+ * A base syntax tree node. The provided generic parameter N
+ * should be an enum of language-specific syntax node constants.
  */
-export interface ISyntaxNode<T = any> {
-  nodeType: T;
+export interface ISyntaxNode<N = any> {
+  node: N;
 }
 
 /**
@@ -15,7 +14,7 @@ export interface ISyntaxNode<T = any> {
  * access modifier constants.
  */
 export interface IAccessible<A> {
-  accessModifier: A;
+  access: A;
 }
 
 /**
@@ -34,6 +33,15 @@ export interface ITyped {
 }
 
 /**
+ * A syntactic structure with an assigned value. The provided
+ * generic parameter N should be an enum with language-specific
+ * syntax node constants.
+ */
+export interface IValued<N> {
+  value: ISyntaxNode<N>;
+}
+
+/**
  * A syntactic structure which has associated parameters, such
  * as a class method or function. The provided generic parameter
  * P should be a type signature for a language-specific parameter
@@ -47,7 +55,7 @@ export interface IWithParameters<P> {
  * A syntactic structure which can contain an arbitrary number
  * of syntax nodes.
  */
-export interface ISyntaxNodeContainer<N extends ISyntaxNode> {
+export interface ISyntaxNodeContainer<N extends ISyntaxNode = ISyntaxNode> {
   nodes: N[];
 }
 

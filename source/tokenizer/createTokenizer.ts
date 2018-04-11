@@ -1,8 +1,8 @@
 import { IToken, Tokenizer, TokenType } from './types';
 
 /**
- * Returns a tokenizer function which associates tokens matching
- * a token type to a specific {pattern}.
+ * Returns a tokenizer function which attempts to return tokens
+ * of a specific type matching a given {pattern}.
  */
 export default function createTokenizer (tokenType: TokenType, pattern: RegExp): Tokenizer {
   return (input: string, offset: number): IToken => {

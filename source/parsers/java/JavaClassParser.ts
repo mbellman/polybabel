@@ -17,11 +17,12 @@ export default class JavaClassParser extends AbstractBlockParser<JavaSyntax.IJav
         JavaConstants.Keyword.PUBLIC,
         JavaConstants.Keyword.PROTECTED,
         JavaConstants.Keyword.PRIVATE
-      ], () => {
-        if (this.isFirstToken) {
-          this._onFirstToken();
-        } else {
+      ],
+      () => {
+        if (this.blockLevel === 1) {
           this._onNestedClassDeclaration();
+        } else {
+          this.halt();
         }
       }
     ]
@@ -29,8 +30,8 @@ export default class JavaClassParser extends AbstractBlockParser<JavaSyntax.IJav
 
   protected getDefault (): JavaSyntax.IJavaClass {
     return {
-      nodeType: JavaSyntax.JavaSyntaxNodeType.CLASS,
-      accessModifier: JavaSyntax.JavaAccessModifier.PACKAGE,
+      node: JavaSyntax.JavaSyntaxNode.CLASS,
+      access: JavaSyntax.JavaAccessModifier.PACKAGE,
       name: null,
       nestedClasses: [],
       fields: [],
@@ -38,17 +39,18 @@ export default class JavaClassParser extends AbstractBlockParser<JavaSyntax.IJav
     };
   }
 
-  private _onFirstToken (): void {
+  protected onFirstToken (): void {
     const { value, nextToken } = this.currentToken;
-    const isAccessModifier = isAccessModifierKeyword(value);
 
-    const className = isAccessModifier
-      ? nextToken.nextToken.value
-      : nextToken.value;
+    if (isAccessModifierKeyword(value)) {
+      this.parsed.access = JavaConstants.AccessModifierMap[value];
 
-    this.parsed.name = className;
+      this.skip(1);
+    }
 
-    this.skip(isAccessModifier ? 2 : 1);
+    this.parsed.name = this.currentToken.value;
+
+    this.skip(1);
   }
 
   private _onNestedClassDeclaration (): void {

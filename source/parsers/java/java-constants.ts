@@ -1,24 +1,51 @@
 import { IHashMap } from '../../system/types';
 import { JavaSyntax } from './java-syntax';
+import { Utils } from '../../system/utils';
 
 export namespace JavaConstants {
-  export const enum ParsingBody {
-    FILE,
-    CLASS,
-    METHOD,
-    INTERFACE
-  }
-
-  export const enum Keyword {
+  export enum Keyword {
     PACKAGE = 'package',
     IMPORT = 'import',
     CLASS = 'class',
     INTERFACE = 'interface',
+    EXTENDS = 'extends',
+    IMPLEMENTS = 'implements',
     PUBLIC = 'public',
     PROTECTED = 'protected',
     PRIVATE = 'private',
-    STATIC = 'static'
+    STATIC = 'static',
+    FINAL = 'final',
+    ABSTRACT = 'abstract',
+    NEW = 'new'
   }
+
+  export const Keywords: string[] = Utils.objectToArray(Keyword);
+
+  export const ModifierKeywords: string[] = [
+    Keyword.STATIC,
+    Keyword.FINAL,
+    Keyword.ABSTRACT
+  ];
+
+  export enum Type {
+    STRING = 'String',
+    OBJECT = 'Object',
+    BYTE = 'byte',
+    SHORT = 'short',
+    INT = 'int',
+    LONG = 'long',
+    FLOAT = 'float',
+    DOUBLE = 'double',
+    BOOLEAN = 'boolean',
+    CHAR = 'char'
+  }
+
+  export const TypeKeywords: string[] = Utils.objectToArray(Type);
+
+  export const ReservedWords: string[] = [
+    ...Keywords,
+    ...TypeKeywords
+  ];
 
   export const AccessModifierKeywords: string[] = [
     Keyword.PUBLIC,
