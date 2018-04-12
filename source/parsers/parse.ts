@@ -1,5 +1,4 @@
 import JavaParser from './java/JavaParser';
-import { AbstractParser } from './common/parsers';
 import { ISyntaxTree } from './common/syntax';
 import { IToken } from '../tokenizer/types';
 import { Language } from '../system/constants';

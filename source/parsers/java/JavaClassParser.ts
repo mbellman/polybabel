@@ -1,5 +1,6 @@
-import { AbstractBlockParser, ISymbolParser, IWordParser, Matcher } from '../common/parsers';
+import AbstractBlockParser from '../common/AbstractBlockParser';
 import { isAccessModifierKeyword } from './java-utils';
+import { ISymbolParser, IWordParser, Matcher } from '../common/parser-types';
 import { IToken } from '../../tokenizer/types';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';

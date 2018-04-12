@@ -1,22 +1,9 @@
-import { Callback, IConstructable, IHashMap } from '../../system/types';
+import { Callback, IConstructable } from '../../system/types';
 import { ISyntaxNode, ISyntaxTree } from './syntax';
 import { IToken, TokenType } from '../../tokenizer/types';
+import { Matcher } from './parser-types';
 
-export type Matcher = [string | RegExp | (RegExp | string)[], Callback];
-
-export interface INumberParser {
-  readonly numbers: Matcher[];
-}
-
-export interface ISymbolParser {
-  readonly symbols: Matcher[];
-}
-
-export interface IWordParser {
-  readonly words: Matcher[];
-}
-
-export abstract class AbstractParser<P extends ISyntaxTree | ISyntaxNode> {
+export default abstract class AbstractParser<P extends ISyntaxTree | ISyntaxNode> {
   protected currentToken: IToken;
   protected isStartOfLine: boolean = true;
   protected parsed: P = this.getDefault();
@@ -182,20 +169,6 @@ export abstract class AbstractParser<P extends ISyntaxTree | ISyntaxNode> {
       if (this.currentToken === startingToken) {
         this.skip(1);
       }
-    }
-  }
-}
-
-export abstract class AbstractBlockParser<P extends ISyntaxTree | ISyntaxNode> extends AbstractParser<P> {
-  protected blockLevel: number = 0;
-
-  protected onBlockEnter (): void {
-    this.blockLevel++;
-  }
-
-  protected onBlockExit (): void {
-    if (--this.blockLevel === 0) {
-      this.finish();
     }
   }
 }

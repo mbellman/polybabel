@@ -1,5 +1,6 @@
-import { AbstractParser, ISymbolParser, Matcher } from '../common/parsers';
+import AbstractParser from '../common/AbstractParser';
 import { isReservedWord } from './java-utils';
+import { ISymbolParser, Matcher } from '../common/parser-types';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 

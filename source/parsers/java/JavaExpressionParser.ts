@@ -1,4 +1,5 @@
-import { AbstractParser, INumberParser, IWordParser, Matcher } from '../common/parsers';
+import AbstractParser from '../common/AbstractParser';
+import { INumberParser, IWordParser, Matcher } from '../common/parser-types';
 import { JavaSyntax } from './java-syntax';
 
 export default class JavaExpressionParser extends AbstractParser<JavaSyntax.IJavaExpression> implements INumberParser, IWordParser {

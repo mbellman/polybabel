@@ -1,7 +1,8 @@
+import AbstractBlockParser from '../common/AbstractBlockParser';
 import JavaObjectFieldParser from './JavaObjectFieldParser';
 import JavaObjectMethodParser from './JavaObjectMethodParser';
-import { AbstractBlockParser, ISymbolParser, IWordParser, Matcher } from '../common/parsers';
 import { isAccessModifierKeyword, isReservedWord } from './java-utils';
+import { ISymbolParser, IWordParser, Matcher } from '../common/parser-types';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 

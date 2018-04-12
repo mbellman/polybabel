@@ -1,6 +1,7 @@
+import AbstractParser from '../common/AbstractParser';
 import JavaParameterParser from './JavaParameterParser';
-import { AbstractParser, ISymbolParser, Matcher, IWordParser } from '../common/parsers';
 import { isAccessModifierKeyword, isModifierKeyword } from './java-utils';
+import { ISymbolParser, IWordParser, Matcher } from '../common/parser-types';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 

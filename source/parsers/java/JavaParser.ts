@@ -1,6 +1,7 @@
+import AbstractParser from '../common/AbstractParser';
 import JavaClassParser from './JavaClassParser';
 import JavaInterfaceParser from './JavaInterfaceParser';
-import { AbstractParser, IWordParser, Matcher } from '../common/parsers';
+import { IWordParser, Matcher } from '../common/parser-types';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 
@@ -48,8 +49,6 @@ export default class JavaParser extends AbstractParser<JavaSyntax.IJavaSyntaxTre
 
   private _onInterfaceDeclaration (): void {
     const javaInterface = this.parseNextWith(JavaInterfaceParser);
-
-    console.log(javaInterface);
 
     this.parsed.nodes.push(javaInterface);
   }
