@@ -16,3 +16,5 @@ export const getLastToken: TokenStepFunction = ({ lastToken }) => lastToken;
 export const getNextToken: TokenStepFunction = ({ nextToken }) => nextToken;
 
 export const isCharacterToken: TokenPredicate = ({ type }) => type !== TokenType.NEWLINE;
+
+export const isStartOfLine: TokenPredicate = ({ type, lastToken }) => !lastToken || lastToken.type === TokenType.NEWLINE;

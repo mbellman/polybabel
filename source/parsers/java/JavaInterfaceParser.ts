@@ -14,7 +14,6 @@ export default class JavaInterfaceParser extends AbstractBlockParser<JavaSyntax.
 
   public readonly words: Matcher[] = [
     [JavaConstants.Keyword.EXTENDS, this._onExtendsDeclaration],
-    // [JavaConstants.Keywords, () => this.halt('keyword')],
     [/./, () => {
       if (this.isStartOfLine()) {
         this._onMemberDeclaration();

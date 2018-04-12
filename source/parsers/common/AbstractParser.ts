@@ -1,5 +1,5 @@
 import { Callback, IConstructable } from '../../system/types';
-import { getLastToken, getNextToken, isCharacterToken } from '../../tokenizer/token-utils';
+import { getLastToken, getNextToken, isCharacterToken, isStartOfLine } from '../../tokenizer/token-utils';
 import { ISyntaxNode, ISyntaxTree } from './syntax';
 import { IToken, TokenType } from '../../tokenizer/types';
 import { Matcher } from './parser-types';
@@ -153,18 +153,38 @@ export default abstract class AbstractParser<P extends ISyntaxTree | ISyntaxNode
   }
 
   protected throw (message: string): void {
-    throw new Error(`Line ${this.currentToken.line}: ${message} (${this.constructor.name})`);
+    throw new Error(`Line ${this.currentToken.line}: ${message} (${this.constructor.name}) | ...${this._currentLineToString()}...`);
   }
 
   protected token (): IToken {
     return this.currentToken;
   }
 
+  private _currentLineToString (): string {
+    let lineString = '';
+    let lineStartToken = this.currentToken;
+
+    if (!isStartOfLine(lineStartToken)) {
+      lineStartToken = this._findMatchingToken(getLastToken, isStartOfLine);
+    }
+
+    let token = lineStartToken;
+
+    do {
+      lineString += `${token.value} `;
+    } while ((token = token.nextToken) && token.type !== TokenType.NEWLINE);
+
+    return lineString;
+  }
+
   /**
-   * Performs a token search using a step function to define how to change
-   * the lookup position on each search step, and a {predicate} function to
-   * determine when a target token has been found. If a token satisfying
-   * the predicate function is matched, that token is returned.
+   * Performs a token search, starting from the current token, using a step
+   * function to define how to change the lookup position on each search
+   * step, and a {predicate} function to determine when a target token has
+   * been found. If a token satisfying the predicate function is matched,
+   * that token is returned.
+   *
+   * The current token is omitted in the search.
    */
   private _findMatchingToken (stepFunction: Callback<IToken, IToken>, predicate: Callback<IToken, boolean>): IToken {
     let token = stepFunction(this.currentToken);
