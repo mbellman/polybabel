@@ -9,16 +9,15 @@ export default class JavaParser extends AbstractParser<JavaSyntax.IJavaSyntaxTre
   public readonly words: Matcher[] = [
     [JavaConstants.Keyword.PACKAGE, this._onPackageDeclaration],
     [JavaConstants.Keyword.IMPORT, this._onImportDeclaration],
+    [JavaConstants.Keyword.CLASS, this._onClassDeclaration],
+    [JavaConstants.Keyword.INTERFACE, this._onInterfaceDeclaration],
     [
       [
-        JavaConstants.Keyword.CLASS,
-        JavaConstants.Keyword.FINAL,
-        JavaConstants.Keyword.ABSTRACT
+        ...JavaConstants.AccessModifiers,
+        ...JavaConstants.Modifiers
       ],
-      this._onClassDeclaration
-    ],
-    [JavaConstants.Keyword.INTERFACE, this._onInterfaceDeclaration],
-    [JavaConstants.AccessModifierKeywords, this._onAccessModifier]
+      this._onModifierKeyword
+    ]
   ];
 
   protected getDefault (): JavaSyntax.IJavaSyntaxTree {
@@ -28,13 +27,20 @@ export default class JavaParser extends AbstractParser<JavaSyntax.IJavaSyntaxTre
     };
   }
 
-  private _onAccessModifier (): void {
-    const { nextToken } = this.currentToken;
+  private _onModifierKeyword (): void {
+    const isModifyingClass = this.lineContains(JavaConstants.Keyword.CLASS);
+    const isModifyingInterface = this.lineContains(JavaConstants.Keyword.INTERFACE);
 
-    this.match(nextToken.value, [
-      [JavaConstants.Keyword.CLASS, this._onClassDeclaration],
-      [JavaConstants.Keyword.INTERFACE, this._onInterfaceDeclaration]
-    ]);
+    this.assert(
+      isModifyingClass !== isModifyingInterface,
+      'Invalid object declaration'
+    );
+
+    if (isModifyingClass) {
+      this._onClassDeclaration();
+    } else {
+      this._onInterfaceDeclaration();
+    }
   }
 
   private _onClassDeclaration (): void {

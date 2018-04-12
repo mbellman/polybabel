@@ -16,21 +16,6 @@ export namespace JavaSyntax {
    */
   interface IJavaAccessible extends IAccessible<JavaAccessModifier> { }
 
-  /**
-   * @internal
-   */
-  interface IJavaFinalizable {
-    isFinal?: true;
-  }
-
-  /**
-   * @internal
-   */
-  interface IJavaObjectMember extends IJavaSyntaxNode, INamed, ITyped, IJavaAccessible, IJavaFinalizable {
-    isAbstract?: true;
-    isStatic?: true;
-  }
-
   export const enum JavaSyntaxNode {
     PACKAGE,
     IMPORT,
@@ -51,20 +36,25 @@ export namespace JavaSyntax {
     PACKAGE
   }
 
+  export interface IJavaPackage extends IJavaSyntaxNode {
+    node: JavaSyntaxNode.PACKAGE;
+    path: string;
+  }
+
   export interface IJavaImport extends IJavaSyntaxNode {
     node: JavaSyntaxNode.IMPORT;
     path: string;
-    alias: string;
+    alias?: string;
   }
 
-  export interface IJavaInterface extends IJavaSyntaxNode, INamed, IJavaAccessible {
+  export interface IJavaInterface extends IJavaSyntaxNode, INamed, Pick<IJavaModifiable, 'access'> {
     node: JavaSyntaxNode.INTERFACE;
     extends?: string[];
     fields: IJavaObjectField[];
     methods: IJavaObjectMethod[];
   }
 
-  export interface IJavaClass extends IJavaSyntaxNode, INamed, IJavaAccessible {
+  export interface IJavaClass extends IJavaSyntaxNode, INamed, IJavaModifiable {
     node: JavaSyntaxNode.CLASS;
     extends?: string;
     implements?: string[];
@@ -72,6 +62,14 @@ export namespace JavaSyntax {
     fields: IJavaObjectField[];
     methods: IJavaObjectMethod[];
   }
+
+  export interface IJavaModifiable extends IJavaAccessible {
+    isAbstract?: true;
+    isFinal?: true;
+    isStatic?: true;
+  }
+
+  export interface IJavaObjectMember extends IJavaSyntaxNode, INamed, ITyped, IJavaModifiable { }
 
   export interface IJavaObjectField extends IJavaObjectMember, Partial<IValued<JavaSyntaxNode>> {
     node: JavaSyntaxNode.OBJECT_FIELD;
@@ -81,11 +79,11 @@ export namespace JavaSyntax {
     node: JavaSyntaxNode.OBJECT_METHOD;
   }
 
-  export interface IJavaParameter extends IJavaSyntaxNode, INamed, ITyped, IJavaFinalizable {
+  export interface IJavaParameter extends IJavaSyntaxNode, INamed, ITyped, Pick<IJavaModifiable, 'isFinal'> {
     node: JavaSyntaxNode.PARAMETER;
   }
 
-  export interface IJavaVariable extends IJavaSyntaxNode, INamed, ITyped, IJavaFinalizable, Partial<IValued<JavaSyntaxNode>> {
+  export interface IJavaVariable extends IJavaSyntaxNode, INamed, ITyped, Pick<IJavaModifiable, 'isFinal'>, Partial<IValued<JavaSyntaxNode>> {
     node: JavaSyntaxNode.VARIABLE;
   }
 

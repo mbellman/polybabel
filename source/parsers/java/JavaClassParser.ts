@@ -49,6 +49,13 @@ export default class JavaClassParser extends AbstractBlockParser<JavaSyntax.IJav
       this.skip(1);
     }
 
+    this.match([
+      [JavaConstants.Keyword.FINAL, () => {
+        this.parsed.isFinal = true;
+        this.skip(1);
+      }]
+    ]);
+
     this.parsed.name = this.currentToken.value;
 
     this.skip(1);

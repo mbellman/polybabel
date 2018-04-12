@@ -2,7 +2,8 @@ interface ITest extends Div, Something, Else {
   String string;
   Bool boolean;
   Object object;
-  Thing getThing (String key, Number id);
+
+  Thing getThing (String key, final Number id);
 }
 
 class HelloWorld {

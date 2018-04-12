@@ -14,9 +14,9 @@ export default class JavaInterfaceParser extends AbstractBlockParser<JavaSyntax.
 
   public readonly words: Matcher[] = [
     [JavaConstants.Keyword.EXTENDS, this._onExtendsDeclaration],
-    [JavaConstants.Keywords, () => this.halt('keyword')],
+    // [JavaConstants.Keywords, () => this.halt('keyword')],
     [/./, () => {
-      if (this.isStartOfLine) {
+      if (this.isStartOfLine()) {
         this._onMemberDeclaration();
       } else {
         this.halt();
@@ -44,21 +44,28 @@ export default class JavaInterfaceParser extends AbstractBlockParser<JavaSyntax.
       this.skip(1);
     }
 
-    // Skip 'interface'
-    this.skip(1);
+    this.assertCurrentTokenValue(
+      JavaConstants.Keyword.INTERFACE,
+      `Invalid interface modifier '${this.currentToken.value}'`
+    );
 
-    this.parsed.name = this.currentToken.value;
+    this.parsed.name = this.nextToken.value;
 
-    this.skip(1);
+    // Skip over 'interface {name}'
+    this.skip(2);
   }
 
   private _onExtendsDeclaration (): void {
     while (this.currentToken.value !== '{') {
-      this.match(this.currentToken.value, [
+      this.match([
         [JavaConstants.Keyword.EXTENDS, () => this.skip(1)],
         [',', () => this.skip(1)],
         [/\w/, () => {
-          // TODO: Assert that base interface names are all comma-separated
+          this.assert(
+            /(extends|,)/.test(this.lastCharacterToken.value),
+            `Invalid character '${this.currentToken.value}'`
+          );
+
           this.parsed.extends.push(this.currentToken.value);
           this.skip(1);
         }]

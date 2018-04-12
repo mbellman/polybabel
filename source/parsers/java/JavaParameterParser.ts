@@ -28,9 +28,10 @@ export default class JavaParameterParser extends AbstractParser<JavaSyntax.IJava
 
     const { value, nextToken } = this.currentToken;
 
-    if (isReservedWord(nextToken.value)) {
-      this.halt('reserved word parameter name');
-    }
+    this.assert(
+      !isReservedWord(nextToken.value),
+      `Invalid parameter name '${nextToken.value}'`
+    );
 
     this.parsed.type = value;
     this.parsed.name = nextToken.value;

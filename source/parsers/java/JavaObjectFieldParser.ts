@@ -1,11 +1,11 @@
-import AbstractParser from '../common/AbstractParser';
+import AbstractJavaObjectMemberParser from './AbstractJavaObjectMemberParser';
 import JavaExpressionParser from './JavaExpressionParser';
 import { isAccessModifierKeyword, isModifierKeyword } from './java-utils';
 import { ISymbolParser, Matcher } from '../common/parser-types';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 
-export default class JavaObjectFieldParser extends AbstractParser<JavaSyntax.IJavaObjectField> implements ISymbolParser {
+export default class JavaObjectFieldParser extends AbstractJavaObjectMemberParser<JavaSyntax.IJavaObjectField> implements ISymbolParser {
   public readonly symbols: Matcher[] = [
     ['=', this._onAssignment],
     [';', this.finish]
@@ -20,37 +20,9 @@ export default class JavaObjectFieldParser extends AbstractParser<JavaSyntax.IJa
     };
   }
 
-  protected onFirstToken (): void {
-    const { value } = this.currentToken;
-
-    if (isAccessModifierKeyword(value)) {
-      this.parsed.access = JavaConstants.AccessModifierMap[value];
-
-      this.skip(1);
-    }
-
-    while (isModifierKeyword(this.currentToken.value)) {
-      this._onModifierKeyword();
-      this.skip(1);
-    }
-
-    this.parsed.type = this.currentToken.value;
-    this.parsed.name = this.currentToken.nextToken.value;
-
-    this.skip(2);
-  }
-
   private _onAssignment (): void {
     const expression = this.parseNextWith(JavaExpressionParser);
 
     this.parsed.value = expression;
-  }
-
-  private _onModifierKeyword (): void {
-    this.match(this.currentToken.value, [
-      [JavaConstants.Keyword.STATIC, () => this.parsed.isStatic = true],
-      [JavaConstants.Keyword.FINAL, () => this.parsed.isFinal = true],
-      [JavaConstants.Keyword.ABSTRACT, () => this.parsed.isAbstract = true]
-    ]);
   }
 }

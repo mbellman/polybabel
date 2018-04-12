@@ -1,13 +1,29 @@
 import { Callback, IConstructable } from '../../system/types';
+import { getLastToken, getNextToken, isCharacterToken } from '../../tokenizer/token-utils';
 import { ISyntaxNode, ISyntaxTree } from './syntax';
 import { IToken, TokenType } from '../../tokenizer/types';
 import { Matcher } from './parser-types';
 
 export default abstract class AbstractParser<P extends ISyntaxTree | ISyntaxNode> {
   protected currentToken: IToken;
-  protected isStartOfLine: boolean = true;
   protected parsed: P = this.getDefault();
   private _isFinished: boolean = false;
+
+  protected get lastCharacterToken (): IToken {
+    return this._findMatchingToken(getLastToken, isCharacterToken);
+  }
+
+  protected get lastToken (): IToken {
+    return this.currentToken.lastToken;
+  }
+
+  protected get nextCharacterToken (): IToken {
+    return this._findMatchingToken(getNextToken, isCharacterToken);
+  }
+
+  protected get nextToken (): IToken {
+    return this.currentToken.nextToken;
+  }
 
   /**
    * Receives a single {token} and attempts to parse and return a
@@ -20,15 +36,25 @@ export default abstract class AbstractParser<P extends ISyntaxTree | ISyntaxNode
     return this.parsed;
   }
 
-  public token (): IToken {
-    return this.currentToken;
+  protected assert (condition: boolean, errorMessage: string): void {
+    if (!condition) {
+      this.throw(errorMessage);
+    }
   }
 
+  protected assertCurrentTokenValue (targetValue: string, errorMessage: string): void {
+    if (this.currentToken.value !== targetValue) {
+      this.throw(errorMessage);
+    }
+  }
+
+  /**
+   * Returns the default parsed value state which will be modified
+   * during parsing.
+   */
   protected abstract getDefault (): P;
 
   protected finish (): void {
-    this.skip(1);
-
     this._isFinished = true;
   }
 
@@ -36,28 +62,41 @@ export default abstract class AbstractParser<P extends ISyntaxTree | ISyntaxNode
     this.throw(`Unexpected ${tokenName} '${this.currentToken.value}'`);
   }
 
-  protected lineContains (value: string | number | RegExp): boolean {
-    let token = this.currentToken;
-
-    while ((token = token.nextToken) && token.type !== TokenType.NEWLINE) {
-      const tokenValueMatches =
-        value === token.value ||
-        value instanceof RegExp && value.test(token.value);
-
-      if (tokenValueMatches) {
-        return true;
-      }
-    }
-
-    return false;
+  protected isStartOfLine (): boolean {
+    return !!this.currentToken.lastToken || this.currentToken.lastToken.type === TokenType.NEWLINE;
   }
 
   /**
-   * Attempts to find a Matcher for a provided {value} among an array
-   * of {matchers}, and fires its callback. If no matching value is
-   * found, the parser halts.
+   * Determines whether a target value or regex is contained within the
+   * current parsing line.
    */
-  protected match (value: string, matchers: Matcher[] = []): void {
+  protected lineContains (targetValue: string | RegExp): boolean {
+    const targetToken = this._findMatchingToken(
+      getNextToken,
+      ({ value, type }) => (
+        value === targetValue ||
+        targetValue instanceof RegExp && targetValue.test(value) ||
+        type === TokenType.NEWLINE
+      )
+    );
+
+    return targetToken.type !== TokenType.NEWLINE;
+  }
+
+  /**
+   * A shorthand method for parsing the current token value using a
+   * set of {matchers}.
+   */
+  protected match (matchers: Matcher[] = []): void {
+    this.matchValue(this.currentToken.value, matchers);
+  }
+
+  /**
+   * Attempts to find a matching {value} among an array of {matchers},
+   * and fires the matcher's callback if successful. If unsuccessful,
+   * the parser halts.
+   */
+  protected matchValue (value: string, matchers: Matcher[] = []): void {
     for (const [ match, handler ] of matchers) {
       const valueHasMatch =
         value === match ||
@@ -74,18 +113,6 @@ export default abstract class AbstractParser<P extends ISyntaxTree | ISyntaxNode
     this.halt('token');
   }
 
-  protected nextNumber (): string {
-    return this._getNextTokenValueByType(TokenType.NUMBER);
-  }
-
-  protected nextSymbol (): string {
-    return this._getNextTokenValueByType(TokenType.SYMBOL);
-  }
-
-  protected nextWord (): string {
-    return this._getNextTokenValueByType(TokenType.WORD);
-  }
-
   /**
    * An optionally overridable hook for parsing the first received token.
    */
@@ -93,9 +120,10 @@ export default abstract class AbstractParser<P extends ISyntaxTree | ISyntaxNode
 
   /**
    * Attempts to parse a token stream starting from the current token
-   * using a provided {Parser}, where Parser subclasses AbstractParser.
-   * If successful, returns the parsed syntax tree or syntax node and
-   * assigns the current token to the last token handled by the Parser.
+   * using a provided {Parser} class constructor, where Parser subclasses
+   * AbstractParser. If successful, returns the parsed syntax tree or
+   * syntax node and assigns the current token to the next token after
+   * the parsed stream.
    */
   protected parseNextWith <T extends ISyntaxTree | ISyntaxNode>(Parser: IConstructable<AbstractParser<T>>): T {
     const parser = new Parser();
@@ -103,20 +131,24 @@ export default abstract class AbstractParser<P extends ISyntaxTree | ISyntaxNode
 
     this.currentToken = parser.token();
 
+    this.skip(1);
+
     return parsed;
   }
 
-  protected skip (n: number): void {
-    while (--n >= 0) {
-      if (!this.currentToken.nextToken) {
-        this.throw('End of file reached');
+  /**
+   * A failsafe mechanism for skipping an arbitrary number of tokens.
+   * Newlines are automatically skipped through and not counted.
+   */
+  protected skip (steps: number): void {
+    while (--steps >= 0) {
+      if (!this.nextToken) {
+        this._isFinished = true;
+
+        break;
       }
 
-      this.currentToken = this.currentToken.nextToken;
-
-      while (this.currentToken.type === TokenType.NEWLINE) {
-        this.currentToken = this.currentToken.nextToken;
-      }
+      this.currentToken = this.nextCharacterToken;
     }
   }
 
@@ -124,14 +156,24 @@ export default abstract class AbstractParser<P extends ISyntaxTree | ISyntaxNode
     throw new Error(`Line ${this.currentToken.line}: ${message} (${this.constructor.name})`);
   }
 
-  private _getNextTokenValueByType (tokenType: TokenType): string {
-    let nextToken = this.currentToken.nextToken;
+  protected token (): IToken {
+    return this.currentToken;
+  }
 
-    while (nextToken && nextToken.type !== tokenType) {
-      nextToken = nextToken.nextToken;
+  /**
+   * Performs a token search using a step function to define how to change
+   * the lookup position on each search step, and a {predicate} function to
+   * determine when a target token has been found. If a token satisfying
+   * the predicate function is matched, that token is returned.
+   */
+  private _findMatchingToken (stepFunction: Callback<IToken, IToken>, predicate: Callback<IToken, boolean>): IToken {
+    let token = stepFunction(this.currentToken);
+
+    while (token && !predicate(token)) {
+      token = stepFunction(token);
     }
 
-    return nextToken ? nextToken.value : null;
+    return token;
   }
 
   private _stream (token: IToken): void {
@@ -146,27 +188,22 @@ export default abstract class AbstractParser<P extends ISyntaxTree | ISyntaxNode
         isFirstToken = false;
       }
 
-      const startingToken = this.currentToken;
+      const initialToken = this.currentToken;
       const { lastToken, type, value } = this.currentToken;
-
-      // TODO: Extract into its own method
-      this.isStartOfLine = lastToken
-        ? lastToken.type === TokenType.NEWLINE
-        : true;
 
       switch (type) {
         case TokenType.WORD:
-          this.match(value, (this as any).words);
+          this.match((this as any).words);
           break;
         case TokenType.NUMBER:
-          this.match(value, (this as any).numbers);
+          this.match((this as any).numbers);
           break;
         case TokenType.SYMBOL:
-          this.match(value, (this as any).symbols);
+          this.match((this as any).symbols);
           break;
       }
 
-      if (this.currentToken === startingToken) {
+      if (!this._isFinished && this.currentToken === initialToken) {
         this.skip(1);
       }
     }

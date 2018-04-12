@@ -19,14 +19,6 @@ export namespace JavaConstants {
     NEW = 'new'
   }
 
-  export const Keywords: string[] = Utils.objectToArray(Keyword);
-
-  export const ModifierKeywords: string[] = [
-    Keyword.STATIC,
-    Keyword.FINAL,
-    Keyword.ABSTRACT
-  ];
-
   export enum Type {
     STRING = 'String',
     OBJECT = 'Object',
@@ -40,14 +32,21 @@ export namespace JavaConstants {
     CHAR = 'char'
   }
 
-  export const TypeKeywords: string[] = Utils.objectToArray(Type);
+  export const Keywords: string[] = Utils.objectToArray(Keyword);
+  export const Types: string[] = Utils.objectToArray(Type);
 
   export const ReservedWords: string[] = [
     ...Keywords,
-    ...TypeKeywords
+    ...Types
   ];
 
-  export const AccessModifierKeywords: string[] = [
+  export const Modifiers: string[] = [
+    Keyword.STATIC,
+    Keyword.FINAL,
+    Keyword.ABSTRACT
+  ];
+
+  export const AccessModifiers: string[] = [
     Keyword.PUBLIC,
     Keyword.PROTECTED,
     Keyword.PRIVATE
