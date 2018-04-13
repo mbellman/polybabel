@@ -33,12 +33,12 @@ export default function tokenize (input: string): IToken[] {
 
       if (value) {
         if (type !== TokenType.WHITESPACE) {
-          const lastToken = tokens[tokens.length - 1];
+          const previousToken = tokens[tokens.length - 1];
           const isNewLine = type === TokenType.NEWLINE;
 
-          if (lastToken) {
-            token.lastToken = lastToken;
-            lastToken.nextToken = token;
+          if (previousToken) {
+            token.previousToken = previousToken;
+            previousToken.nextToken = token;
           }
 
           token.line = isNewLine ? ++line : line;

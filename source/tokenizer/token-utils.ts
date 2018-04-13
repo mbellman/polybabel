@@ -1,20 +1,18 @@
 import { Callback } from '../system/types';
 import { IToken, TokenType } from './types';
 
-/**
- * @internal
- */
-type TokenStepFunction = Callback<IToken, IToken>;
+export function getPreviousToken ({ previousToken }: IToken) {
+  return previousToken;
+}
 
-/**
- * @internal
- */
-type TokenPredicate = Callback<IToken, boolean>;
+export function getNextToken ({ nextToken }: IToken): IToken {
+  return nextToken;
+}
 
-export const getLastToken: TokenStepFunction = ({ lastToken }) => lastToken;
+export function isCharacterToken ({ type }: IToken): boolean {
+  return type !== TokenType.NEWLINE;
+}
 
-export const getNextToken: TokenStepFunction = ({ nextToken }) => nextToken;
-
-export const isCharacterToken: TokenPredicate = ({ type }) => type !== TokenType.NEWLINE;
-
-export const isStartOfLine: TokenPredicate = ({ type, lastToken }) => !lastToken || lastToken.type === TokenType.NEWLINE;
+export function isStartOfLine ({ type, previousToken }: IToken) {
+  return !previousToken || previousToken.type === TokenType.NEWLINE;
+}
