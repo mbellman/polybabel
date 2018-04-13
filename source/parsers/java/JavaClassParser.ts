@@ -5,6 +5,57 @@ import { IToken } from '../../tokenizer/types';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 
+function onNestedClassDeclaration (stream): void {
+
+}
+
+export const parseJavaClass = createComposedParser(
+  javaBlockParser
+)({
+  words: [
+    [
+      [
+        JavaConstants.Keyword.CLASS,
+        JavaConstants.Keyword.PUBLIC,
+        JavaConstants.Keyword.PROTECTED,
+        JavaConstants.Keyword.PRIVATE
+      ],
+      stream => {
+        if (this.blockLevel === 1) {
+          this.onNestedClassDeclaration(stream);
+        } else {
+          stream.halt();
+        }
+      }
+    ]
+  ],
+
+  onFirstToken: stream => {
+    const { value, nextToken } = stream.currentToken;
+
+    if (isAccessModifierKeyword(value)) {
+      stream.parsed.access = JavaConstants.AccessModifierMap[value];
+
+      stream.skip(1);
+    }
+
+    stream.match([
+      [JavaConstants.Keyword.FINAL, () => {
+        stream.parsed.isFinal = true;
+        stream.skip(1);
+      }]
+    ]);
+
+    stream.parsed.name = stream.currentToken.value;
+
+    stream.skip(1);
+  },
+
+  onNestedClassDeclaration: stream => {
+
+  }
+});
+
 export default class JavaClassParser extends AbstractBlockParser<JavaSyntax.IJavaClass> implements ISymbolParser, IWordParser {
   public readonly symbols: Matcher[] = [
     ['{', this.onBlockEnter],
