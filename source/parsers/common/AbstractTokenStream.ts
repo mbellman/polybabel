@@ -1,8 +1,7 @@
 import { Callback } from '../../system/types';
 import { getNextToken, getPreviousToken, isCharacterToken, isStartOfLine } from '../../tokenizer/token-utils';
 import { IToken, TokenType } from '../../tokenizer/types';
-import { ParsedSyntax, TokenMatcher } from './types';
-import { Parser } from './parser-factory';
+import { ParsedSyntax, Parser, TokenMatcher, IParserReturn } from './types';
 
 export abstract class AbstractTokenStream<P extends ParsedSyntax = ParsedSyntax> {
   public abstract readonly words: TokenMatcher<P>[];
@@ -100,7 +99,7 @@ export abstract class AbstractTokenStream<P extends ParsedSyntax = ParsedSyntax>
         match instanceof RegExp && match.test(value);
 
       if (valueHasMatch) {
-        handler.call(this);
+        handler(this);
 
         return;
       }
@@ -121,14 +120,14 @@ export abstract class AbstractTokenStream<P extends ParsedSyntax = ParsedSyntax>
    * syntax node and assigns the current token to the next token after
    * the parsed stream.
    */
-  public parseNextWith <S extends ParsedSyntax>(parse: Parser<S>): S {
+  public parseNextWith <S extends ParsedSyntax>(parse: Parser<S>): IParserReturn<S> {
     const { parsed, token } = parse(this.currentToken);
 
     this.currentToken = token;
 
     this.skip(1);
 
-    return parsed;
+    return { parsed, token };
   }
 
   /**

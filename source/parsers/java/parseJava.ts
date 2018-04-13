@@ -1,6 +1,6 @@
 import JavaClassParser from './JavaClassParser';
 import JavaInterfaceParser from './JavaInterfaceParser';
-import { createHelpers, createParser, StreamHandler } from '../common/parser-factory';
+import { createHelpers, createParser } from '../common/parser-factory';
 import { IHashMap } from '../../system/types';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
