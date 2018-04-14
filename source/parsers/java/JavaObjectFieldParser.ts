@@ -1,14 +1,20 @@
-import AbstractJavaObjectMemberParser from './AbstractJavaObjectMemberParser';
+import AbstractParser from '../common/AbstractParser';
 import JavaExpressionParser from './JavaExpressionParser';
-import { isAccessModifierKeyword, isModifierKeyword } from './java-utils';
-import { ISymbolParser, Matcher } from '../common/parser-types';
-import { JavaConstants } from './java-constants';
+import JavaObjectMemberParser from './JavaObjectMemberParser';
+import Parser from '../common/Parser';
+import { Composes, Matches } from '../common/parser-decorators';
+import { ISymbols, TokenMatcher } from '../common/parser-types';
 import { JavaSyntax } from './java-syntax';
 
-export default class JavaObjectFieldParser extends AbstractJavaObjectMemberParser<JavaSyntax.IJavaObjectField> implements ISymbolParser {
-  public readonly symbols: Matcher[] = [
-    ['=', this._onAssignment],
-    [';', this.finish]
+@Matches<ISymbols>()
+@Composes(
+  Parser,
+  JavaObjectMemberParser
+)
+export default abstract class JavaObjectFieldParser extends AbstractParser<JavaSyntax.IJavaObjectField> {
+  public static readonly symbols: TokenMatcher<JavaObjectFieldParser>[] = [
+    ['=', parser => parser._onAssignment],
+    [';', parser => parser.finish]
   ];
 
   protected getDefault (): JavaSyntax.IJavaObjectField {

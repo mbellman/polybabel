@@ -1,10 +1,15 @@
 import AbstractParser from '../common/AbstractParser';
-import { INumberParser, IWordParser, Matcher } from '../common/parser-types';
+import Parser from '../common/Parser';
+import { Composes, Matches } from '../common/parser-decorators';
+import { INumbers, IWords, TokenMatcher } from '../common/parser-types';
 import { JavaSyntax } from './java-syntax';
 
-export default class JavaExpressionParser extends AbstractParser<JavaSyntax.IJavaExpression> implements INumberParser, IWordParser {
-  public readonly numbers: Matcher[] = [];
-  public readonly words: Matcher[] = [];
+@Matches<INumbers>()
+@Matches<IWords>()
+@Composes(Parser)
+export default abstract class JavaExpressionParser extends AbstractParser<JavaSyntax.IJavaExpression> {
+  public static readonly numbers: TokenMatcher<JavaExpressionParser>[] = [];
+  public static readonly words: TokenMatcher<JavaExpressionParser>[] = [];
 
   protected getDefault (): JavaSyntax.IJavaExpression {
     return {

@@ -1,17 +1,20 @@
-import AbstractBlockParser from '../common/AbstractBlockParser';
+import AbstractParser from '../common/AbstractParser';
+import BlockParser from '../common/BlockParser';
+import JavaBlockParser from './JavaBlockParser';
+import Parser from '../common/Parser';
+import { Composes, Matches } from '../common/parser-decorators';
 import { isAccessModifierKeyword } from './java-utils';
-import { ISymbolParser, IWordParser, Matcher } from '../common/parser-types';
-import { IToken } from '../../tokenizer/types';
+import { IWords, TokenMatcher } from '../common/parser-types';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 
-export default class JavaClassParser extends AbstractBlockParser<JavaSyntax.IJavaClass> implements ISymbolParser, IWordParser {
-  public readonly symbols: Matcher[] = [
-    ['{', this.onBlockEnter],
-    ['}', this.onBlockExit]
-  ];
-
-  public readonly words: Matcher[] = [
+@Matches<IWords>()
+@Composes(
+  Parser,
+  JavaBlockParser
+)
+export default abstract class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClass> {
+  public static readonly words: TokenMatcher<BlockParser & JavaClassParser>[] = [
     [
       [
         JavaConstants.Keyword.CLASS,
@@ -19,11 +22,11 @@ export default class JavaClassParser extends AbstractBlockParser<JavaSyntax.IJav
         JavaConstants.Keyword.PROTECTED,
         JavaConstants.Keyword.PRIVATE
       ],
-      () => {
-        if (this.blockLevel === 1) {
-          this._onNestedClassDeclaration();
+      parser => {
+        if (parser.blockLevel === 1) {
+          parser._onNestedClassDeclaration();
         } else {
-          this.halt();
+          parser.halt();
         }
       }
     ]

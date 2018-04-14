@@ -16,7 +16,7 @@ export interface IToken {
   type: TokenType;
   value: string;
   line?: number;
-  lastToken?: IToken;
+  previousToken?: IToken;
   nextToken?: IToken;
 }
 

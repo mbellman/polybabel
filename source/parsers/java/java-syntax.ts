@@ -1,4 +1,4 @@
-import { IAccessible, INamed, ISyntaxNode, ISyntaxNodeContainer, ISyntaxTree, ITyped, IValued, IWithParameters } from '../common/syntax';
+import { IAccessible, INamed, ISyntaxNode, ISyntaxNodeContainer, ISyntaxTree, ITyped, IValued, IWithParameters } from '../common/syntax-types';
 
 export namespace JavaSyntax {
   /**
@@ -15,6 +15,15 @@ export namespace JavaSyntax {
    * @internal
    */
   interface IJavaAccessible extends IAccessible<JavaAccessModifier> { }
+
+  /**
+   * @internal
+   */
+  interface IJavaModifiable {
+    isAbstract?: true;
+    isFinal?: true;
+    isStatic?: true;
+  }
 
   export const enum JavaSyntaxNode {
     PACKAGE,
@@ -47,14 +56,14 @@ export namespace JavaSyntax {
     alias?: string;
   }
 
-  export interface IJavaInterface extends IJavaSyntaxNode, INamed, Pick<IJavaModifiable, 'access'> {
+  export interface IJavaInterface extends IJavaSyntaxNode, INamed, IJavaAccessible {
     node: JavaSyntaxNode.INTERFACE;
     extends?: string[];
     fields: IJavaObjectField[];
     methods: IJavaObjectMethod[];
   }
 
-  export interface IJavaClass extends IJavaSyntaxNode, INamed, IJavaModifiable {
+  export interface IJavaClass extends IJavaSyntaxNode, INamed, IJavaAccessible, IJavaModifiable {
     node: JavaSyntaxNode.CLASS;
     extends?: string;
     implements?: string[];
@@ -63,13 +72,7 @@ export namespace JavaSyntax {
     methods: IJavaObjectMethod[];
   }
 
-  export interface IJavaModifiable extends IJavaAccessible {
-    isAbstract?: true;
-    isFinal?: true;
-    isStatic?: true;
-  }
-
-  export interface IJavaObjectMember extends IJavaSyntaxNode, INamed, ITyped, IJavaModifiable { }
+  export interface IJavaObjectMember extends IJavaSyntaxNode, INamed, ITyped, IJavaAccessible, IJavaModifiable { }
 
   export interface IJavaObjectField extends IJavaObjectMember, Partial<IValued<JavaSyntaxNode>> {
     node: JavaSyntaxNode.OBJECT_FIELD;
@@ -96,4 +99,6 @@ export namespace JavaSyntax {
   }
 
   export interface IJavaSyntaxTree extends ISyntaxTree<IJavaSyntaxNode> { }
+
+  export type JavaParsedSyntax = IJavaSyntaxNode | IJavaSyntaxTree;
 }

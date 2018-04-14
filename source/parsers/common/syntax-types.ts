@@ -4,7 +4,7 @@ import { Language } from '../../system/constants';
  * A base syntax tree node. The provided generic parameter N
  * should be an enum of language-specific syntax node constants.
  */
-export interface ISyntaxNode<N = any> {
+export interface ISyntaxNode<N> {
   node: N;
 }
 
@@ -55,7 +55,7 @@ export interface IWithParameters<P> {
  * A syntactic structure which can contain an arbitrary number
  * of syntax nodes.
  */
-export interface ISyntaxNodeContainer<N extends ISyntaxNode = ISyntaxNode> {
+export interface ISyntaxNodeContainer<N extends ISyntaxNode<any>> {
   nodes: N[];
 }
 
@@ -63,6 +63,6 @@ export interface ISyntaxNodeContainer<N extends ISyntaxNode = ISyntaxNode> {
  * A base syntax tree object, representing all syntactic elements
  * in a file.
  */
-export interface ISyntaxTree<N extends ISyntaxNode = ISyntaxNode> extends ISyntaxNodeContainer<N> {
+export interface ISyntaxTree<N extends ISyntaxNode<any>> extends ISyntaxNodeContainer<N> {
   lines: number;
 }

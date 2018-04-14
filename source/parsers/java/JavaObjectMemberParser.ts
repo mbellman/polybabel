@@ -3,7 +3,7 @@ import { isAccessModifierKeyword, isModifierKeyword } from './java-utils';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 
-export default abstract class AbstractJavaObjectMemberParser<P extends JavaSyntax.IJavaObjectMember> extends AbstractParser<P> {
+export default abstract class JavaObjectMemberParser extends AbstractParser<JavaSyntax.IJavaObjectMember> {
   protected onFirstToken (): void {
     const { value } = this.currentToken;
 
