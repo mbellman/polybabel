@@ -4,9 +4,10 @@ import { IToken, TokenType } from '../../tokenizer/types';
 import { ParsedSyntax, Parser, TokenMatcher, IParserReturn } from './types';
 
 export abstract class AbstractTokenStream<P extends ParsedSyntax = ParsedSyntax> {
-  public abstract readonly words: TokenMatcher<P>[];
-  public abstract readonly symbols: TokenMatcher<P>[];
+  public abstract readonly name: string;
   public abstract readonly numbers: TokenMatcher<P>[];
+  public abstract readonly symbols: TokenMatcher<P>[];
+  public abstract readonly words: TokenMatcher<P>[];
   public currentToken: IToken;
   public parsed: P = this.getDefault();
   private _isFinished: boolean = false;
@@ -47,13 +48,16 @@ export abstract class AbstractTokenStream<P extends ParsedSyntax = ParsedSyntax>
 
   /**
    * Receives a single {token} and attempts to parse and return a
-   * syntax tree or syntax node object by streaming through the
-   * next tokens in the token sequence.
+   * parsed syntax object by streaming through the following tokens
+   * in the token sequence.
    */
-  public parse (token: IToken): P {
+  public parse (token: IToken): IParserReturn<P> {
     this._stream(token);
 
-    return this.parsed;
+    return {
+      parsed: this.parsed,
+      token: this.currentToken
+    };
   }
 
   public finish (): void {
@@ -69,11 +73,13 @@ export abstract class AbstractTokenStream<P extends ParsedSyntax = ParsedSyntax>
    * current parsing line.
    */
   public lineContains (targetValue: string | RegExp): boolean {
-    const targetToken = this._findMatchingToken(getNextToken, ({ value, type }) => (
-      value === targetValue ||
-      targetValue instanceof RegExp && targetValue.test(value) ||
-      type === TokenType.NEWLINE
-    ));
+    const targetToken = this._findMatchingToken(getNextToken, ({ value, type }) => {
+      const isMatchingValue = value === targetValue;
+      const hasMatchingPattern = targetValue instanceof RegExp && targetValue.test(value);
+      const isNewLine = type === TokenType.NEWLINE;
+
+      return isMatchingValue || hasMatchingPattern || isNewLine;
+    });
 
     return targetToken.type !== TokenType.NEWLINE;
   }
@@ -109,25 +115,23 @@ export abstract class AbstractTokenStream<P extends ParsedSyntax = ParsedSyntax>
   }
 
   /**
-   * An optionally overridable hook for parsing the first received token.
+   * An optionally overridable hook to be run upon starting the token
+   * {stream}.
    */
-  public onFirstToken (): void { }
+  public onFirstToken (stream: AbstractTokenStream<P>): void { }
 
   /**
-   * Attempts to parse a token stream starting from the current token
-   * using a provided {Parser} class constructor, where Parser subclasses
-   * AbstractParser. If successful, returns the parsed syntax tree or
-   * syntax node and assigns the current token to the next token after
-   * the parsed stream.
+   * Attempts to parse the token stream starting from the current token
+   * using a provided parser function. If successful, sets the current
+   * token to the next token after that reached by the parser after
+   * finishing, and returns its parser return object.
    */
-  public parseNextWith <S extends ParsedSyntax>(parse: Parser<S>): IParserReturn<S> {
-    const { parsed, token } = parse(this.currentToken);
+  public parseNextWith <S extends ParsedSyntax>(parser: Parser<S>): IParserReturn<S> {
+    const parserReturn = parser(this.currentToken);
 
-    this.currentToken = token;
+    this.currentToken = parserReturn.token;
 
-    this.skip(1);
-
-    return { parsed, token };
+    return parserReturn;
   }
 
   /**
@@ -147,7 +151,7 @@ export abstract class AbstractTokenStream<P extends ParsedSyntax = ParsedSyntax>
   }
 
   public throw (message: string): void {
-    throw new Error(`Line ${this.currentToken.line}: ${message} (${this.constructor.name}) | ...${this._currentLineToString()}...`);
+    throw new Error(`Line ${this.currentToken.line}: ${message} (${this.name}) | ...${this._currentLineToString()}...`);
   }
 
   public token (): IToken {
@@ -191,19 +195,17 @@ export abstract class AbstractTokenStream<P extends ParsedSyntax = ParsedSyntax>
   }
 
   private _stream (token: IToken): void {
-    let isFirstToken = true;
-
     this.currentToken = token;
 
-    while (!this._isFinished && this.currentToken) {
-      if (isFirstToken && this.currentToken.type !== TokenType.NEWLINE) {
-        this.onFirstToken();
+    while (this.currentToken.type === TokenType.NEWLINE) {
+      this.skip(1);
+    }
 
-        isFirstToken = false;
-      }
+    this.onFirstToken(this);
 
+    while (!this._isFinished && this.nextToken) {
       const initialToken = this.currentToken;
-      const { lastToken, type, value } = this.currentToken;
+      const { previousToken, type, value } = this.currentToken;
 
       switch (type) {
         case TokenType.WORD:
@@ -220,6 +222,13 @@ export abstract class AbstractTokenStream<P extends ParsedSyntax = ParsedSyntax>
       if (!this._isFinished && this.currentToken === initialToken) {
         this.skip(1);
       }
+    }
+
+    if (this.nextToken) {
+      // Advance the token stream after finishing so that the token in
+      // the parser return object returned by this.parse() represents
+      // the next token after the parsed chunk
+      this.skip(1);
     }
   }
 }

@@ -4,8 +4,6 @@ import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 
 export const parseJavaObjectMember = createParser<JavaSyntax.IJavaObjectMember>({
-  name: 'JavaObjectMemberParser',
-
   onFirstToken (stream) {
     const { value } = stream.currentToken;
 

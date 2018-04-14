@@ -1,5 +1,6 @@
 import AbstractJavaObjectMemberParser from './AbstractJavaObjectMemberParser';
 import JavaParameterParser from './JavaParameterParser';
+import { parseJavaBlock } from './parseJavaBlock';
 import { isAccessModifierKeyword, isModifierKeyword } from './java-utils';
 import { ISymbolParser, IWordParser, Matcher } from '../common/parser-types';
 import { JavaConstants } from './java-constants';

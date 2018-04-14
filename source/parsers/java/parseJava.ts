@@ -1,14 +1,35 @@
 import JavaClassParser from './JavaClassParser';
-import JavaInterfaceParser from './JavaInterfaceParser';
-import { createHelpers, createParser } from '../common/parser-factory';
+import { parseJavaInterface } from './parseJavaInterface';
+import { createParser } from '../common/parser-factory';
 import { IHashMap } from '../../system/types';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
+import { TokenMatcher } from '../common/types';
 
-/**
- * @internal
- */
-const helpers = createHelpers<JavaSyntax.IJavaSyntaxTree>({
+export const parseJava = createParser<JavaSyntax.IJavaSyntaxTree>({
+  words () {
+    return [
+      [JavaConstants.Keyword.PACKAGE, this.onPackageDeclaration],
+      [JavaConstants.Keyword.IMPORT, this.onImportDeclaration],
+      [JavaConstants.Keyword.CLASS, this.onClassDeclaration],
+      [JavaConstants.Keyword.INTERFACE, this.onInterfaceDeclaration],
+      [
+        [
+          ...JavaConstants.AccessModifiers,
+          ...JavaConstants.Modifiers
+        ],
+        this.onModifierKeyword
+      ]
+    ];
+  },
+
+  getDefault (): JavaSyntax.IJavaSyntaxTree {
+    return {
+      lines: 0,
+      nodes: []
+    };
+  },
+
   onPackageDeclaration: stream =>
     null,
 
@@ -27,7 +48,7 @@ const helpers = createHelpers<JavaSyntax.IJavaSyntaxTree>({
     stream.parsed.nodes.push(parsed);
   },
 
-  onModifierKeyword: stream => {
+  onModifierKeyword (stream) {
     const isModifyingClass = stream.lineContains(JavaConstants.Keyword.CLASS);
     const isModifyingInterface = stream.lineContains(JavaConstants.Keyword.INTERFACE);
 
@@ -37,34 +58,9 @@ const helpers = createHelpers<JavaSyntax.IJavaSyntaxTree>({
     );
 
     if (isModifyingClass) {
-      helpers.onClassDeclaration(stream);
+      this.onClassDeclaration(stream);
     } else {
-      helpers.onInterfaceDeclaration(stream);
+      this.onInterfaceDeclaration(stream);
     }
-  }
-});
-
-export const parseJava = createParser<JavaSyntax.IJavaSyntaxTree>({
-  name: 'JavaParser',
-
-  words: [
-    [JavaConstants.Keyword.PACKAGE, helpers.onPackageDeclaration],
-    [JavaConstants.Keyword.IMPORT, helpers.onImportDeclaration],
-    [JavaConstants.Keyword.CLASS, helpers.onClassDeclaration],
-    [JavaConstants.Keyword.INTERFACE, helpers.onInterfaceDeclaration],
-    [
-      [
-        ...JavaConstants.AccessModifiers,
-        ...JavaConstants.Modifiers
-      ],
-      helpers.onModifierKeyword
-    ]
-  ],
-
-  getDefault (): JavaSyntax.IJavaSyntaxTree {
-    return {
-      lines: 0,
-      nodes: []
-    };
   }
 });

@@ -6,6 +6,7 @@ import { ISymbolParser, IWordParser, Matcher } from '../common/parser-types';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 
+/*
 export default class JavaInterfaceParser extends AbstractBlockParser<JavaSyntax.IJavaInterface> implements ISymbolParser, IWordParser {
   public readonly symbols: Matcher[] = [
     ['{', this.onBlockEnter],
@@ -86,3 +87,4 @@ export default class JavaInterfaceParser extends AbstractBlockParser<JavaSyntax.
     }
   }
 }
+*/
