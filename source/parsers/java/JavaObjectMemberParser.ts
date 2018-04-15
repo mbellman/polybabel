@@ -2,9 +2,24 @@ import AbstractParser from '../common/AbstractParser';
 import { isAccessModifierKeyword, isModifierKeyword } from './java-utils';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
+import { Parser } from '../common/parser-decorators';
 
-export default abstract class JavaObjectMemberParser extends AbstractParser<JavaSyntax.IJavaObjectMember> {
-  protected onFirstToken (): void {
+@Parser({
+  symbols: [
+    [/[=(]/, 'finish']
+  ]
+})
+export default class JavaObjectMemberParser extends AbstractParser<JavaSyntax.IJavaObjectMember> {
+  public getDefault (): JavaSyntax.IJavaObjectMember {
+    return {
+      node: null,
+      access: JavaSyntax.JavaAccessModifier.PACKAGE,
+      type: null,
+      name: null
+    };
+  }
+
+  public onFirstToken (): void {
     const { value } = this.currentToken;
 
     if (isAccessModifierKeyword(value)) {
@@ -27,5 +42,6 @@ export default abstract class JavaObjectMemberParser extends AbstractParser<Java
     this.parsed.name = this.nextToken.value;
 
     this.skip(2);
+    this.stop();
   }
 }

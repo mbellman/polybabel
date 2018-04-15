@@ -1,15 +1,10 @@
-import { IAccessible, INamed, ISyntaxNode, ISyntaxNodeContainer, ISyntaxTree, ITyped, IValued, IWithParameters } from '../common/syntax-types';
+import { IAccessible, IBlock, INamed, ISyntaxNode, ISyntaxTree, ITyped, IValued, IWithParameters } from '../common/syntax-types';
 
 export namespace JavaSyntax {
   /**
    * @internal
    */
   interface IJavaSyntaxNode extends ISyntaxNode<JavaSyntaxNode> { }
-
-  /**
-   * @internal
-   */
-  interface IJavaSyntaxNodeContainer extends ISyntaxNodeContainer<IJavaSyntaxNode> { }
 
   /**
    * @internal
@@ -33,6 +28,7 @@ export namespace JavaSyntax {
     OBJECT_FIELD,
     OBJECT_METHOD,
     PARAMETER,
+    BLOCK,
     VARIABLE,
     REFERENCE,
     EXPRESSION
@@ -56,6 +52,10 @@ export namespace JavaSyntax {
     alias?: string;
   }
 
+  export interface IJavaBlock extends IJavaSyntaxNode, IBlock<IJavaSyntaxNode> {
+    node: JavaSyntaxNode.BLOCK;
+  }
+
   export interface IJavaInterface extends IJavaSyntaxNode, INamed, IJavaAccessible {
     node: JavaSyntaxNode.INTERFACE;
     extends?: string[];
@@ -72,14 +72,16 @@ export namespace JavaSyntax {
     methods: IJavaObjectMethod[];
   }
 
-  export interface IJavaObjectMember extends IJavaSyntaxNode, INamed, ITyped, IJavaAccessible, IJavaModifiable { }
+  export interface IJavaObjectMember extends IJavaSyntaxNode, IJavaAccessible, IJavaModifiable, ITyped, INamed { }
 
   export interface IJavaObjectField extends IJavaObjectMember, Partial<IValued<JavaSyntaxNode>> {
     node: JavaSyntaxNode.OBJECT_FIELD;
   }
 
-  export interface IJavaObjectMethod extends IJavaObjectMember, IWithParameters<IJavaParameter>, IJavaSyntaxNodeContainer {
+  export interface IJavaObjectMethod extends IJavaObjectMember, IWithParameters<IJavaParameter> {
     node: JavaSyntaxNode.OBJECT_METHOD;
+    throws?: string[];
+    block: IJavaBlock;
   }
 
   export interface IJavaParameter extends IJavaSyntaxNode, INamed, ITyped, Pick<IJavaModifiable, 'isFinal'> {
@@ -94,7 +96,7 @@ export namespace JavaSyntax {
     node: JavaSyntaxNode.REFERENCE;
   }
 
-  export interface IJavaExpression extends IJavaSyntaxNode, IJavaSyntaxNodeContainer {
+  export interface IJavaExpression extends IJavaSyntaxNode {
     node: JavaSyntaxNode.EXPRESSION;
   }
 

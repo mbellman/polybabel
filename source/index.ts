@@ -7,7 +7,7 @@ import tokenize from './tokenizer/tokenize';
 import { getFileContents, resolveFilesDeep } from './system/file';
 import { getFlags, IFlags } from './system/flags';
 import { IConfiguration, resolveConfiguration } from './system/configuration';
-import { ISyntaxTree } from 'parsers/common/syntax';
+import { ISyntaxTree } from 'parsers/common/syntax-types';
 import { Language } from './system/constants';
 
 /**
@@ -33,7 +33,7 @@ async function processFiles (directory: string, files: string[]): Promise<void> 
     const tokens = tokenize(fileContents);
 
     try {
-      const syntaxTree: ISyntaxTree = parse(tokens, language);
+      const syntaxTree: ISyntaxTree<any> = parse(tokens, language);
     } catch (e) {
       Logger.warn(`[${file}]`);
       Logger.error(` ${e.message}\n`);

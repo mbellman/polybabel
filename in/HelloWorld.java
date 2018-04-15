@@ -1,6 +1,6 @@
 interface ITest extends Div, Something, Else {
   String string;
-  Bool boolean;
+  private final abstract static Bool boolean;
   Object object;
 
   Thing getThing (String key, final Number id);

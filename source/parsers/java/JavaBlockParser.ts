@@ -1,15 +1,19 @@
 import AbstractParser from '../common/AbstractParser';
-import BlockParser from '../common/BlockParser';
-import { Composes, Matches } from '../common/parser-decorators';
-import { ISymbols, TokenMatcher, ParsedSyntax } from '../common/parser-types';
 import { JavaSyntax } from './java-syntax';
-import { ISyntaxNode } from '../common/syntax-types';
+import { Parser } from '../common/parser-decorators';
 
-@Matches<ISymbols>()
-@Composes(BlockParser)
-export default abstract class JavaBlockParser extends AbstractParser<JavaSyntax.JavaParsedSyntax> {
-  public static readonly symbols: TokenMatcher<BlockParser>[] = [
-    ['{', parser => parser.onBlockEnter],
-    ['}', parser => parser.onBlockExit]
-  ];
+@Parser({
+  type: JavaBlockParser,
+  symbols: [
+    ['{', parser => parser.skip(1)],
+    ['}', 'finish']
+  ]
+})
+export default class JavaBlockParser extends AbstractParser<JavaSyntax.IJavaBlock> {
+  public getDefault (): JavaSyntax.IJavaBlock {
+    return {
+      node: JavaSyntax.JavaSyntaxNode.BLOCK,
+      nodes: []
+    };
+  }
 }

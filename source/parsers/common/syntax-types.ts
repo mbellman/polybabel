@@ -55,7 +55,7 @@ export interface IWithParameters<P> {
  * A syntactic structure which can contain an arbitrary number
  * of syntax nodes.
  */
-export interface ISyntaxNodeContainer<N extends ISyntaxNode<any>> {
+export interface IBlock<N extends ISyntaxNode<any>> {
   nodes: N[];
 }
 
@@ -63,6 +63,6 @@ export interface ISyntaxNodeContainer<N extends ISyntaxNode<any>> {
  * A base syntax tree object, representing all syntactic elements
  * in a file.
  */
-export interface ISyntaxTree<N extends ISyntaxNode<any>> extends ISyntaxNodeContainer<N> {
+export interface ISyntaxTree<N extends ISyntaxNode<any>> extends IBlock<N> {
   lines: number;
 }

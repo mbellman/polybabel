@@ -1,5 +1,5 @@
 import JavaParser from './java/JavaParser';
-import { ISyntaxTree } from './common/syntax';
+import { ISyntaxTree } from './common/syntax-types';
 import { IToken } from '../tokenizer/types';
 import { Language } from '../system/constants';
 
@@ -7,7 +7,7 @@ import { Language } from '../system/constants';
  * Parses a list of {tokens} into a syntax tree using a parser
  * class determined by {language}.
  */
-export default function parse (tokens: IToken[], language: Language): ISyntaxTree {
+export default function parse (tokens: IToken[], language: Language): ISyntaxTree<any> {
   switch (language) {
     case Language.JAVA:
       return new JavaParser().parse(tokens[0]);

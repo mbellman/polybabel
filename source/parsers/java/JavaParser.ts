@@ -1,33 +1,39 @@
 import AbstractParser from '../common/AbstractParser';
 import JavaClassParser from './JavaClassParser';
 import JavaInterfaceParser from './JavaInterfaceParser';
-import { IWordParser, Matcher } from '../common/parser-types';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
+import { Parser } from '../common/parser-decorators';
 
-export default class JavaParser extends AbstractParser<JavaSyntax.IJavaSyntaxTree> implements IWordParser {
-  public readonly words: Matcher[] = [
-    [JavaConstants.Keyword.PACKAGE, this._onPackageDeclaration],
-    [JavaConstants.Keyword.IMPORT, this._onImportDeclaration],
-    [JavaConstants.Keyword.CLASS, this._onClassDeclaration],
-    [JavaConstants.Keyword.INTERFACE, this._onInterfaceDeclaration],
+@Parser({
+  type: JavaParser,
+  words: [
+    [JavaConstants.Keyword.PACKAGE, 'onPackageDeclaration'],
+    [JavaConstants.Keyword.IMPORT, 'onImportDeclaration'],
+    [JavaConstants.Keyword.CLASS, 'onClassDeclaration'],
+    [JavaConstants.Keyword.INTERFACE, 'onInterfaceDeclaration'],
     [
       [
         ...JavaConstants.AccessModifiers,
         ...JavaConstants.Modifiers
       ],
-      this._onModifierKeyword
+      'onModifierKeyword'
     ]
-  ];
+  ]
+})
+export default class JavaParser extends AbstractParser<JavaSyntax.IJavaSyntaxTree> {
+  public constructor () {
+    super();
+  }
 
-  protected getDefault (): JavaSyntax.IJavaSyntaxTree {
+  public getDefault (): JavaSyntax.IJavaSyntaxTree {
     return {
       lines: 0,
       nodes: []
     };
   }
 
-  private _onModifierKeyword (): void {
+  public onModifierKeyword (): void {
     const isModifyingClass = this.lineContains(JavaConstants.Keyword.CLASS);
     const isModifyingInterface = this.lineContains(JavaConstants.Keyword.INTERFACE);
 
@@ -37,29 +43,31 @@ export default class JavaParser extends AbstractParser<JavaSyntax.IJavaSyntaxTre
     );
 
     if (isModifyingClass) {
-      this._onClassDeclaration();
+      this.onClassDeclaration();
     } else {
-      this._onInterfaceDeclaration();
+      this.onInterfaceDeclaration();
     }
   }
 
-  private _onClassDeclaration (): void {
+  public onClassDeclaration (): void {
     const javaClass = this.parseNextWith(JavaClassParser);
 
     this.parsed.nodes.push(javaClass);
   }
 
-  private _onImportDeclaration (): void {
+  public onImportDeclaration (): void {
 
   }
 
-  private _onInterfaceDeclaration (): void {
+  public onInterfaceDeclaration (): void {
     const javaInterface = this.parseNextWith(JavaInterfaceParser);
+
+    console.log(javaInterface);
 
     this.parsed.nodes.push(javaInterface);
   }
 
-  private _onPackageDeclaration (): void {
+  public onPackageDeclaration (): void {
 
   }
 }

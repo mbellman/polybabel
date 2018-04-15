@@ -26,36 +26,7 @@ export type ParserHandler<A extends AbstractParser> = Callback<A>;
  * determine behavior when certain tokens are encountered
  * during the token stream.
  */
-export type TokenMatcher<A extends AbstractParser = AbstractParser> = [string | RegExp | Array<string | RegExp>, ParserHandler<A>];
-
-/**
- * An object which contains token type-specific TokenMatcher
- * arrays aiding the parsing functionality of an AbstractParser
- * subclass.
- */
-export interface IMatcher {
-  readonly words?: TokenMatcher[];
-  readonly symbols?: TokenMatcher[];
-  readonly numbers?: TokenMatcher[];
-}
-
-/**
- * An IMatcher variant for matching word tokens.
- */
-export interface IWords extends IMatcher {
-  readonly words: TokenMatcher[];
-}
-
-/**
- * An IMatcher variant for matching symbol tokens.
- */
-export interface ISymbols extends IMatcher {
-  readonly symbols: TokenMatcher[];
-}
-
-/**
- * An IMatcher variant for matching number tokens.
- */
-export interface INumbers extends IMatcher {
-  readonly numbers: TokenMatcher[];
-}
+export type TokenMatcher<A extends AbstractParser = AbstractParser, K extends keyof A = any> = [
+  (string | RegExp | Array<string | RegExp>),
+  (ParserHandler<A> | keyof A)
+];
