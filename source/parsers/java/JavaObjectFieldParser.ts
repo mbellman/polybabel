@@ -1,17 +1,18 @@
-import AbstractJavaObjectMemberParser from './AbstractJavaObjectMemberParser';
+import AbstractParser from '../common/AbstractParser';
 import JavaExpressionParser from './JavaExpressionParser';
-import { isAccessModifierKeyword, isModifierKeyword } from './java-utils';
-import { ISymbolParser, Matcher } from '../common/parser-types';
-import { JavaConstants } from './java-constants';
+import JavaObjectMemberParser from './JavaObjectMemberParser';
 import { JavaSyntax } from './java-syntax';
+import { Parser } from '../common/parser-decorators';
 
-export default class JavaObjectFieldParser extends AbstractJavaObjectMemberParser<JavaSyntax.IJavaObjectField> implements ISymbolParser {
-  public readonly symbols: Matcher[] = [
-    ['=', this._onAssignment],
-    [';', this.finish]
-  ];
-
-  protected getDefault (): JavaSyntax.IJavaObjectField {
+@Parser({
+  type: JavaObjectFieldParser,
+  symbols: [
+    ['=', 'onAssignment'],
+    [';', 'finish']
+  ]
+})
+export default abstract class JavaObjectFieldParser extends AbstractParser<JavaSyntax.IJavaObjectField> {
+  public getDefault (): JavaSyntax.IJavaObjectField {
     return {
       node: JavaSyntax.JavaSyntaxNode.OBJECT_FIELD,
       access: JavaSyntax.JavaAccessModifier.PACKAGE,
@@ -20,9 +21,15 @@ export default class JavaObjectFieldParser extends AbstractJavaObjectMemberParse
     };
   }
 
-  private _onAssignment (): void {
+  public onAssignment (): void {
     const expression = this.parseNextWith(JavaExpressionParser);
 
     this.parsed.value = expression;
+  }
+
+  public onFirstToken (): void {
+    const { node, ...member } = this.parseNextWith(JavaObjectMemberParser);
+
+    Object.assign(this.parsed, member);
   }
 }

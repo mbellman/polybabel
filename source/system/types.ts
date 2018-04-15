@@ -23,3 +23,8 @@ export interface IHashMap<V> {
 export interface IConstructable<T = any> {
   new (...args: any[]): T;
 }
+
+/**
+ * Any class constructor, including that of an abstract class.
+ */
+export type Constructor<T = any> = IConstructable<T> | Function & { prototype: T };

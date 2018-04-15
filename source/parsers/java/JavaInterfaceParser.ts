@@ -1,30 +1,30 @@
-import AbstractBlockParser from '../common/AbstractBlockParser';
+import AbstractParser from '../common/AbstractParser';
 import JavaObjectFieldParser from './JavaObjectFieldParser';
 import JavaObjectMethodParser from './JavaObjectMethodParser';
-import { isAccessModifierKeyword, isReservedWord } from './java-utils';
-import { ISymbolParser, IWordParser, Matcher } from '../common/parser-types';
+import { isAccessModifierKeyword } from './java-utils';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
+import { Parser } from '../common/parser-decorators';
 
-/*
-export default class JavaInterfaceParser extends AbstractBlockParser<JavaSyntax.IJavaInterface> implements ISymbolParser, IWordParser {
-  public readonly symbols: Matcher[] = [
-    ['{', this.onBlockEnter],
-    ['}', this.onBlockExit]
-  ];
-
-  public readonly words: Matcher[] = [
-    [JavaConstants.Keyword.EXTENDS, this._onExtendsDeclaration],
-    [/./, () => {
-      if (this.isStartOfLine()) {
-        this._onMemberDeclaration();
+@Parser({
+  type: JavaInterfaceParser,
+  words: [
+    [JavaConstants.Keyword.EXTENDS, 'onExtendsDeclaration'],
+    [/./, parser => {
+      if (parser.isStartOfLine()) {
+        parser.onMemberDeclaration();
       } else {
-        this.halt();
+        parser.halt();
       }
     }]
-  ];
-
-  protected getDefault (): JavaSyntax.IJavaInterface {
+  ],
+  symbols: [
+    ['{', parser => parser.skip(1)],
+    ['}', parser => parser.finish()]
+  ]
+})
+export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJavaInterface> {
+  public getDefault (): JavaSyntax.IJavaInterface {
     return {
       node: JavaSyntax.JavaSyntaxNode.INTERFACE,
       access: JavaSyntax.JavaAccessModifier.PACKAGE,
@@ -35,7 +35,7 @@ export default class JavaInterfaceParser extends AbstractBlockParser<JavaSyntax.
     };
   }
 
-  protected onFirstToken (): void {
+  public onFirstToken (): void {
     const { value } = this.currentToken;
 
     if (isAccessModifierKeyword(value)) {
@@ -55,14 +55,14 @@ export default class JavaInterfaceParser extends AbstractBlockParser<JavaSyntax.
     this.skip(2);
   }
 
-  private _onExtendsDeclaration (): void {
+  public onExtendsDeclaration (): void {
     while (this.currentToken.value !== '{') {
       this.match([
         [JavaConstants.Keyword.EXTENDS, () => this.skip(1)],
         [',', () => this.skip(1)],
         [/\w/, () => {
           this.assert(
-            /(extends|,)/.test(this.lastCharacterToken.value),
+            /(extends|,)/.test(this.previousCharacterToken.value),
             `Invalid character '${this.currentToken.value}'`
           );
 
@@ -73,7 +73,7 @@ export default class JavaInterfaceParser extends AbstractBlockParser<JavaSyntax.
     }
   }
 
-  private _onMemberDeclaration (): void {
+  public onMemberDeclaration (): void {
     const isMethodDeclaration = this.lineContains('(');
 
     const parsed = isMethodDeclaration
@@ -87,4 +87,3 @@ export default class JavaInterfaceParser extends AbstractBlockParser<JavaSyntax.
     }
   }
 }
-*/

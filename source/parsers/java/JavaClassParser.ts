@@ -1,86 +1,23 @@
-import AbstractBlockParser from '../common/AbstractBlockParser';
+import AbstractParser from '../common/AbstractParser';
 import { isAccessModifierKeyword } from './java-utils';
-import { ISymbolParser, IWordParser, Matcher } from '../common/parser-types';
-import { IToken } from '../../tokenizer/types';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
+import { Parser } from '../common/parser-decorators';
 
-function onNestedClassDeclaration (stream): void {
-
-}
-
-export const parseJavaClass = createComposedParser(
-  javaBlockParser
-)({
+@Parser({
+  type: JavaClassParser,
   words: [
-    [
-      [
-        JavaConstants.Keyword.CLASS,
-        JavaConstants.Keyword.PUBLIC,
-        JavaConstants.Keyword.PROTECTED,
-        JavaConstants.Keyword.PRIVATE
-      ],
-      stream => {
-        if (this.blockLevel === 1) {
-          this.onNestedClassDeclaration(stream);
-        } else {
-          stream.halt();
-        }
+    [/./, parser => {
+      if (parser.isStartOfLine()) {
+        parser.onClassMemberDeclaration();
+      } else {
+        parser.halt();
       }
-    ]
-  ],
-
-  onFirstToken: stream => {
-    const { value, nextToken } = stream.currentToken;
-
-    if (isAccessModifierKeyword(value)) {
-      stream.parsed.access = JavaConstants.AccessModifierMap[value];
-
-      stream.skip(1);
-    }
-
-    stream.match([
-      [JavaConstants.Keyword.FINAL, () => {
-        stream.parsed.isFinal = true;
-        stream.skip(1);
-      }]
-    ]);
-
-    stream.parsed.name = stream.currentToken.value;
-
-    stream.skip(1);
-  },
-
-  onNestedClassDeclaration: stream => {
-
-  }
-});
-
-export default class JavaClassParser extends AbstractBlockParser<JavaSyntax.IJavaClass> implements ISymbolParser, IWordParser {
-  public readonly symbols: Matcher[] = [
-    ['{', this.onBlockEnter],
-    ['}', this.onBlockExit]
-  ];
-
-  public readonly words: Matcher[] = [
-    [
-      [
-        JavaConstants.Keyword.CLASS,
-        JavaConstants.Keyword.PUBLIC,
-        JavaConstants.Keyword.PROTECTED,
-        JavaConstants.Keyword.PRIVATE
-      ],
-      () => {
-        if (this.blockLevel === 1) {
-          this._onNestedClassDeclaration();
-        } else {
-          this.halt();
-        }
-      }
-    ]
-  ];
-
-  protected getDefault (): JavaSyntax.IJavaClass {
+    }]
+  ]
+})
+export default abstract class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClass> {
+  public getDefault (): JavaSyntax.IJavaClass {
     return {
       node: JavaSyntax.JavaSyntaxNode.CLASS,
       access: JavaSyntax.JavaAccessModifier.PACKAGE,
@@ -91,7 +28,11 @@ export default class JavaClassParser extends AbstractBlockParser<JavaSyntax.IJav
     };
   }
 
-  protected onFirstToken (): void {
+  public onClassMemberDeclaration (): void {
+    this.halt();
+  }
+
+  public onFirstToken (): void {
     const { value, nextToken } = this.currentToken;
 
     if (isAccessModifierKeyword(value)) {
@@ -112,7 +53,7 @@ export default class JavaClassParser extends AbstractBlockParser<JavaSyntax.IJav
     this.skip(1);
   }
 
-  private _onNestedClassDeclaration (): void {
+  public onNestedClassDeclaration (): void {
     const javaClass = this.parseNextWith(JavaClassParser);
 
     this.parsed.nestedClasses.push(javaClass);

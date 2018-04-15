@@ -1,14 +1,10 @@
 import AbstractParser from '../common/AbstractParser';
 import { isReservedWord } from './java-utils';
-import { ISymbolParser, Matcher } from '../common/parser-types';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
+import { Parser } from '../common/parser-decorators';
 
-export default class JavaParameterParser extends AbstractParser<JavaSyntax.IJavaParameter> implements ISymbolParser {
-  public readonly symbols: Matcher[] = [
-    [/[,)]/, this.finish]
-  ];
-
+export default class JavaParameterParser extends AbstractParser<JavaSyntax.IJavaParameter> {
   public getDefault (): JavaSyntax.IJavaParameter {
     return {
       node: JavaSyntax.JavaSyntaxNode.PARAMETER,
@@ -17,7 +13,7 @@ export default class JavaParameterParser extends AbstractParser<JavaSyntax.IJava
     };
   }
 
-  protected onFirstToken (): void {
+  public onFirstToken (): void {
     const isFinalParameter = this.currentToken.value === JavaConstants.Keyword.FINAL;
 
     if (isFinalParameter) {
@@ -37,5 +33,6 @@ export default class JavaParameterParser extends AbstractParser<JavaSyntax.IJava
     this.parsed.name = nextToken.value;
 
     this.skip(2);
+    this.stop();
   }
 }
