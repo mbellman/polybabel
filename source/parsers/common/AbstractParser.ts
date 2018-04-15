@@ -53,8 +53,19 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
     this._isFinished = true;
   }
 
-  public halt (tokenName: string = 'token'): void {
-    this.throw(`Unexpected ${tokenName} '${this.currentToken.value}'`);
+  public halt (tokenName?: string): void {
+    const tokenType =
+      tokenName ?
+        tokenName :
+      this.currentToken.type === TokenType.WORD ?
+        'keyword' :
+      this.currentToken.type === TokenType.NUMBER ?
+        'number' :
+      this.currentToken.type === TokenType.SYMBOL ?
+        'symbol' :
+      'token';
+
+    this.throw(`Unexpected ${tokenType} '${this.currentToken.value}'`);
   }
 
   public isStartOfLine (): boolean {
@@ -101,14 +112,14 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
         if (typeof handler === 'string') {
           (this as any)[handler](this);
         } else {
-          (handler as Callback<this>)(this);
+          handler(this);
         }
 
         return;
       }
     }
 
-    this.halt('token');
+    this.halt();
   }
 
   /**
@@ -131,8 +142,16 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
   public parse (token: IToken): P {
     this.currentToken = token;
 
-    this._stream();
-    this.onFinish();
+    try {
+      this._stream();
+      this.onFinish();
+    } catch (e) {
+      const message = e.message.indexOf(' -> ') > -1
+        ? e.message
+        : `${this.constructor.name} -> ${e.message}`;
+
+      throw new Error(message);
+    }
 
     return this.parsed;
   }
@@ -182,7 +201,7 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
   }
 
   public throw (message: string): void {
-    throw new Error(`Line ${this.currentToken.line}: ${message} (${this.constructor.name}) | ...${this._currentLineToString()}...`);
+    throw new Error(`Line ${this.currentToken.line}: ${message} | ...${this._getLocalLineContent()}...`);
   }
 
   public token (): IToken {
@@ -193,21 +212,25 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
     return new (ParserClass as IConstructable<A>)();
   }
 
-  private _currentLineToString (): string {
-    let lineString = '';
-    let lineStartToken = this.currentToken;
+  private _getLocalLineContent (limit: number = 3): string {
+    let n = limit;
+    let lineContent = '';
+    let localToken = this.currentToken;
 
-    if (!isStartOfLine(lineStartToken)) {
-      lineStartToken = this._findMatchingToken(getPreviousToken, isStartOfLine);
+    // Walk backward to the start of the limit, or the
+    // beginning of the current line
+    while (--n >= 0 && localToken.previousToken && isCharacterToken(localToken)) {
+      localToken = localToken.previousToken;
     }
 
-    let token = lineStartToken;
+    // Walk to the end of the limit, or the end of the
+    // current line
+    while (n++ < 2 * limit && localToken.nextToken && isCharacterToken(localToken)) {
+      lineContent += ` ${localToken.value}`;
+      localToken = localToken.nextToken;
+    }
 
-    do {
-      lineString += `${token.value} `;
-    } while ((token = token.nextToken) && token.type !== TokenType.NEWLINE);
-
-    return lineString;
+    return lineContent;
   }
 
   /**

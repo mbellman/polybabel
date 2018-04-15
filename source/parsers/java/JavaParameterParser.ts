@@ -33,7 +33,10 @@ export default class JavaParameterParser extends AbstractParser<JavaSyntax.IJava
   }
 
   public validateParameter (typeToken: IToken, nameToken: IToken): void {
-    this.assert(typeToken.type === TokenType.WORD && nameToken.type === TokenType.WORD);
+    this.assert(
+      typeToken.type === TokenType.WORD && nameToken.type === TokenType.WORD,
+      `Invalid parameter '${typeToken.value} ${nameToken.value}'`
+    );
 
     this.assert(
       !isReservedWord(nameToken.value),

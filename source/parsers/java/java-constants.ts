@@ -21,6 +21,7 @@ export namespace JavaConstants {
 
   export enum Type {
     STRING = 'String',
+    NUMBER = 'Number',
     OBJECT = 'Object',
     BYTE = 'byte',
     SHORT = 'short',

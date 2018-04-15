@@ -3,7 +3,7 @@ interface ITest extends Div, Something, Else {
   private final abstract static Bool boolean;
   Object object;
 
-  Thing getThing (String key, final Number id);
+  Thing getThing (String key, final Number id) throws Exception;
 }
 
 class HelloWorld {

@@ -19,11 +19,6 @@ import { TokenType } from 'tokenizer/types';
     [',', 'onParameterSeparator'],
     [')', 'onParameterBlockClose'],
     [';', 'finish']
-  ],
-  numbers: [
-    [/./, () => {
-      console.log('hi');
-    }]
   ]
 })
 export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJavaObjectMethod> {
@@ -38,41 +33,41 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
     };
   }
 
-  public onParameterBlockOpen (): void {
-    this.assert(this.previousToken.type === TokenType.WORD);
-    this.skip(1);
-  }
-
-  public onParameterBlockClose (): void {
-    this.assert(this.previousToken.type === TokenType.WORD);
-    this.skip(1);
-  }
-
-  public onParameterSeparator (): void {
-    const { previousToken, nextToken } = this;
-
-    this.assert(
-      previousToken.type === TokenType.WORD,
-      `Invalid parameter name '${previousToken.value}'`
-    );
-
-    this.assert(
-      nextToken.type === TokenType.WORD || nextToken.value === ')',
-      `Invalid parameter type '${nextToken.value}'`
-    );
-
-    this.skip(1);
-  }
-
   public onFirstToken (): void {
     const { node, ...member } = this.parseNextWith(JavaObjectMemberParser);
 
     Object.assign(this.parsed, member);
   }
 
+  public onParameterBlockOpen (): void {
+    this.assert(this.previousCharacterToken.type === TokenType.WORD);
+    this.skip(1);
+  }
+
+  public onParameterBlockClose (): void {
+    this.assert(this.previousCharacterToken.type === TokenType.WORD);
+    this.skip(1);
+  }
+
   public onParameterDeclaration (): void {
     const parameter = this.parseNextWith(JavaParameterParser);
 
     this.parsed.parameters.push(parameter);
+  }
+
+  public onParameterSeparator (): void {
+    const { previousCharacterToken, nextCharacterToken } = this;
+
+    this.assert(
+      previousCharacterToken.type === TokenType.WORD,
+      `Invalid parameter name '${previousCharacterToken.value}'`
+    );
+
+    this.assert(
+      nextCharacterToken.type === TokenType.WORD || nextCharacterToken.value === ')',
+      `Invalid parameter type '${nextCharacterToken.value}'`
+    );
+
+    this.skip(1);
   }
 }

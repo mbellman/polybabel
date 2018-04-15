@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import assert from './system/assert';
-import Logger from './system/Logger';
+import chalk from 'chalk';
 import parse from './parsers/parse';
 import tokenize from './tokenizer/tokenize';
 import { getFileContents, resolveFilesDeep } from './system/file';
@@ -26,39 +26,46 @@ function getLanguageByExtension (extension: string): Language {
  * @internal
  */
 async function processFiles (directory: string, files: string[]): Promise<void> {
+  let totalFailedFiles = 0;
+
   for (const file of files) {
     const extension = file.split('.').pop();
-    const language = getLanguageByExtension(extension);
-    const fileContents = await getFileContents(`${process.cwd()}/${directory}/${file}`);
-    const tokens = tokenize(fileContents);
 
     try {
+      const language = getLanguageByExtension(extension);
+      const fileContents = await getFileContents(`${process.cwd()}/${directory}/${file}`);
+      const tokens = tokenize(fileContents);
       const syntaxTree: ISyntaxTree<any> = parse(tokens, language);
     } catch (e) {
-      Logger.warn(`[${file}]`);
-      Logger.error(` ${e.message}\n`);
+      const [ message, lineContent ] = e.message.split(' | ');
+
+      console.log(chalk.bgRed.bold(` ${file} `));
+      console.log(' ', chalk.red(message), chalk.blue(lineContent), '\n');
+
+      ++totalFailedFiles;
     }
   }
+
+  assert(
+    totalFailedFiles === 0,
+    chalk.yellow('Failed to compile!')
+  );
 }
 
 /**
  * Polybabel entry point.
  */
 async function main (args: string[]) {
+  console.log(chalk.green(`\nStarting...\n`));
+
   const startTime = Date.now();
   const flags = getFlags(args);
+  const { inputFolderName } = await resolveConfiguration(flags);
+  const inputFiles = await resolveFilesDeep(inputFolderName);
 
-  try {
-    const { inputFolderName } = await resolveConfiguration(flags);
-    const inputFiles = await resolveFilesDeep(inputFolderName);
+  await processFiles(inputFolderName, inputFiles);
 
-    await processFiles(inputFolderName, inputFiles);
-  } catch (e) {
-    Logger.warn('Failed to compile:');
-    Logger.error(e.toString());
-  }
-
-  Logger.log(`Compiled in ${Date.now() - startTime} ms!`);
+  console.log(`Compiled in ${Date.now() - startTime} ms!`);
 }
 
 main(process.argv);

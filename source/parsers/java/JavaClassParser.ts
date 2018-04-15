@@ -16,7 +16,7 @@ import { Parser } from '../common/parser-decorators';
     }]
   ]
 })
-export default abstract class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClass> {
+export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClass> {
   public getDefault (): JavaSyntax.IJavaClass {
     return {
       node: JavaSyntax.JavaSyntaxNode.CLASS,
