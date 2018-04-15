@@ -19,6 +19,11 @@ import { TokenType } from 'tokenizer/types';
     [',', 'onParameterSeparator'],
     [')', 'onParameterBlockClose'],
     [';', 'finish']
+  ],
+  numbers: [
+    [/./, () => {
+      console.log('hi');
+    }]
   ]
 })
 export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJavaObjectMethod> {
@@ -46,12 +51,16 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
   public onParameterSeparator (): void {
     const { previousToken, nextToken } = this;
 
-    const isValidParameterSeparator =
-      previousToken.type === TokenType.WORD &&
-      nextToken.type === TokenType.WORD ||
-      nextToken.value === ')';
+    this.assert(
+      previousToken.type === TokenType.WORD,
+      `Invalid parameter name '${previousToken.value}'`
+    );
 
-    this.assert(isValidParameterSeparator);
+    this.assert(
+      nextToken.type === TokenType.WORD || nextToken.value === ')',
+      `Invalid parameter type '${nextToken.value}'`
+    );
+
     this.skip(1);
   }
 

@@ -8,8 +8,8 @@ import { IToken, Tokenizer, TokenType } from './types';
  * @internal
  */
 const tokenizers: Tokenizer[] = [
-  createTokenizer(TokenType.WORD, /\w/),
   createTokenizer(TokenType.NUMBER, /\d/),
+  createTokenizer(TokenType.WORD, /\w/),
   createTokenizer(TokenType.SYMBOL, /[$_|=`:;<>?,.\-*+\/%&!^~\[\]{}()'"]/),
   createTokenizer(TokenType.NEWLINE, /[\r\n]/),
   createTokenizer(TokenType.WHITESPACE, /[\s\t]/),
