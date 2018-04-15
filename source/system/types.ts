@@ -1,8 +1,14 @@
 /**
- * A callback function which takes arguments of type T
+ * A callback function which takes argument(s) of type T
  * and returns a value of type U.
  */
-export type Callback<T = any, U = any> = (...args: T[]) => U;
+export type Callback<T = any, U = any> = (arg?: T) => U;
+
+/**
+ * A callback function bound to the context of an object
+ * of type C.
+ */
+export type BoundCallback<C, T = any, U = any> = (this: C, arg?: T) => U;
 
 /**
  * A key/value map.

@@ -1,5 +1,4 @@
 import AbstractParser from '../common/AbstractParser';
-import JavaBlockParser from './JavaBlockParser';
 import JavaObjectMemberParser from './JavaObjectMemberParser';
 import JavaParameterParser from './JavaParameterParser';
 import { JavaSyntax } from './java-syntax';
