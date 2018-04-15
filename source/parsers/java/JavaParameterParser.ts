@@ -3,7 +3,7 @@ import { isReservedWord } from './java-utils';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { Parser } from '../common/parser-decorators';
-import { TokenType } from 'tokenizer/types';
+import { TokenType, IToken } from 'tokenizer/types';
 
 export default class JavaParameterParser extends AbstractParser<JavaSyntax.IJavaParameter> {
   public getDefault (): JavaSyntax.IJavaParameter {
@@ -23,7 +23,7 @@ export default class JavaParameterParser extends AbstractParser<JavaSyntax.IJava
       this.skip(1);
     }
 
-    this.validateParameter();
+    this.validateParameter(this.currentToken, this.nextToken);
 
     this.parsed.type = this.currentToken.value;
     this.parsed.name = this.nextToken.value;
@@ -32,18 +32,12 @@ export default class JavaParameterParser extends AbstractParser<JavaSyntax.IJava
     this.stop();
   }
 
-  public validateParameter (): void {
-    const { type, nextToken } = this.currentToken;
-
-    const hasValidTypeAndName =
-      type === TokenType.WORD &&
-      nextToken.type === TokenType.WORD;
-
-    this.assert(hasValidTypeAndName);
+  public validateParameter (typeToken: IToken, nameToken: IToken): void {
+    this.assert(typeToken.type === TokenType.WORD && nameToken.type === TokenType.WORD);
 
     this.assert(
-      !isReservedWord(nextToken.value),
-      `Invalid parameter name '${nextToken.value}'`
+      !isReservedWord(nameToken.value),
+      `Invalid parameter name '${nameToken.value}'`
     );
   }
 }
