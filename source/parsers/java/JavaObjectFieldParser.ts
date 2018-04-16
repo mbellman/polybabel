@@ -1,6 +1,7 @@
 import AbstractParser from '../common/AbstractParser';
 import JavaExpressionParser from './JavaExpressionParser';
 import JavaObjectMemberParser from './JavaObjectMemberParser';
+import { Implements, Override } from 'trampoline-framework';
 import { JavaSyntax } from './java-syntax';
 import { Parser } from '../common/parser-decorators';
 
@@ -12,7 +13,7 @@ import { Parser } from '../common/parser-decorators';
   ]
 })
 export default abstract class JavaObjectFieldParser extends AbstractParser<JavaSyntax.IJavaObjectField> {
-  public getDefault (): JavaSyntax.IJavaObjectField {
+  @Implements public getDefault (): JavaSyntax.IJavaObjectField {
     return {
       node: JavaSyntax.JavaSyntaxNode.OBJECT_FIELD,
       access: JavaSyntax.JavaAccessModifier.PACKAGE,
@@ -27,7 +28,7 @@ export default abstract class JavaObjectFieldParser extends AbstractParser<JavaS
     this.parsed.value = expression;
   }
 
-  public onFirstToken (): void {
+  @Override public onFirstToken (): void {
     const { node, ...member } = this.parseNextWith(JavaObjectMemberParser);
 
     Object.assign(this.parsed, member);

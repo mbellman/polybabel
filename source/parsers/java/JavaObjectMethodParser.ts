@@ -3,10 +3,10 @@ import JavaClauseParser from './JavaClauseParser';
 import JavaObjectMemberParser from './JavaObjectMemberParser';
 import JavaParameterParser from './JavaParameterParser';
 import { Implements, Override } from 'trampoline-framework';
+import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { Parser } from '../common/parser-decorators';
 import { TokenType } from 'tokenizer/types';
-import { JavaConstants } from './java-constants';
 
 @Parser({
   type: JavaObjectMethodParser,
@@ -35,9 +35,7 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
   }
 
   @Override public onFirstToken (): void {
-    const { node, ...member } = this.parseNextWith(JavaObjectMemberParser);
-
-    Object.assign(this.parsed, member);
+    this.emulate(JavaObjectMemberParser);
   }
 
   public onParameterDeclaration (): void {

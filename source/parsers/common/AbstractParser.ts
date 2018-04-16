@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import { Callback, Constructor, IConstructable } from '../../system/types';
-import { getNextToken, getPreviousToken, isCharacterToken, isStartOfLine } from '../../tokenizer/token-utils';
+import { getNextToken, getPreviousToken, isCharacterToken } from '../../tokenizer/token-utils';
+import { ISyntaxNode } from './syntax-types';
 import { IToken, TokenType } from '../../tokenizer/types';
 import { ParsedSyntax, TokenMatcher } from './parser-types';
 
@@ -46,6 +47,15 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
 
   public assertCurrentTokenValue (targetValue: string, errorMessage?: string): void {
     this.assert(this.currentToken.value === targetValue, errorMessage);
+  }
+
+  /**
+   * @todo @description
+   */
+  public emulate <T extends ISyntaxNode & { [K in keyof Exclude<P, T>]: any }>(ParserClass: Constructor<AbstractParser<T>>): void {
+    const { node, ...parsed } = this.parseNextWith(ParserClass) as any;
+
+    Object.assign(this.parsed, parsed);
   }
 
   public abstract getDefault (): P;
@@ -323,6 +333,8 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
       }
 
       if (this._isStopped) {
+        // Break out of the token loop, keep the current token where it
+        // is, and let the parent parser worry about what to do
         break;
       }
 

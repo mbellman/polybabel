@@ -1,4 +1,4 @@
-interface ITest extends Div, Something, Else {
+protected interface ITest extends Div, Something, Else {
   String string;
   Bool boolean;
   Object object;
@@ -6,7 +6,7 @@ interface ITest extends Div, Something, Else {
   Thing getThing (String key, final Number id) throws Exception;
 }
 
-class HelloWorld {
+public final class HelloWorld {
   public static void main (String[] args) {
     console.log('Hello!');
 
