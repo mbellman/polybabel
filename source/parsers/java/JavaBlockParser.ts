@@ -5,7 +5,7 @@ import { Parser } from '../common/parser-decorators';
 @Parser({
   type: JavaBlockParser,
   symbols: [
-    ['{', parser => parser.skip(1)],
+    ['{', 'next'],
     ['}', 'finish']
   ]
 })

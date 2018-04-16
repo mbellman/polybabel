@@ -23,7 +23,7 @@ export default class JavaParameterParser extends AbstractParser<JavaSyntax.IJava
     if (isFinalParameter) {
       this.parsed.isFinal = true;
 
-      this.skip(1);
+      this.next();
     }
 
     this.validateParameter(this.currentToken, this.nextToken);

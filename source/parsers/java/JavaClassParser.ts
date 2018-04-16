@@ -39,19 +39,19 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
     if (isAccessModifierKeyword(value)) {
       this.parsed.access = JavaConstants.AccessModifierMap[value];
 
-      this.skip(1);
+      this.next();
     }
 
     this.match([
       [JavaConstants.Keyword.FINAL, () => {
         this.parsed.isFinal = true;
-        this.skip(1);
+        this.next();
       }]
     ]);
 
     this.parsed.name = this.currentToken.value;
 
-    this.skip(1);
+    this.next();
   }
 
   public onNestedClassDeclaration (): void {

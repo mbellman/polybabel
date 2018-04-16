@@ -12,7 +12,7 @@ import { Parser } from '../common/parser-decorators';
     [/./, 'onNextClauseValue']
   ],
   symbols: [
-    [',', parser => parser.skip(1)],
+    [',', 'next'],
     [/[{;]/, 'stop']
   ]
 })
@@ -26,7 +26,7 @@ export default class JavaClauseParser extends AbstractParser<JavaSyntax.IJavaCla
 
   @Override public onFirstToken (): void {
     this.assert(isClauseKeyword(this.currentToken.value));
-    this.skip(1);
+    this.next();
   }
 
   public onNextClauseValue (): void {

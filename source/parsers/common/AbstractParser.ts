@@ -27,7 +27,9 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
   }
 
   /**
-   * Disallow external/manual construction of subclass instances.
+   * Disallow external/manual construction of subclass instances
+   * unless they deliberately expose a public constructor.
+   *
    * See: parseNextWith()
    */
   protected constructor () { }
@@ -48,6 +50,13 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
 
   public abstract getDefault (): P;
 
+  /**
+   * Finishes parsing and ensures that the current token will be
+   * advanced upon returning to the parent parser, stepping 'out'
+   * of the parsed chunk.
+   *
+   * See: stop()
+   */
   public finish (): void {
     this._isFinished = true;
   }
@@ -122,6 +131,13 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
   }
 
   /**
+   * A shorthand method for only skipping one character token.
+   */
+  public next (): void {
+    this.skip(1);
+  }
+
+  /**
    * An optionally overridable hook which runs after the last
    * token in the parsing stream.
    */
@@ -147,9 +163,10 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
     } catch (e) {
       // Catching errors here allows both intentional halting errors
       // and actual subclass design/runtime errors to be displayed,
-      // properly attributed to the source. Throwing the error in
-      // the catch block allows it to ripple up to the top of the
-      // parsing hierarchy and halt the root language parser
+      // properly attributed to the source. We then throw the error
+      // again to propagate it up to the file compilation loop so
+      // it can be displayed in the context of the source file,
+      // which is unknown to parsers.
       const message = this._getNormalizedErrorMessage(e.message);
 
       throw new Error(message);
@@ -183,12 +200,13 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
   }
 
   /**
-   * A mechanism for skipping an arbitrary number of tokens. Newlines
-   * should automatically be skipped through and not counted.
+   * A mechanism for skipping an arbitrary number of character tokens.
+   * Newline tokens are skipped over without counting toward the total
+   * number of skips.
    */
   public skip (steps: number): void {
     while (--steps >= 0) {
-      if (!this.nextToken) {
+      if (!this.nextCharacterToken) {
         this._isFinished = true;
 
         break;
@@ -198,6 +216,12 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
     }
   }
 
+  /**
+   * Stops the parser without any error, but with the intent of letting
+   * the parent parser continue from the current token.
+   *
+   * See: finish()
+   */
   public stop (): void {
     this._isStopped = true;
   }
@@ -226,7 +250,8 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
     }
 
     // Walk forward to the end of the limit, or the end
-    // of the current line
+    // of the current line, adding each encountered token
+    // to the list of local token values
     while (n++ < 2 * limit && localToken.nextToken && isCharacterToken(localToken)) {
       localTokenValues.push(localToken.value);
       localToken = localToken.nextToken;
@@ -255,7 +280,8 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
    * been found. If a token satisfying the predicate function is matched,
    * that token is returned.
    *
-   * The current token is omitted in the search.
+   * The current token will not be counted as a match even if it happens
+   * to satisfy the predicate function.
    */
   private _findMatchingToken (stepFunction: Callback<IToken, IToken>, predicate: Callback<IToken, boolean>): IToken {
     let token = stepFunction(this.currentToken);
@@ -267,17 +293,21 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
     return token;
   }
 
+  /**
+   * Steps through tokens starting from the current token until either
+   * the subclass finishes, stops, or halts.
+   */
   private _stream (): void {
     const statics = this.constructor as any;
 
     while (this.currentToken.type === TokenType.NEWLINE) {
-      this.skip(1);
+      this.next();
     }
 
     this.onFirstToken();
 
     while (!this._isStopped && !this._isFinished && this.nextToken) {
-      const initialToken = this.currentToken;
+      const tokenAtStepStart = this.currentToken;
       const { previousToken, type, value } = this.currentToken;
 
       switch (type) {
@@ -296,16 +326,16 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
         break;
       }
 
-      if (!this._isFinished && this.currentToken === initialToken) {
-        this.skip(1);
+      if (!this._isFinished && this.currentToken === tokenAtStepStart) {
+        this.next();
       }
     }
 
     if (!this._isStopped && this.nextToken) {
       // Advance the token stream after finishing so that the next
-      // token after the parsed stream can be assigned back to the
+      // token after the parsed chunk can be assigned back to the
       // parent parser instance
-      this.skip(1);
+      this.next();
     }
   }
 }

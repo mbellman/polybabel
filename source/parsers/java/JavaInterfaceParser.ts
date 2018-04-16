@@ -1,12 +1,12 @@
 import AbstractParser from '../common/AbstractParser';
+import JavaClauseParser from './JavaClauseParser';
 import JavaObjectFieldParser from './JavaObjectFieldParser';
 import JavaObjectMethodParser from './JavaObjectMethodParser';
+import { Implements, Override } from 'trampoline-framework';
 import { isAccessModifierKeyword } from './java-utils';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { Parser } from '../common/parser-decorators';
-import { Implements, Override } from 'trampoline-framework';
-import JavaClauseParser from './JavaClauseParser';
 
 @Parser({
   type: JavaInterfaceParser,
@@ -49,7 +49,7 @@ export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJava
     if (isAccessModifierKeyword(value)) {
       this.parsed.access = JavaConstants.AccessModifierMap[value];
 
-      this.skip(1);
+      this.next();
     }
 
     this.assertCurrentTokenValue(
@@ -57,11 +57,11 @@ export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJava
       `Invalid interface modifier '${this.currentToken.value}'`
     );
 
-    this.skip(1);
+    this.next();
 
     this.parsed.name = this.currentToken.value;
 
-    this.skip(1);
+    this.next();
   }
 
   public onMemberDeclaration (): void {
@@ -82,6 +82,6 @@ export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJava
     const { fields, methods } = this.parsed;
 
     this.assert(fields.length === 0 && methods.length === 0);
-    this.skip(1);
+    this.next();
   }
 }

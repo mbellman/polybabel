@@ -48,7 +48,7 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
 
   public onParametersEnd (): void {
     this.assert(this.previousCharacterToken.type === TokenType.WORD);
-    this.skip(1);
+    this.next();
   }
 
   public onParameterSeparator (): void {
@@ -64,12 +64,12 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
       `Invalid parameter type '${nextCharacterToken.value}'`
     );
 
-    this.skip(1);
+    this.next();
   }
 
   public onParametersStart (): void {
     this.assert(this.previousCharacterToken.type === TokenType.WORD);
-    this.skip(1);
+    this.next();
   }
 
   public onThrowsClause (): void {

@@ -26,7 +26,7 @@ export default class JavaObjectMemberParser extends AbstractParser<JavaSyntax.IJ
     if (isAccessModifierKeyword(value)) {
       this.parsed.access = JavaConstants.AccessModifierMap[value];
 
-      this.skip(1);
+      this.next();
     }
 
     while (isModifierKeyword(this.currentToken.value)) {
@@ -36,7 +36,7 @@ export default class JavaObjectMemberParser extends AbstractParser<JavaSyntax.IJ
         [JavaConstants.Keyword.ABSTRACT, () => this.parsed.isAbstract = true]
       ]);
 
-      this.skip(1);
+      this.next();
     }
 
     this.validateMember(this.currentToken, this.nextToken);
