@@ -21,8 +21,8 @@ import JavaClauseParser from './JavaClauseParser';
     }]
   ],
   symbols: [
-    ['{', parser => parser.skip(1)],
-    ['}', parser => parser.finish()]
+    ['{', 'onOpenBrace'],
+    ['}', 'finish']
   ]
 })
 export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJavaInterface> {
@@ -35,6 +35,12 @@ export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJava
       fields: [],
       methods: []
     };
+  }
+
+  public onExtendsClause (): void {
+    const extendsClause = this.parseNextWith(JavaClauseParser);
+
+    this.parsed.extends = extendsClause.values;
   }
 
   @Override public onFirstToken (): void {
@@ -51,16 +57,11 @@ export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJava
       `Invalid interface modifier '${this.currentToken.value}'`
     );
 
-    this.parsed.name = this.nextToken.value;
+    this.skip(1);
 
-    // Skip over 'interface {name}'
-    this.skip(2);
-  }
+    this.parsed.name = this.currentToken.value;
 
-  public onExtendsClause (): void {
-    const extendsClause = this.parseNextWith(JavaClauseParser);
-
-    this.parsed.extends = extendsClause.values;
+    this.skip(1);
   }
 
   public onMemberDeclaration (): void {
@@ -75,5 +76,12 @@ export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJava
     } else {
       this.parsed.fields.push(parsed as JavaSyntax.IJavaObjectField);
     }
+  }
+
+  public onOpenBrace (): void {
+    const { fields, methods } = this.parsed;
+
+    this.assert(fields.length === 0 && methods.length === 0);
+    this.skip(1);
   }
 }

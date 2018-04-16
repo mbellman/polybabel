@@ -26,7 +26,7 @@ export type ParserHandler<A extends AbstractParser> = Callback<A>;
  * determine behavior when certain tokens are encountered
  * during the token stream.
  */
-export type TokenMatcher<A extends AbstractParser = AbstractParser, K extends keyof A = any> = [
+export type TokenMatcher<A extends AbstractParser = AbstractParser> = [
   (string | RegExp | Array<string | RegExp>),
   (ParserHandler<A> | keyof A)
 ];
