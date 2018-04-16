@@ -10,6 +10,7 @@ export namespace JavaConstants {
     INTERFACE = 'interface',
     EXTENDS = 'extends',
     IMPLEMENTS = 'implements',
+    THROWS = 'throws',
     PUBLIC = 'public',
     PROTECTED = 'protected',
     PRIVATE = 'private',
@@ -39,6 +40,12 @@ export namespace JavaConstants {
   export const ReservedWords: string[] = [
     ...Keywords,
     ...Types
+  ];
+
+  export const Clauses: string[] = [
+    JavaConstants.Keyword.EXTENDS,
+    JavaConstants.Keyword.IMPLEMENTS,
+    JavaConstants.Keyword.THROWS
   ];
 
   export const Modifiers: string[] = [

@@ -42,11 +42,21 @@ has-flag@^3.0.0:
   version "3.0.0"
   resolved "https://registry.npmjs.org/has-flag/-/has-flag-3.0.0.tgz#b5d454dc2199ae225699f3467e5a07f3b955bafd"
 
+reflect-metadata@^0.1.12:
+  version "0.1.12"
+  resolved "https://registry.npmjs.org/reflect-metadata/-/reflect-metadata-0.1.12.tgz#311bf0c6b63cd782f228a81abe146a2bfa9c56f2"
+
 supports-color@^5.3.0:
   version "5.3.0"
   resolved "https://registry.npmjs.org/supports-color/-/supports-color-5.3.0.tgz#5b24ac15db80fa927cf5227a4a33fd3c4c7676c0"
   dependencies:
     has-flag "^3.0.0"
+
+trampoline-framework@^0.8.4:
+  version "0.8.4"
+  resolved "https://registry.npmjs.org/trampoline-framework/-/trampoline-framework-0.8.4.tgz#d1edc50ac20012fe70007445ae214518d61b3797"
+  dependencies:
+    reflect-metadata "^0.1.12"
 
 typescript@^2.8.1:
   version "2.8.1"

@@ -1,4 +1,5 @@
 import AbstractParser from '../common/AbstractParser';
+import { Implements, Override } from 'trampoline-framework';
 import { isAccessModifierKeyword } from './java-utils';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
@@ -17,7 +18,7 @@ import { Parser } from '../common/parser-decorators';
   ]
 })
 export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClass> {
-  public getDefault (): JavaSyntax.IJavaClass {
+  @Implements public getDefault (): JavaSyntax.IJavaClass {
     return {
       node: JavaSyntax.JavaSyntaxNode.CLASS,
       access: JavaSyntax.JavaAccessModifier.PACKAGE,
@@ -32,7 +33,7 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
     this.halt();
   }
 
-  public onFirstToken (): void {
+  @Override public onFirstToken (): void {
     const { value, nextToken } = this.currentToken;
 
     if (isAccessModifierKeyword(value)) {

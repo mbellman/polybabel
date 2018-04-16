@@ -1,6 +1,7 @@
 import AbstractParser from '../common/AbstractParser';
 import JavaClassParser from './JavaClassParser';
 import JavaInterfaceParser from './JavaInterfaceParser';
+import { Implements } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { Parser } from '../common/parser-decorators';
@@ -26,27 +27,11 @@ export default class JavaParser extends AbstractParser<JavaSyntax.IJavaSyntaxTre
     super();
   }
 
-  public getDefault (): JavaSyntax.IJavaSyntaxTree {
+  @Implements public getDefault (): JavaSyntax.IJavaSyntaxTree {
     return {
       lines: 0,
       nodes: []
     };
-  }
-
-  public onModifierKeyword (): void {
-    const isModifyingClass = this.lineContains(JavaConstants.Keyword.CLASS);
-    const isModifyingInterface = this.lineContains(JavaConstants.Keyword.INTERFACE);
-
-    this.assert(
-      isModifyingClass !== isModifyingInterface,
-      'Invalid object declaration'
-    );
-
-    if (isModifyingClass) {
-      this.onClassDeclaration();
-    } else {
-      this.onInterfaceDeclaration();
-    }
   }
 
   public onClassDeclaration (): void {
@@ -63,6 +48,22 @@ export default class JavaParser extends AbstractParser<JavaSyntax.IJavaSyntaxTre
     const javaInterface = this.parseNextWith(JavaInterfaceParser);
 
     this.parsed.nodes.push(javaInterface);
+  }
+
+  public onModifierKeyword (): void {
+    const isModifyingClass = this.lineContains(JavaConstants.Keyword.CLASS);
+    const isModifyingInterface = this.lineContains(JavaConstants.Keyword.INTERFACE);
+
+    this.assert(
+      isModifyingClass !== isModifyingInterface,
+      'Invalid object declaration'
+    );
+
+    if (isModifyingClass) {
+      this.onClassDeclaration();
+    } else {
+      this.onInterfaceDeclaration();
+    }
   }
 
   public onPackageDeclaration (): void {

@@ -1,3 +1,4 @@
+import chalk from 'chalk';
 import { Callback, Constructor, IConstructable } from '../../system/types';
 import { getNextToken, getPreviousToken, isCharacterToken, isStartOfLine } from '../../tokenizer/token-utils';
 import { IToken, TokenType } from '../../tokenizer/types';
@@ -41,10 +42,8 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
     }
   }
 
-  public assertCurrentTokenValue (targetValue: string, errorMessage: string): void {
-    if (this.currentToken.value !== targetValue) {
-      this.throw(errorMessage);
-    }
+  public assertCurrentTokenValue (targetValue: string, errorMessage?: string): void {
+    this.assert(this.currentToken.value === targetValue, errorMessage);
   }
 
   public abstract getDefault (): P;
@@ -58,7 +57,7 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
       tokenName ?
         tokenName :
       this.currentToken.type === TokenType.WORD ?
-        'keyword' :
+        'word' :
       this.currentToken.type === TokenType.NUMBER ?
         'number' :
       this.currentToken.type === TokenType.SYMBOL ?
@@ -97,9 +96,9 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
   }
 
   /**
-   * Attempts to find a matching {value} among an array of {matchers},
-   * and fires the matcher's callback if successful. If unsuccessful,
-   * the parser halts.
+   * Attempts to find a matching {value} among an array of token
+   * matchers, and fires the matcher's callback if successful.
+   * If unsuccessful, the the parser halts.
    */
   public matchValue (value: string, matchers: TokenMatcher<this>[] = []): void {
     for (const [ match, handler ] of matchers) {
@@ -146,9 +145,12 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
       this._stream();
       this.onFinish();
     } catch (e) {
-      const message = e.message.indexOf(' -> ') > -1
-        ? e.message
-        : `${this.constructor.name} -> ${e.message}`;
+      // Catching errors here allows both intentional halting errors
+      // and actual subclass design/runtime errors to be displayed,
+      // properly attributed to the source. Throwing the error in
+      // the catch block allows it to ripple up to the top of the
+      // parsing hierarchy and halt the root language parser
+      const message = this._getNormalizedErrorMessage(e.message);
 
       throw new Error(message);
     }
@@ -201,7 +203,7 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
   }
 
   public throw (message: string): void {
-    throw new Error(`Line ${this.currentToken.line}: ${message} | ...${this._getLocalLineContent()}...`);
+    throw new Error(`Line ${this.currentToken.line}: ${message}`);
   }
 
   public token (): IToken {
@@ -214,23 +216,36 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
 
   private _getLocalLineContent (limit: number = 3): string {
     let n = limit;
-    let lineContent = '';
     let localToken = this.currentToken;
+    const localTokenValues: string[] = [];
 
     // Walk backward to the start of the limit, or the
     // beginning of the current line
-    while (--n >= 0 && localToken.previousToken && isCharacterToken(localToken)) {
+    while (--n >= 0 && localToken.previousToken && isCharacterToken(localToken.previousToken)) {
       localToken = localToken.previousToken;
     }
 
-    // Walk to the end of the limit, or the end of the
-    // current line
+    // Walk forward to the end of the limit, or the end
+    // of the current line
     while (n++ < 2 * limit && localToken.nextToken && isCharacterToken(localToken)) {
-      lineContent += ` ${localToken.value}`;
+      localTokenValues.push(localToken.value);
       localToken = localToken.nextToken;
     }
 
-    return lineContent;
+    return localTokenValues.join(' ');
+  }
+
+  /**
+   * Returns a colorized, formatted, and source-attributed error message
+   * from an arbitrary original error message.
+   */
+  private _getNormalizedErrorMessage (message: string): string {
+    const messageIsAlreadyNormalized = message.indexOf(' -> ') > -1;
+    const colorizedLineContent = chalk.red(`...${this._getLocalLineContent()}...`);
+
+    return messageIsAlreadyNormalized
+      ? message
+      : ` ${chalk.blue(message)} ${chalk.cyan(`(${this.constructor.name})`)} -> ${colorizedLineContent}\n`;
   }
 
   /**

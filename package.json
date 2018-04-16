@@ -12,6 +12,7 @@
 		"@types/core-js": "^0.9.46",
 		"@types/node": "^9.4.4",
 		"chalk": "^2.3.2",
+		"trampoline-framework": "^0.8.4",
 		"typescript": "^2.8.1"
 	},
 	"bin": {

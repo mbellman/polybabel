@@ -31,7 +31,8 @@ export namespace JavaSyntax {
     BLOCK,
     VARIABLE,
     REFERENCE,
-    EXPRESSION
+    EXPRESSION,
+    CLAUSE
   }
 
   export const enum JavaAccessModifier {
@@ -46,14 +47,9 @@ export namespace JavaSyntax {
     path: string;
   }
 
-  export interface IJavaImport extends IJavaSyntaxNode {
+  export interface IJavaImport extends IJavaSyntaxNode, INamed {
     node: JavaSyntaxNode.IMPORT;
     path: string;
-    alias?: string;
-  }
-
-  export interface IJavaBlock extends IJavaSyntaxNode, IBlock<IJavaSyntaxNode> {
-    node: JavaSyntaxNode.BLOCK;
   }
 
   export interface IJavaInterface extends IJavaSyntaxNode, INamed, IJavaAccessible {
@@ -67,9 +63,9 @@ export namespace JavaSyntax {
     node: JavaSyntaxNode.CLASS;
     extends?: string;
     implements?: string[];
-    nestedClasses: IJavaClass[];
     fields: IJavaObjectField[];
     methods: IJavaObjectMethod[];
+    nestedClasses: IJavaClass[];
   }
 
   export interface IJavaObjectMember extends IJavaSyntaxNode, IJavaAccessible, IJavaModifiable, ITyped, INamed { }
@@ -88,6 +84,10 @@ export namespace JavaSyntax {
     node: JavaSyntaxNode.PARAMETER;
   }
 
+  export interface IJavaBlock extends IJavaSyntaxNode, IBlock<IJavaSyntaxNode> {
+    node: JavaSyntaxNode.BLOCK;
+  }
+
   export interface IJavaVariable extends IJavaSyntaxNode, INamed, ITyped, Pick<IJavaModifiable, 'isFinal'>, Partial<IValued<JavaSyntaxNode>> {
     node: JavaSyntaxNode.VARIABLE;
   }
@@ -98,6 +98,11 @@ export namespace JavaSyntax {
 
   export interface IJavaExpression extends IJavaSyntaxNode {
     node: JavaSyntaxNode.EXPRESSION;
+  }
+
+  export interface IJavaClause extends IJavaSyntaxNode {
+    node: JavaSyntaxNode.CLAUSE;
+    values: string[];
   }
 
   export interface IJavaSyntaxTree extends ISyntaxTree<IJavaSyntaxNode> { }

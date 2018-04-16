@@ -11,3 +11,7 @@ export function isModifierKeyword (word: string): boolean {
 export function isReservedWord (word: string): boolean {
   return JavaConstants.ReservedWords.indexOf(word) > -1;
 }
+
+export function isClauseKeyword (word: string): boolean {
+  return JavaConstants.Clauses.indexOf(word) > -1;
+}

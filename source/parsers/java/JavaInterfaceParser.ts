@@ -5,11 +5,13 @@ import { isAccessModifierKeyword } from './java-utils';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { Parser } from '../common/parser-decorators';
+import { Implements, Override } from 'trampoline-framework';
+import JavaClauseParser from './JavaClauseParser';
 
 @Parser({
   type: JavaInterfaceParser,
   words: [
-    [JavaConstants.Keyword.EXTENDS, 'onExtendsDeclaration'],
+    [JavaConstants.Keyword.EXTENDS, 'onExtendsClause'],
     [/./, parser => {
       if (parser.isStartOfLine()) {
         parser.onMemberDeclaration();
@@ -24,7 +26,7 @@ import { Parser } from '../common/parser-decorators';
   ]
 })
 export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJavaInterface> {
-  public getDefault (): JavaSyntax.IJavaInterface {
+  @Implements public getDefault (): JavaSyntax.IJavaInterface {
     return {
       node: JavaSyntax.JavaSyntaxNode.INTERFACE,
       access: JavaSyntax.JavaAccessModifier.PACKAGE,
@@ -35,7 +37,7 @@ export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJava
     };
   }
 
-  public onFirstToken (): void {
+  @Override public onFirstToken (): void {
     const { value } = this.currentToken;
 
     if (isAccessModifierKeyword(value)) {
@@ -55,22 +57,10 @@ export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJava
     this.skip(2);
   }
 
-  public onExtendsDeclaration (): void {
-    while (this.currentToken.value !== '{') {
-      this.match([
-        [JavaConstants.Keyword.EXTENDS, () => this.skip(1)],
-        [',', () => this.skip(1)],
-        [/\w/, () => {
-          this.assert(
-            /(extends|,)/.test(this.previousCharacterToken.value),
-            `Invalid character '${this.currentToken.value}'`
-          );
+  public onExtendsClause (): void {
+    const extendsClause = this.parseNextWith(JavaClauseParser);
 
-          this.parsed.extends.push(this.currentToken.value);
-          this.skip(1);
-        }]
-      ]);
-    }
+    this.parsed.extends = extendsClause.values;
   }
 
   public onMemberDeclaration (): void {
