@@ -1,17 +1,8 @@
 import { IAccessible, IBlock, INamed, ISyntaxNode, ISyntaxTree, ITyped, IValued, IWithParameters } from '../common/syntax-types';
 
 export namespace JavaSyntax {
-  /**
-   * @internal
-   */
-  interface IJavaSyntaxNode extends ISyntaxNode<JavaSyntaxNode> { }
-
-  /**
-   * @internal
-   */
-  interface IJavaAccessible extends IAccessible<JavaAccessModifier> { }
-
   export const enum JavaSyntaxNode {
+    TREE,
     PACKAGE,
     IMPORT,
     CLASS,
@@ -32,6 +23,10 @@ export namespace JavaSyntax {
     PRIVATE,
     PACKAGE
   }
+
+  export interface IJavaSyntaxNode extends ISyntaxNode<JavaSyntaxNode> { }
+
+  export interface IJavaAccessible extends IAccessible<JavaAccessModifier> { }
 
   export interface IJavaPackage extends IJavaSyntaxNode {
     node: JavaSyntaxNode.PACKAGE;

@@ -1,30 +1,55 @@
-import AbstractParser from './AbstractParser';
-import { Callback, Constructor } from '../../system/types';
-import { TokenMatcher } from './parser-types';
+import { Callback } from '../../system/types';
+import { TokenMatch, TokenMatcher } from './parser-types';
 
 /**
  * @todo @description
+ * @internal
  */
-interface IParserConfiguration<P extends AbstractParser> {
-  type?: Constructor<P>;
-  words?: TokenMatcher<P>[];
-  symbols?: TokenMatcher<P>[];
-  numbers?: TokenMatcher<P>[];
+function sortStringsBeforeArraysBeforeRegexes ([ tokenMatchA ]: TokenMatcher, [ tokenMatchB ]: TokenMatcher) {
+  return typeof tokenMatchA === 'string'
+    ? -1
+    : Array.isArray(tokenMatchA) && typeof tokenMatchB !== 'string'
+      ? -1
+      : 1;
 }
 
 /**
  * @todo @description
+ * @internal
  */
-export function Parser <P extends AbstractParser>(parserConfiguration: IParserConfiguration<P>): Callback<Constructor<P>> {
-  const {
-    words = [],
-    symbols = [],
-    numbers = []
-  } = parserConfiguration;
+function createTokenMatchManagerDecorator (matcherKey: string): Callback<TokenMatch, MethodDecorator> {
+  return (tokenMatch: TokenMatch) => {
+    return (target: any, methodName, propertyDescriptor: PropertyDescriptor) => {
+      const { constructor } = target;
 
-  return (target: Constructor<P>) => {
-    (target as any).words = words;
-    (target as any).symbols = symbols;
-    (target as any).numbers = numbers;
+      if (!constructor[matcherKey]) {
+        constructor[matcherKey] = [];
+      }
+
+      const tokenMatchers: TokenMatcher[] = constructor[matcherKey];
+
+      tokenMatchers.push([tokenMatch, propertyDescriptor.value]);
+      tokenMatchers.sort(sortStringsBeforeArraysBeforeRegexes);
+    };
   };
 }
+
+/**
+ * Marks a decorated method to be called if a token matching the
+ * string, regex, or array of strings/regexes is encountered.
+ */
+export const Match = createTokenMatchManagerDecorator('matches');
+
+/**
+ * Marks a decorated method to be called if a token matching the
+ * string, regex, or array of strings/regexes exists further on
+ * the current line.
+ */
+export const Lookahead = createTokenMatchManagerDecorator('lookaheads');
+
+/**
+ * Marks a decorated method to be called if a token matching the
+ * string, regex, or array of strings/regexes does not exist
+ * further on the current line.
+ */
+export const NegativeLookahead = createTokenMatchManagerDecorator('negativeLookaheads');

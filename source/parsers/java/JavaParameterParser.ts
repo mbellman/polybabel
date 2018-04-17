@@ -4,10 +4,9 @@ import { isReservedWord } from './java-utils';
 import { IToken, TokenType } from 'tokenizer/types';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
-import { Parser } from '../common/parser-decorators';
 
 export default class JavaParameterParser extends AbstractParser<JavaSyntax.IJavaParameter> {
-  @Implements public getDefault (): JavaSyntax.IJavaParameter {
+  @Implements protected getDefault (): JavaSyntax.IJavaParameter {
     return {
       node: JavaSyntax.JavaSyntaxNode.PARAMETER,
       type: null,
@@ -15,7 +14,7 @@ export default class JavaParameterParser extends AbstractParser<JavaSyntax.IJava
     };
   }
 
-  @Override public onFirstToken (): void {
+  @Override protected onFirstToken (): void {
     this.assert(/[(,]/.test(this.previousToken.value));
 
     const isFinalParameter = this.currentToken.value === JavaConstants.Keyword.FINAL;
@@ -35,7 +34,7 @@ export default class JavaParameterParser extends AbstractParser<JavaSyntax.IJava
     this.stop();
   }
 
-  public validateParameter (typeToken: IToken, nameToken: IToken): void {
+  private validateParameter (typeToken: IToken, nameToken: IToken): void {
     this.assert(
       typeToken.type === TokenType.WORD && nameToken.type === TokenType.WORD,
       `Invalid parameter '${typeToken.value} ${nameToken.value}'`

@@ -3,27 +3,28 @@ import { Callback, Constructor, IConstructable } from '../../system/types';
 import { getNextToken, getPreviousToken, isCharacterToken } from '../../tokenizer/token-utils';
 import { ISyntaxNode } from './syntax-types';
 import { IToken, TokenType } from '../../tokenizer/types';
-import { ParsedSyntax, TokenMatcher } from './parser-types';
+import { TokenMatch, TokenMatcher } from './parser-types';
+import { Bound } from 'trampoline-framework';
 
-export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSyntax> {
-  public currentToken: IToken;
-  public parsed: P = this.getDefault();
-  private _isFinished: boolean = false;
-  private _isStopped: boolean = false;
+export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode> {
+  protected currentToken: IToken;
+  protected parsed: P = this.getDefault();
+  private isFinished: boolean = false;
+  private isStopped: boolean = false;
 
-  public get nextCharacterToken (): IToken {
-    return this._findMatchingToken(getNextToken, isCharacterToken);
+  protected get nextCharacterToken (): IToken {
+    return this.findMatchingToken(getNextToken, isCharacterToken);
   }
 
-  public get nextToken (): IToken {
+  protected get nextToken (): IToken {
     return this.currentToken.nextToken;
   }
 
-  public get previousCharacterToken (): IToken {
-    return this._findMatchingToken(getPreviousToken, isCharacterToken);
+  protected get previousCharacterToken (): IToken {
+    return this.findMatchingToken(getPreviousToken, isCharacterToken);
   }
 
-  public get previousToken (): IToken {
+  protected get previousToken (): IToken {
     return this.currentToken.previousToken;
   }
 
@@ -35,7 +36,32 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
    */
   protected constructor () { }
 
-  public assert (condition: boolean, errorMessage?: string): void {
+  /**
+   * Receives a single {token} and attempts to parse and return a
+   * syntax tree or syntax node object by streaming through the
+   * next tokens in the token sequence.
+   */
+  public parse (token: IToken): P {
+    this.currentToken = token;
+
+    try {
+      this.stream();
+    } catch (e) {
+      // Catching errors here allows both intentional halting errors
+      // and actual subclass design/runtime errors to be displayed,
+      // properly attributed to the source. We then throw the error
+      // again to propagate it up to the file compilation loop so
+      // it can be displayed in the context of the source file,
+      // which is unknown to parsers.
+      const message = this.getNormalizedErrorMessage(e.message);
+
+      throw new Error(message);
+    }
+
+    return this.parsed;
+  }
+
+  protected assert (condition: boolean, errorMessage?: string): void {
     if (!condition) {
       if (errorMessage) {
         this.throw(errorMessage);
@@ -45,20 +71,20 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
     }
   }
 
-  public assertCurrentTokenValue (targetValue: string, errorMessage?: string): void {
+  protected assertCurrentTokenValue (targetValue: string, errorMessage?: string): void {
     this.assert(this.currentToken.value === targetValue, errorMessage);
   }
 
   /**
    * @todo @description
    */
-  public emulate <T extends ISyntaxNode & { [K in keyof Exclude<P, T>]: any }>(ParserClass: Constructor<AbstractParser<T>>): void {
+  protected emulate <T extends ISyntaxNode & { [K in keyof Exclude<P, T>]: any }>(ParserClass: Constructor<AbstractParser<T>>): void {
     const { node, ...parsed } = this.parseNextWith(ParserClass) as any;
 
     Object.assign(this.parsed, parsed);
   }
 
-  public abstract getDefault (): P;
+  protected abstract getDefault (): P;
 
   /**
    * Finishes parsing and ensures that the current token will be
@@ -67,11 +93,11 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
    *
    * See: stop()
    */
-  public finish (): void {
-    this._isFinished = true;
+  protected finish (): void {
+    this.isFinished = true;
   }
 
-  public halt (tokenName?: string): void {
+  protected halt (tokenName?: string): void {
     const tokenType =
       tokenName ?
         tokenName :
@@ -86,16 +112,20 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
     this.throw(`Unexpected ${tokenType} '${this.currentToken.value}'`);
   }
 
-  public isStartOfLine (): boolean {
-    return !!this.previousToken || this.previousToken.type === TokenType.NEWLINE;
+  protected isStartOfLine (): boolean {
+    return !this.previousToken || this.previousToken.type === TokenType.NEWLINE;
   }
 
   /**
    * Determines whether a target value or regex is contained within the
    * current parsing line.
    */
-  public lineContains (targetValue: string | RegExp): boolean {
-    const targetToken = this._findMatchingToken(getNextToken, ({ value, type }) => {
+  @Bound protected lineContains (targetValue: string | RegExp): boolean {
+    if (this.currentTokenMatches(targetValue)) {
+      return true;
+    }
+
+    const targetToken = this.findMatchingToken(getNextToken, ({ value, type }) => {
       return (
         value === targetValue ||
         targetValue instanceof RegExp && targetValue.test(value) ||
@@ -107,83 +137,17 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
   }
 
   /**
-   * A shorthand method for parsing the current token value using a
-   * set of {matchers}.
-   */
-  public match (matchers: TokenMatcher<this>[] = []): void {
-    this.matchValue(this.currentToken.value, matchers);
-  }
-
-  /**
-   * Attempts to find a matching {value} among an array of token
-   * matchers, and fires the matcher's callback if successful.
-   * If unsuccessful, the the parser halts.
-   */
-  public matchValue (value: string, matchers: TokenMatcher<this>[] = []): void {
-    for (const [ match, handler ] of matchers) {
-      const valueHasMatch =
-        value === match ||
-        Array.isArray(match) && match.indexOf(value) > -1 ||
-        match instanceof RegExp && match.test(value);
-
-      if (valueHasMatch) {
-        if (typeof handler === 'string') {
-          (this as any)[handler](this);
-        } else {
-          handler(this);
-        }
-
-        return;
-      }
-    }
-
-    this.halt();
-  }
-
-  /**
    * A shorthand method for only skipping one character token.
    */
-  public next (): void {
+  protected next (): void {
     this.skip(1);
   }
-
-  /**
-   * An optionally overridable hook which runs after the last
-   * token in the parsing stream.
-   */
-  public onFinish (): void { }
 
   /**
    * An optionally overridable hook which runs on the first token
    * in the parsing stream.
    */
-  public onFirstToken (): void { }
-
-  /**
-   * Receives a single {token} and attempts to parse and return a
-   * syntax tree or syntax node object by streaming through the
-   * next tokens in the token sequence.
-   */
-  public parse (token: IToken): P {
-    this.currentToken = token;
-
-    try {
-      this._stream();
-      this.onFinish();
-    } catch (e) {
-      // Catching errors here allows both intentional halting errors
-      // and actual subclass design/runtime errors to be displayed,
-      // properly attributed to the source. We then throw the error
-      // again to propagate it up to the file compilation loop so
-      // it can be displayed in the context of the source file,
-      // which is unknown to parsers.
-      const message = this._getNormalizedErrorMessage(e.message);
-
-      throw new Error(message);
-    }
-
-    return this.parsed;
-  }
+  protected onFirstToken (): void { }
 
   /**
    * Attempts to parse a token stream starting from the current token
@@ -200,8 +164,8 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
    * reassigning their own current tokens to the final token of the
    * child parser, we just contain the work here.
    */
-  public parseNextWith <T extends ParsedSyntax>(ParserClass: Constructor<AbstractParser<T>>): T {
-    const parser = this._createParser(ParserClass);
+  protected parseNextWith <T extends ISyntaxNode>(ParserClass: Constructor<AbstractParser<T>>): T {
+    const parser = this.createParser(ParserClass);
     const parsed = parser.parse(this.currentToken);
 
     this.currentToken = parser.token();
@@ -214,10 +178,10 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
    * Newline tokens are skipped over without counting toward the total
    * number of skips.
    */
-  public skip (steps: number): void {
+  protected skip (steps: number): void {
     while (--steps >= 0) {
       if (!this.nextCharacterToken) {
-        this._isFinished = true;
+        this.isFinished = true;
 
         break;
       }
@@ -232,23 +196,105 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
    *
    * See: finish()
    */
-  public stop (): void {
-    this._isStopped = true;
+  protected stop (): void {
+    this.isStopped = true;
   }
 
-  public throw (message: string): void {
+  protected throw (message: string): void {
     throw new Error(`Line ${this.currentToken.line}: ${message}`);
   }
 
-  public token (): IToken {
+  protected token (): IToken {
     return this.currentToken;
   }
 
-  private _createParser <A extends AbstractParser>(ParserClass: Constructor<A>): A {
+  /**
+   * @todo @description
+   */
+  private checkTokenMatchersWithPredicate (tokenMatchers: TokenMatcher[], predicate: Callback<TokenMatch, boolean>): boolean {
+    const { value } = this.currentToken;
+
+    if (tokenMatchers) {
+      for (const [ tokenMatch, callback ] of tokenMatchers) {
+        if (predicate(tokenMatch)) {
+          callback.call(this);
+
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * @todo @description
+   */
+  private checkMatches (): void {
+    const statics = this.constructor as any;
+    const matches: TokenMatcher[] = statics.matches;
+    const lookaheads: TokenMatcher[] = statics.lookaheads;
+    const negativeLookaheads: TokenMatcher[] = statics.negativeLookaheads;
+
+    if (this.checkTokenMatchersWithPredicate(matches, this.currentTokenMatches)) {
+      return;
+    }
+
+    if (this.isStartOfLine()) {
+      if (this.checkTokenMatchersWithPredicate(lookaheads, this.currentLineHasMatch)) {
+        return;
+      }
+
+      if (this.checkTokenMatchersWithPredicate(negativeLookaheads, match => !this.currentLineHasMatch(match))) {
+        return;
+      }
+    }
+
+    this.halt();
+  }
+
+  private createParser <A extends AbstractParser>(ParserClass: Constructor<A>): A {
     return new (ParserClass as IConstructable<A>)();
   }
 
-  private _getLocalLineContent (limit: number = 3): string {
+  @Bound private currentLineHasMatch (tokenMatch: TokenMatch): boolean {
+    return (
+      (Array.isArray(tokenMatch) && tokenMatch.some(this.lineContains)) ||
+      this.lineContains(tokenMatch as string | RegExp)
+    );
+  }
+
+  @Bound private currentTokenMatches (tokenMatch: TokenMatch): boolean {
+    const { value } = this.currentToken;
+
+    return (
+      value === tokenMatch ||
+      (Array.isArray(tokenMatch) && tokenMatch.indexOf(value) > -1) ||
+      tokenMatch instanceof RegExp && tokenMatch.test(value)
+    );
+  }
+
+  /**
+   * Performs a token search, starting from the current token, using a step
+   * function to define how to change the lookup position on each search
+   * step, and a {predicate} function to determine when a target token has
+   * been found. If a token satisfying the predicate function is matched,
+   * that token is returned.
+   *
+   * The current token will not be counted as a match even if it happens
+   * to satisfy the predicate function.
+   */
+  private findMatchingToken (stepFunction: Callback<IToken, IToken>, predicate: Callback<IToken, boolean>): IToken {
+    let token = stepFunction(this.currentToken);
+
+    while (token && !predicate(token)) {
+      token = stepFunction(token);
+    }
+
+    return token;
+  }
+
+  private getLocalLineContent (limit: number = 3): string {
     let n = limit;
     let localToken = this.currentToken;
     const localTokenValues: string[] = [];
@@ -274,9 +320,9 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
    * Returns a colorized, formatted, and source-attributed error message
    * from an arbitrary original error message.
    */
-  private _getNormalizedErrorMessage (message: string): string {
+  private getNormalizedErrorMessage (message: string): string {
     const messageIsAlreadyNormalized = message.indexOf(' -> ') > -1;
-    const colorizedLineContent = chalk.red(`...${this._getLocalLineContent()}...`);
+    const colorizedLineContent = chalk.red(`...${this.getLocalLineContent()}...`);
 
     return messageIsAlreadyNormalized
       ? message
@@ -284,69 +330,37 @@ export default abstract class AbstractParser<P extends ParsedSyntax = ParsedSynt
   }
 
   /**
-   * Performs a token search, starting from the current token, using a step
-   * function to define how to change the lookup position on each search
-   * step, and a {predicate} function to determine when a target token has
-   * been found. If a token satisfying the predicate function is matched,
-   * that token is returned.
-   *
-   * The current token will not be counted as a match even if it happens
-   * to satisfy the predicate function.
-   */
-  private _findMatchingToken (stepFunction: Callback<IToken, IToken>, predicate: Callback<IToken, boolean>): IToken {
-    let token = stepFunction(this.currentToken);
-
-    while (token && !predicate(token)) {
-      token = stepFunction(token);
-    }
-
-    return token;
-  }
-
-  /**
    * Steps through tokens starting from the current token until either
    * the subclass finishes, stops, or halts.
    */
-  private _stream (): void {
-    const statics = this.constructor as any;
-
+  private stream (): void {
     while (this.currentToken.type === TokenType.NEWLINE) {
       this.next();
     }
 
     this.onFirstToken();
 
-    while (!this._isStopped && !this._isFinished && this.nextToken) {
-      const tokenAtStepStart = this.currentToken;
-      const { previousToken, type, value } = this.currentToken;
+    while (!this.isStopped && !this.isFinished && this.nextToken) {
+      const initialToken = this.currentToken;
 
-      switch (type) {
-        case TokenType.WORD:
-          this.match(statics.words);
-          break;
-        case TokenType.NUMBER:
-          this.match(statics.numbers);
-          break;
-        case TokenType.SYMBOL:
-          this.match(statics.symbols);
-          break;
+      if (initialToken.type !== TokenType.NEWLINE) {
+        this.checkMatches();
       }
 
-      if (this._isStopped) {
+      if (this.isStopped) {
         // Break out of the token loop, keep the current token where it
-        // is, and let the parent parser worry about what to do
+        // is, and let the parent parser handle things from there
         break;
       }
 
-      if (!this._isFinished && this.currentToken === tokenAtStepStart) {
+      if (!this.isFinished && this.currentToken === initialToken) {
         this.next();
       }
     }
 
-    if (!this._isStopped && this.nextToken) {
-      // Advance the token stream after finishing so that the next
-      // token after the parsed chunk can be assigned back to the
-      // parent parser instance
+    if (!this.isStopped && this.nextToken) {
+      // Advance the token stream after finishing so as to break 'out'
+      // of the parsing chunk
       this.next();
     }
   }

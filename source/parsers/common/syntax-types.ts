@@ -6,7 +6,6 @@ import { Language } from '../../system/constants';
  */
 export interface ISyntaxNode<N = any> {
   node: N;
-  [key: string]: any;
 }
 
 /**
@@ -54,7 +53,8 @@ export interface IWithParameters<P> {
 
 /**
  * A syntactic structure which can contain an arbitrary number
- * of syntax nodes.
+ * of syntax nodes. The provided generic parameter N should be
+ * an enum of language-specific syntax node constants.
  */
 export interface IBlock<N extends ISyntaxNode> {
   nodes: N[];
@@ -62,8 +62,8 @@ export interface IBlock<N extends ISyntaxNode> {
 
 /**
  * A base syntax tree object, representing all syntactic elements
- * in a file.
+ * in a file. The provided generic parameter N should be an enum
+ * of language-specific syntax node constants. A syntax tree is
+ * also itself considered a syntax node.
  */
-export interface ISyntaxTree<N extends ISyntaxNode = ISyntaxNode> extends IBlock<N> {
-  lines: number;
-}
+export interface ISyntaxTree<N extends ISyntaxNode = ISyntaxNode> extends ISyntaxNode, IBlock<N> { }

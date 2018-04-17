@@ -3,11 +3,11 @@ test/
 coverage/
 in/
 out/
+scripts/
 .nyc_output/
-checkin.sh
-deploy.sh
 tsconfig.json
 tslint.json
+package-lock.json
 yarn.lock
 yarn-error.log
 .eslintignore

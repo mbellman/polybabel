@@ -4,69 +4,43 @@ import JavaInterfaceParser from './JavaInterfaceParser';
 import { Implements } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
-import { Parser } from '../common/parser-decorators';
+import { Lookahead, Match } from '../common/parser-decorators';
 
-@Parser({
-  type: JavaParser,
-  words: [
-    [JavaConstants.Keyword.PACKAGE, 'onPackageDeclaration'],
-    [JavaConstants.Keyword.IMPORT, 'onImportDeclaration'],
-    [JavaConstants.Keyword.CLASS, 'onClassDeclaration'],
-    [JavaConstants.Keyword.INTERFACE, 'onInterfaceDeclaration'],
-    [
-      [
-        ...JavaConstants.AccessModifiers,
-        ...JavaConstants.Modifiers
-      ],
-      'onModifierKeyword'
-    ]
-  ]
-})
 export default class JavaParser extends AbstractParser<JavaSyntax.IJavaSyntaxTree> {
   public constructor () {
     super();
   }
 
-  @Implements public getDefault (): JavaSyntax.IJavaSyntaxTree {
+  @Implements protected getDefault (): JavaSyntax.IJavaSyntaxTree {
     return {
-      lines: 0,
+      node: JavaSyntax.JavaSyntaxNode.TREE,
       nodes: []
     };
   }
 
-  public onClassDeclaration (): void {
+  @Lookahead(JavaConstants.Keyword.CLASS)
+  private onClass (): void {
     const javaClass = this.parseNextWith(JavaClassParser);
 
     this.parsed.nodes.push(javaClass);
   }
 
-  public onImportDeclaration (): void {
-
-  }
-
-  public onInterfaceDeclaration (): void {
+  @Lookahead(JavaConstants.Keyword.INTERFACE)
+  private onInterface (): void {
     const javaInterface = this.parseNextWith(JavaInterfaceParser);
+
+    console.log(javaInterface);
 
     this.parsed.nodes.push(javaInterface);
   }
 
-  public onModifierKeyword (): void {
-    const isModifyingClass = this.lineContains(JavaConstants.Keyword.CLASS);
-    const isModifyingInterface = this.lineContains(JavaConstants.Keyword.INTERFACE);
+  @Match(JavaConstants.Keyword.IMPORT)
+  private onImport (): void {
 
-    this.assert(
-      isModifyingClass !== isModifyingInterface,
-      'Invalid object declaration'
-    );
-
-    if (isModifyingClass) {
-      this.onClassDeclaration();
-    } else {
-      this.onInterfaceDeclaration();
-    }
   }
 
-  public onPackageDeclaration (): void {
+  @Match(JavaConstants.Keyword.PACKAGE)
+  private onPackage (): void {
 
   }
 }

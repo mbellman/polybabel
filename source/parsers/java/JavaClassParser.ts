@@ -1,23 +1,12 @@
 import AbstractParser from '../common/AbstractParser';
 import JavaModifiableParser from './JavaModifiableParser';
 import { Implements, Override } from 'trampoline-framework';
-import { isAccessModifierKeyword, isModifierKeyword } from './java-utils';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
-import { Parser } from '../common/parser-decorators';
-import JavaObjectFieldParser from './JavaObjectFieldParser';
+import { Match } from '../common/parser-decorators';
 
-@Parser({
-  type: JavaClassParser,
-  words: [
-    [/./, 'onClassMemberDeclaration']
-  ],
-  symbols: [
-    ['{', 'onOpenBrace']
-  ]
-})
 export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClass> {
-  @Implements public getDefault (): JavaSyntax.IJavaClass {
+  @Implements protected getDefault (): JavaSyntax.IJavaClass {
     return {
       node: JavaSyntax.JavaSyntaxNode.CLASS,
       access: JavaSyntax.JavaAccessModifier.PACKAGE,
@@ -28,7 +17,8 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
     };
   }
 
-  public onClassMemberDeclaration (): void {
+  @Match(/./)
+  private onClassMemberDeclaration (): void {
     const isNestedClassDeclaration = this.lineContains(JavaConstants.Keyword.CLASS);
     const isNestedInterfaceDeclaration = this.lineContains(JavaConstants.Keyword.INTERFACE);
     const isMethodDeclaration = this.lineContains('(');
@@ -37,7 +27,7 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
     this.halt();
   }
 
-  @Override public onFirstToken (): void {
+  @Override protected onFirstToken (): void {
     this.emulate(JavaModifiableParser);
 
     this.assertCurrentTokenValue(
@@ -52,13 +42,14 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
     this.next();
   }
 
-  public onNestedClassDeclaration (): void {
+  private onNestedClassDeclaration (): void {
     const javaClass = this.parseNextWith(JavaClassParser);
 
     this.parsed.nestedClasses.push(javaClass);
   }
 
-  public onOpenBrace (): void {
+  @Match('{')
+  private onOpenBrace (): void {
     const { fields, methods } = this.parsed;
 
     this.assert(fields.length === 0 && methods.length === 0);

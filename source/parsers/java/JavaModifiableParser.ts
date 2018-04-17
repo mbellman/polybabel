@@ -1,36 +1,34 @@
 import AbstractParser from '../common/AbstractParser';
+import { IHashMap } from '../../system/types';
 import { Implements, Override } from 'trampoline-framework';
 import { isAccessModifierKeyword, isModifierKeyword } from './java-utils';
+import { ISyntaxNode } from '../common/syntax-types';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
+import { Match } from '../common/parser-decorators';
 
 export default class JavaModifiableParser extends AbstractParser<JavaSyntax.IJavaModifiable> {
-  @Implements public getDefault (): JavaSyntax.IJavaModifiable {
+  @Implements protected getDefault (): JavaSyntax.IJavaModifiable {
     return {
       node: null,
       access: JavaSyntax.JavaAccessModifier.PACKAGE
     };
   }
 
-  @Override public onFirstToken (): void {
-    const { value } = this.currentToken;
+  @Match(JavaConstants.AccessModifiers)
+  private onAccessModifier (): void {
+    this.parsed.access = JavaConstants.AccessModifierMap[this.currentToken.value];
+  }
 
-    if (isAccessModifierKeyword(value)) {
-      this.parsed.access = JavaConstants.AccessModifierMap[value];
+  @Match(JavaConstants.Modifiers)
+  private onModifier (): void {
+    const modifiableKey = JavaConstants.ModifierFlagMap[this.currentToken.value];
 
-      this.next();
-    }
+    this.parsed[modifiableKey] = true;
+  }
 
-    while (isModifierKeyword(this.currentToken.value)) {
-      this.match([
-        [JavaConstants.Keyword.FINAL, () => this.parsed.isFinal = true],
-        [JavaConstants.Keyword.STATIC, () => this.parsed.isStatic = true],
-        [JavaConstants.Keyword.ABSTRACT, () => this.parsed.isAbstract = true]
-      ]);
-
-      this.next();
-    }
-
+  @Match(/./)
+  private onNonModifier (): void {
     this.stop();
   }
 }

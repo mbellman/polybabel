@@ -6,27 +6,10 @@ import { Implements, Override } from 'trampoline-framework';
 import { isAccessModifierKeyword } from './java-utils';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
-import { Parser } from '../common/parser-decorators';
+import { Lookahead, Match, NegativeLookahead } from '../common/parser-decorators';
 
-@Parser({
-  type: JavaInterfaceParser,
-  words: [
-    [JavaConstants.Keyword.EXTENDS, 'onExtendsClause'],
-    [/./, parser => {
-      if (parser.isStartOfLine()) {
-        parser.onMemberDeclaration();
-      } else {
-        parser.halt();
-      }
-    }]
-  ],
-  symbols: [
-    ['{', 'onOpenBrace'],
-    ['}', 'finish']
-  ]
-})
 export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJavaInterface> {
-  @Implements public getDefault (): JavaSyntax.IJavaInterface {
+  @Implements protected getDefault (): JavaSyntax.IJavaInterface {
     return {
       node: JavaSyntax.JavaSyntaxNode.INTERFACE,
       access: JavaSyntax.JavaAccessModifier.PACKAGE,
@@ -37,13 +20,36 @@ export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJava
     };
   }
 
-  public onExtendsClause (): void {
-    const extendsClause = this.parseNextWith(JavaClauseParser);
+  @Match('{')
+  private onEnter (): void {
+    const { fields, methods } = this.parsed;
 
-    this.parsed.extends = extendsClause.values;
+    this.assert(fields.length === 0 && methods.length === 0);
+    this.next();
   }
 
-  @Override public onFirstToken (): void {
+  @Match('}')
+  private onExit(): void {
+    this.finish();
+  }
+
+  @Match(JavaConstants.Keyword.EXTENDS)
+  private onExtends (): void {
+    this.assert(this.parsed.extends.length === 0);
+
+    const clause = this.parseNextWith(JavaClauseParser);
+
+    this.parsed.extends = clause.values;
+  }
+
+  @NegativeLookahead('(')
+  private onField (): void {
+    const field = this.parseNextWith(JavaObjectFieldParser);
+
+    this.parsed.fields.push(field);
+  }
+
+  @Override protected onFirstToken (): void {
     const { value } = this.currentToken;
 
     if (isAccessModifierKeyword(value)) {
@@ -64,24 +70,10 @@ export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJava
     this.next();
   }
 
-  public onMemberDeclaration (): void {
-    const isMethodDeclaration = this.lineContains('(');
+  @Lookahead('(')
+  private onMethod (): void {
+    const method = this.parseNextWith(JavaObjectMethodParser);
 
-    const parsed = isMethodDeclaration
-      ? this.parseNextWith(JavaObjectMethodParser)
-      : this.parseNextWith(JavaObjectFieldParser);
-
-    if (isMethodDeclaration) {
-      this.parsed.methods.push(parsed as JavaSyntax.IJavaObjectMethod);
-    } else {
-      this.parsed.fields.push(parsed as JavaSyntax.IJavaObjectField);
-    }
-  }
-
-  public onOpenBrace (): void {
-    const { fields, methods } = this.parsed;
-
-    this.assert(fields.length === 0 && methods.length === 0);
-    this.next();
+    this.parsed.methods.push(method);
   }
 }

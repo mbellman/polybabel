@@ -5,25 +5,11 @@ import JavaParameterParser from './JavaParameterParser';
 import { Implements, Override } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
-import { Parser } from '../common/parser-decorators';
+import { Match } from '../common/parser-decorators';
 import { TokenType } from 'tokenizer/types';
 
-@Parser({
-  type: JavaObjectMethodParser,
-  words: [
-    [JavaConstants.Keyword.THROWS, 'onThrowsClause'],
-    [/./, 'onParameterDeclaration']
-  ],
-  symbols: [
-    ['(', 'onParametersStart'],
-    [',', 'onParameterSeparator'],
-    [')', 'onParametersEnd'],
-    // TODO Handle method { } blocks
-    [';', 'finish']
-  ]
-})
 export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJavaObjectMethod> {
-  @Implements public getDefault (): JavaSyntax.IJavaObjectMethod {
+  @Implements protected getDefault (): JavaSyntax.IJavaObjectMethod {
     return {
       node: JavaSyntax.JavaSyntaxNode.OBJECT_METHOD,
       access: JavaSyntax.JavaAccessModifier.PACKAGE,
@@ -34,22 +20,30 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
     };
   }
 
-  @Override public onFirstToken (): void {
+  @Match(';')
+  private onFinish (): void {
+    this.finish();
+  }
+
+  @Override protected onFirstToken (): void {
     this.emulate(JavaObjectMemberParser);
   }
 
-  public onParameterDeclaration (): void {
+  @Match(/./)
+  private onParameterDeclaration (): void {
     const parameter = this.parseNextWith(JavaParameterParser);
 
     this.parsed.parameters.push(parameter);
   }
 
-  public onParametersEnd (): void {
+  @Match(')')
+  private onParametersEnd (): void {
     this.assert(this.previousCharacterToken.type === TokenType.WORD);
     this.next();
   }
 
-  public onParameterSeparator (): void {
+  @Match(',')
+  private onParameterSeparator (): void {
     const { previousCharacterToken, nextCharacterToken } = this;
 
     this.assert(
@@ -65,12 +59,14 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
     this.next();
   }
 
-  public onParametersStart (): void {
+  @Match('(')
+  private onParametersStart (): void {
     this.assert(this.previousCharacterToken.type === TokenType.WORD);
     this.next();
   }
 
-  public onThrowsClause (): void {
+  @Match(JavaConstants.Keyword.THROWS)
+  private onThrowsClause (): void {
     const throwsClause = this.parseNextWith(JavaClauseParser);
 
     this.parsed.throws = throwsClause.values;
