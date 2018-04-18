@@ -1,9 +1,13 @@
+package HelloWorld;
+
+import goodbye.GoodbyeWorld;
+
 protected interface ITest extends Div, Something, Else {
   String string;
   Bool boolean;
   Object object;
 
-  Thing getThing (String thing key, final Number id) throws Exception;
+  Thing getThing (String thing, final Number id) throws Exception;
 }
 
 public final class HelloWorld {

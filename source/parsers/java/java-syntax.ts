@@ -97,7 +97,9 @@ export namespace JavaSyntax {
     node: JavaSyntaxNode.EXPRESSION;
   }
 
-  export interface IJavaSyntaxTree extends ISyntaxTree<IJavaSyntaxNode> { }
+  export interface IJavaSyntaxTree extends ISyntaxTree<IJavaSyntaxNode> {
+    package: IJavaPackage;
+  }
 
   export type JavaParsedSyntax = IJavaSyntaxNode | IJavaSyntaxTree;
 }

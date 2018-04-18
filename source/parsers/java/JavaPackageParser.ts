@@ -4,17 +4,16 @@ import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { Match } from '../common/parser-decorators';
 
-export default class JavaImportParser extends AbstractParser<JavaSyntax.IJavaImport> {
-  @Implements protected getDefault (): JavaSyntax.IJavaImport {
+export default class JavaPackageParser extends AbstractParser<JavaSyntax.IJavaPackage> {
+  @Implements protected getDefault (): JavaSyntax.IJavaPackage {
     return {
-      node: JavaSyntax.JavaSyntaxNode.IMPORT,
-      name: null,
+      node: JavaSyntax.JavaSyntaxNode.PACKAGE,
       path: ''
     };
   }
 
   @Override protected onFirstToken (): void {
-    this.assertCurrentTokenValue(JavaConstants.Keyword.IMPORT);
+    this.assertCurrentTokenValue(JavaConstants.Keyword.PACKAGE);
     this.next();
   }
 
@@ -25,13 +24,11 @@ export default class JavaImportParser extends AbstractParser<JavaSyntax.IJavaImp
 
   @Match('.')
   private onDot (): void {
-    this.parsed.path += '/';
+    this.parsed.path += '.';
   }
 
   @Match(';')
   private onEnd (): void {
-    this.parsed.name = this.previousToken.value;
-
     this.finish();
   }
 }

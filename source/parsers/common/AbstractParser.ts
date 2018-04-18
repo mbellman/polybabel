@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { Callback, Constructor, IConstructable } from '../../system/types';
+import { Callback, Constructor, IConstructable, IHashMap } from '../../system/types';
 import { getNextToken, getPreviousToken, isCharacterToken } from '../../tokenizer/token-utils';
 import { ISyntaxNode } from './syntax-types';
 import { IToken, TokenType } from '../../tokenizer/types';
@@ -294,26 +294,31 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
     return token;
   }
 
-  private getLocalLineContent (limit: number = 3): string {
-    let n = limit;
+  private getColorizedLinePreview (range: number = 3): string {
+    let n = range;
     let localToken = this.currentToken;
     const localTokenValues: string[] = [];
 
-    // Walk backward to the start of the limit, or the
+    // Walk backward to the start of the range, or the
     // beginning of the current line
     while (--n >= 0 && localToken.previousToken && isCharacterToken(localToken.previousToken)) {
       localToken = localToken.previousToken;
     }
 
-    // Walk forward to the end of the limit, or the end
+    // Walk forward to the end of the range, or the end
     // of the current line, adding each encountered token
     // to the list of local token values
-    while (n++ < 2 * limit && localToken.nextToken && isCharacterToken(localToken)) {
-      localTokenValues.push(localToken.value);
+    while (n++ < (2 * range) && localToken.nextToken && isCharacterToken(localToken)) {
+      const colorize = localToken === this.currentToken
+        ? chalk.bold.red
+        : chalk.gray;
+
+      localTokenValues.push(colorize(localToken.value));
+
       localToken = localToken.nextToken;
     }
 
-    return localTokenValues.join(' ');
+    return `...${localTokenValues.join(' ')}...`;
   }
 
   /**
@@ -321,12 +326,11 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
    * from an arbitrary original error message.
    */
   private getNormalizedErrorMessage (message: string): string {
-    const messageIsAlreadyNormalized = message.indexOf(' -> ') > -1;
-    const colorizedLineContent = chalk.red(`...${this.getLocalLineContent()}...`);
+    const messageIsAlreadyNormalized = message.indexOf('->') > -1;
 
     return messageIsAlreadyNormalized
       ? message
-      : ` ${chalk.blue(message)} ${chalk.cyan(`(${this.constructor.name})`)} -> ${colorizedLineContent}\n`;
+      : ` ${chalk.blueBright(message)} ${chalk.cyan(`(${this.constructor.name})`)} -> ${this.getColorizedLinePreview()}\n`;
   }
 
   /**

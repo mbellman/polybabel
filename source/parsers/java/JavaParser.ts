@@ -1,6 +1,8 @@
 import AbstractParser from '../common/AbstractParser';
 import JavaClassParser from './JavaClassParser';
+import JavaImportParser from './JavaImportParser';
 import JavaInterfaceParser from './JavaInterfaceParser';
+import JavaPackageParser from './JavaPackageParser';
 import { Implements } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
@@ -14,25 +16,28 @@ export default class JavaParser extends AbstractParser<JavaSyntax.IJavaSyntaxTre
   @Implements protected getDefault (): JavaSyntax.IJavaSyntaxTree {
     return {
       node: JavaSyntax.JavaSyntaxNode.TREE,
+      package: null,
       nodes: []
     };
   }
 
   @Match(JavaConstants.Keyword.PACKAGE)
   private onPackage (): void {
+    const javaPackage = this.parseNextWith(JavaPackageParser);
 
+    this.parsed.package = javaPackage;
   }
 
   @Match(JavaConstants.Keyword.IMPORT)
   private onImport (): void {
+    const javaImport = this.parseNextWith(JavaImportParser);
 
+    this.parsed.nodes.push(javaImport);
   }
 
   @Lookahead(JavaConstants.Keyword.INTERFACE)
   private onInterface (): void {
     const javaInterface = this.parseNextWith(JavaInterfaceParser);
-
-    console.log(javaInterface);
 
     this.parsed.nodes.push(javaInterface);
   }

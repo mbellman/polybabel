@@ -46,7 +46,7 @@ async function processFiles (directory: string, files: string[]): Promise<void> 
 
   assert(
     totalFailedFiles === 0,
-    chalk.yellow('Failed to compile!')
+    chalk.red('Failed to compile!')
   );
 }
 
