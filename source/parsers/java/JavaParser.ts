@@ -18,11 +18,14 @@ export default class JavaParser extends AbstractParser<JavaSyntax.IJavaSyntaxTre
     };
   }
 
-  @Lookahead(JavaConstants.Keyword.CLASS)
-  private onClass (): void {
-    const javaClass = this.parseNextWith(JavaClassParser);
+  @Match(JavaConstants.Keyword.PACKAGE)
+  private onPackage (): void {
 
-    this.parsed.nodes.push(javaClass);
+  }
+
+  @Match(JavaConstants.Keyword.IMPORT)
+  private onImport (): void {
+
   }
 
   @Lookahead(JavaConstants.Keyword.INTERFACE)
@@ -34,13 +37,10 @@ export default class JavaParser extends AbstractParser<JavaSyntax.IJavaSyntaxTre
     this.parsed.nodes.push(javaInterface);
   }
 
-  @Match(JavaConstants.Keyword.IMPORT)
-  private onImport (): void {
+  @Lookahead(JavaConstants.Keyword.CLASS)
+  private onClass (): void {
+    const javaClass = this.parseNextWith(JavaClassParser);
 
-  }
-
-  @Match(JavaConstants.Keyword.PACKAGE)
-  private onPackage (): void {
-
+    this.parsed.nodes.push(javaClass);
   }
 }

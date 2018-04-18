@@ -18,11 +18,6 @@ export default class JavaClauseParser extends AbstractParser<JavaSyntax.IJavaCla
     this.next();
   }
 
-  @Match(',')
-  private onSeparator (): void {
-    this.next();
-  }
-
   @Match(/^[A-Za-z]/)
   private onClauseValue (): void {
     const { value: previousValue } = this.previousCharacterToken;
@@ -35,12 +30,13 @@ export default class JavaClauseParser extends AbstractParser<JavaSyntax.IJavaCla
     this.parsed.values.push(this.currentToken.value);
   }
 
-  @Match(JavaConstants.ReservedWords)
-  private onReservedWord (): void {
-    this.stop();
+  @Match(',')
+  private onSeparator (): void {
+    this.next();
   }
 
   @Match(/[{;]/)
+  @Match(JavaConstants.ReservedWords)
   private onEnd (): void {
     this.stop();
   }

@@ -3,7 +3,7 @@ protected interface ITest extends Div, Something, Else {
   Bool boolean;
   Object object;
 
-  Thing getThing (String key, final Number id) throws Exception;
+  Thing getThing (String thing key, final Number id) throws Exception;
 }
 
 public final class HelloWorld {

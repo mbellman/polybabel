@@ -15,15 +15,15 @@ export default abstract class JavaObjectFieldParser extends AbstractParser<JavaS
     };
   }
 
+  @Override protected onFirstToken (): void {
+    this.emulate(JavaObjectMemberParser);
+  }
+
   @Match('=')
   private onAssignment (): void {
     const expression = this.parseNextWith(JavaExpressionParser);
 
     this.parsed.value = expression;
-  }
-
-  @Override protected onFirstToken (): void {
-    this.emulate(JavaObjectMemberParser);
   }
 
   @Match(';')

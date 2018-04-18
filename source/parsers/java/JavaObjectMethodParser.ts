@@ -20,13 +20,14 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
     };
   }
 
-  @Match(';')
-  private onFinish (): void {
-    this.finish();
-  }
-
   @Override protected onFirstToken (): void {
     this.emulate(JavaObjectMemberParser);
+  }
+
+  @Match('(')
+  private onParametersStart (): void {
+    this.assert(this.previousCharacterToken.type === TokenType.WORD);
+    this.next();
   }
 
   @Match(/./)
@@ -34,12 +35,6 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
     const parameter = this.parseNextWith(JavaParameterParser);
 
     this.parsed.parameters.push(parameter);
-  }
-
-  @Match(')')
-  private onParametersEnd (): void {
-    this.assert(this.previousCharacterToken.type === TokenType.WORD);
-    this.next();
   }
 
   @Match(',')
@@ -59,8 +54,8 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
     this.next();
   }
 
-  @Match('(')
-  private onParametersStart (): void {
+  @Match(')')
+  private onParametersEnd (): void {
     this.assert(this.previousCharacterToken.type === TokenType.WORD);
     this.next();
   }
@@ -70,5 +65,10 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
     const throwsClause = this.parseNextWith(JavaClauseParser);
 
     this.parsed.throws = throwsClause.values;
+  }
+
+  @Match(';')
+  private onFinish (): void {
+    this.finish();
   }
 }

@@ -17,18 +17,18 @@ function sortStringsBeforeArraysBeforeRegexes ([ tokenMatchA ]: TokenMatcher, [ 
  * @todo @description
  * @internal
  */
-function createTokenMatchManagerDecorator (matcherKey: string): Callback<TokenMatch, MethodDecorator> {
+function createTokenMatcherManagerDecorator (tokenMatcherKey: string): Callback<TokenMatch, MethodDecorator> {
   return (tokenMatch: TokenMatch) => {
     return (target: any, methodName, propertyDescriptor: PropertyDescriptor) => {
       const { constructor } = target;
 
-      if (!constructor[matcherKey]) {
-        constructor[matcherKey] = [];
+      if (!constructor[tokenMatcherKey]) {
+        constructor[tokenMatcherKey] = [];
       }
 
-      const tokenMatchers: TokenMatcher[] = constructor[matcherKey];
+      const tokenMatchers: TokenMatcher[] = constructor[tokenMatcherKey];
 
-      tokenMatchers.push([tokenMatch, propertyDescriptor.value]);
+      tokenMatchers.push([ tokenMatch, propertyDescriptor.value ]);
       tokenMatchers.sort(sortStringsBeforeArraysBeforeRegexes);
     };
   };
@@ -38,18 +38,18 @@ function createTokenMatchManagerDecorator (matcherKey: string): Callback<TokenMa
  * Marks a decorated method to be called if a token matching the
  * string, regex, or array of strings/regexes is encountered.
  */
-export const Match = createTokenMatchManagerDecorator('matches');
+export const Match = createTokenMatcherManagerDecorator('matches');
 
 /**
  * Marks a decorated method to be called if a token matching the
  * string, regex, or array of strings/regexes exists further on
  * the current line.
  */
-export const Lookahead = createTokenMatchManagerDecorator('lookaheads');
+export const Lookahead = createTokenMatcherManagerDecorator('lookaheads');
 
 /**
  * Marks a decorated method to be called if a token matching the
  * string, regex, or array of strings/regexes does not exist
  * further on the current line.
  */
-export const NegativeLookahead = createTokenMatchManagerDecorator('negativeLookaheads');
+export const NegativeLookahead = createTokenMatcherManagerDecorator('negativeLookaheads');

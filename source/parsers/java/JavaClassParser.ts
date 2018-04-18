@@ -17,16 +17,6 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
     };
   }
 
-  @Match(/./)
-  private onClassMemberDeclaration (): void {
-    const isNestedClassDeclaration = this.lineContains(JavaConstants.Keyword.CLASS);
-    const isNestedInterfaceDeclaration = this.lineContains(JavaConstants.Keyword.INTERFACE);
-    const isMethodDeclaration = this.lineContains('(');
-    const isFieldDeclaration = !isMethodDeclaration && !isNestedClassDeclaration && !isNestedInterfaceDeclaration;
-
-    this.halt();
-  }
-
   @Override protected onFirstToken (): void {
     this.emulate(JavaModifiableParser);
 
@@ -42,17 +32,27 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
     this.next();
   }
 
-  private onNestedClassDeclaration (): void {
-    const javaClass = this.parseNextWith(JavaClassParser);
-
-    this.parsed.nestedClasses.push(javaClass);
-  }
-
   @Match('{')
   private onOpenBrace (): void {
     const { fields, methods } = this.parsed;
 
     this.assert(fields.length === 0 && methods.length === 0);
     this.next();
+  }
+
+  @Match(/./)
+  private onClassMemberDeclaration (): void {
+    const isNestedClassDeclaration = this.lineContains(JavaConstants.Keyword.CLASS);
+    const isNestedInterfaceDeclaration = this.lineContains(JavaConstants.Keyword.INTERFACE);
+    const isMethodDeclaration = this.lineContains('(');
+    const isFieldDeclaration = !isMethodDeclaration && !isNestedClassDeclaration && !isNestedInterfaceDeclaration;
+
+    this.halt();
+  }
+
+  private onNestedClassDeclaration (): void {
+    const javaClass = this.parseNextWith(JavaClassParser);
+
+    this.parsed.nestedClasses.push(javaClass);
   }
 }

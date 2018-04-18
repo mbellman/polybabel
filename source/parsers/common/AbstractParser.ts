@@ -230,7 +230,7 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
   /**
    * @todo @description
    */
-  private checkMatches (): void {
+  private checkTokenMatchers (): void {
     const statics = this.constructor as any;
     const matches: TokenMatcher[] = statics.matches;
     const lookaheads: TokenMatcher[] = statics.lookaheads;
@@ -334,8 +334,8 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
    * the subclass finishes, stops, or halts.
    */
   private stream (): void {
-    while (this.currentToken.type === TokenType.NEWLINE) {
-      this.next();
+    if (this.currentToken.type === TokenType.NEWLINE) {
+      this.currentToken = this.nextCharacterToken;
     }
 
     this.onFirstToken();
@@ -343,8 +343,8 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
     while (!this.isStopped && !this.isFinished && this.nextToken) {
       const initialToken = this.currentToken;
 
-      if (initialToken.type !== TokenType.NEWLINE) {
-        this.checkMatches();
+      if (this.currentToken.type !== TokenType.NEWLINE) {
+        this.checkTokenMatchers();
       }
 
       if (this.isStopped) {
