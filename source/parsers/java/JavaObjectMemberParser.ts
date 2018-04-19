@@ -1,5 +1,6 @@
 import AbstractParser from '../common/AbstractParser';
 import JavaModifiableParser from './JavaModifiableParser';
+import JavaTypeParser from './JavaTypeParser';
 import { Implements, Override } from 'trampoline-framework';
 import { IToken, TokenType } from 'tokenizer/types';
 import { JavaSyntax } from './java-syntax';
@@ -16,19 +17,11 @@ export default class JavaObjectMemberParser extends AbstractParser<JavaSyntax.IJ
 
   @Override protected onFirstToken (): void {
     this.emulate(JavaModifiableParser);
-    this.validateMember(this.currentToken, this.nextToken);
 
-    this.parsed.type = this.currentToken.value;
-    this.parsed.name = this.nextToken.value;
+    this.parsed.type = this.parseNextWith(JavaTypeParser);
+    this.parsed.name = this.currentToken.value;
 
-    this.skip(2);
-    this.stop();
-  }
-
-  private validateMember (typeToken: IToken, nameToken: IToken): void {
-    this.assert(
-      typeToken.type === TokenType.WORD && nameToken.type === TokenType.WORD,
-      `Invalid member '${typeToken.value} ${nameToken.value}'`
-    );
+    this.assert(this.currentToken.type === TokenType.WORD);
+    this.finish();
   }
 }

@@ -3,6 +3,7 @@ import { Implements, Override } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { Match } from '../common/parser-decorators';
+import { Pattern } from '../common/parser-types';
 
 export default class JavaImportParser extends AbstractParser<JavaSyntax.IJavaImport> {
   @Implements protected getDefault (): JavaSyntax.IJavaImport {
@@ -18,7 +19,7 @@ export default class JavaImportParser extends AbstractParser<JavaSyntax.IJavaImp
     this.next();
   }
 
-  @Match(/\w/)
+  @Match(Pattern.WORD)
   private onWord (): void {
     this.parsed.path += this.currentToken.value;
   }

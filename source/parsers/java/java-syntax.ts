@@ -7,14 +7,15 @@ export namespace JavaSyntax {
     IMPORT,
     CLASS,
     INTERFACE,
+    SEQUENCE,
+    TYPE,
     OBJECT_FIELD,
     OBJECT_METHOD,
     PARAMETER,
     BLOCK,
     VARIABLE,
     REFERENCE,
-    EXPRESSION,
-    CLAUSE
+    EXPRESSION
   }
 
   export const enum JavaAccessModifier {
@@ -46,21 +47,34 @@ export namespace JavaSyntax {
 
   export interface IJavaInterface extends IJavaSyntaxNode, INamed, IJavaAccessible {
     node: JavaSyntaxNode.INTERFACE;
-    extends?: string[];
+    extends?: IJavaType[];
     fields: IJavaObjectField[];
     methods: IJavaObjectMethod[];
   }
 
   export interface IJavaClass extends IJavaSyntaxNode, INamed, IJavaModifiable {
     node: JavaSyntaxNode.CLASS;
-    extends?: string;
-    implements?: string[];
+    extends: IJavaType[];
+    implements: IJavaType[];
     fields: IJavaObjectField[];
     methods: IJavaObjectMethod[];
     nestedClasses: IJavaClass[];
   }
 
-  export interface IJavaObjectMember extends IJavaModifiable, ITyped, INamed { }
+  export interface IJavaSequence<T extends IJavaSyntaxNode> extends IJavaSyntaxNode {
+    node: JavaSyntaxNode.SEQUENCE;
+    values: T[];
+  }
+
+  export interface IJavaType extends IJavaSyntaxNode, INamed {
+    node: JavaSyntaxNode.TYPE;
+    genericTypes: IJavaType[];
+    isArray?: true;
+  }
+
+  export interface IJavaObjectMember extends IJavaModifiable, ITyped<IJavaType>, INamed {
+    node: JavaSyntaxNode;
+  }
 
   export interface IJavaObjectField extends IJavaObjectMember, IValued<JavaSyntaxNode> {
     node: JavaSyntaxNode.OBJECT_FIELD;
@@ -68,24 +82,19 @@ export namespace JavaSyntax {
 
   export interface IJavaObjectMethod extends IJavaObjectMember, IWithParameters<IJavaParameter> {
     node: JavaSyntaxNode.OBJECT_METHOD;
-    throws?: string[];
+    throws?: IJavaType[];
     block: IJavaBlock;
   }
 
-  export interface IJavaParameter extends IJavaSyntaxNode, INamed, ITyped, Pick<IJavaModifiable, 'isFinal'> {
+  export interface IJavaParameter extends IJavaSyntaxNode, INamed, ITyped<IJavaType>, Pick<IJavaModifiable, 'isFinal'> {
     node: JavaSyntaxNode.PARAMETER;
-  }
-
-  export interface IJavaClause extends IJavaSyntaxNode {
-    node: JavaSyntaxNode.CLAUSE;
-    values: string[];
   }
 
   export interface IJavaBlock extends IJavaSyntaxNode, IBlock<IJavaSyntaxNode> {
     node: JavaSyntaxNode.BLOCK;
   }
 
-  export interface IJavaVariable extends IJavaSyntaxNode, INamed, ITyped, Pick<IJavaModifiable, 'isFinal'>, IValued<JavaSyntaxNode> {
+  export interface IJavaVariable extends IJavaSyntaxNode, INamed, ITyped<IJavaType>, Pick<IJavaModifiable, 'isFinal'>, IValued<JavaSyntaxNode> {
     node: JavaSyntaxNode.VARIABLE;
   }
 

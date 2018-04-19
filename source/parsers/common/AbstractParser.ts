@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import { Callback, Constructor, IConstructable, IHashMap } from '../../system/types';
 import { getNextToken, getPreviousToken, isCharacterToken } from '../../tokenizer/token-utils';
-import { ISyntaxNode } from './syntax-types';
+import { ISyntaxNode, ISyntaxTree } from './syntax-types';
 import { IToken, TokenType } from '../../tokenizer/types';
 import { TokenMatch, TokenMatcher } from './parser-types';
 import { Bound } from 'trampoline-framework';
@@ -73,6 +73,23 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
 
   protected assertCurrentTokenValue (targetValue: string, errorMessage?: string): void {
     this.assert(this.currentToken.value === targetValue, errorMessage);
+  }
+
+  @Bound protected currentLineHasMatch (tokenMatch: TokenMatch): boolean {
+    return (
+      (Array.isArray(tokenMatch) && tokenMatch.some(this.lineContains)) ||
+      this.lineContains(tokenMatch as string | RegExp)
+    );
+  }
+
+  @Bound protected currentTokenMatches (tokenMatch: TokenMatch): boolean {
+    const { value } = this.currentToken;
+
+    return (
+      value === tokenMatch ||
+      (Array.isArray(tokenMatch) && tokenMatch.indexOf(value) > -1) ||
+      tokenMatch instanceof RegExp && tokenMatch.test(value)
+    );
   }
 
   /**
@@ -164,11 +181,16 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
    * reassigning their own current tokens to the final token of the
    * child parser, we just contain the work here.
    */
-  protected parseNextWith <T extends ISyntaxNode>(ParserClass: Constructor<AbstractParser<T>>): T {
-    const parser = this.createParser(ParserClass);
-    const parsed = parser.parse(this.currentToken);
+  protected parseNextWith <T extends ISyntaxNode>(parser: Constructor<AbstractParser<T>>): T;
+  protected parseNextWith <T extends ISyntaxNode>(parser: AbstractParser<T>): T;
+  protected parseNextWith <T extends ISyntaxNode>(parser: Constructor<AbstractParser<T>> | AbstractParser<T>): T {
+    const parserInstance = parser instanceof AbstractParser
+      ? parser
+      : this.createParser(parser);
 
-    this.currentToken = parser.token();
+    const parsed = parserInstance.parse(this.currentToken);
+
+    this.currentToken = parserInstance.token();
 
     return parsed;
   }
@@ -255,23 +277,6 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
 
   private createParser <A extends AbstractParser>(ParserClass: Constructor<A>): A {
     return new (ParserClass as IConstructable<A>)();
-  }
-
-  @Bound private currentLineHasMatch (tokenMatch: TokenMatch): boolean {
-    return (
-      (Array.isArray(tokenMatch) && tokenMatch.some(this.lineContains)) ||
-      this.lineContains(tokenMatch as string | RegExp)
-    );
-  }
-
-  @Bound private currentTokenMatches (tokenMatch: TokenMatch): boolean {
-    const { value } = this.currentToken;
-
-    return (
-      value === tokenMatch ||
-      (Array.isArray(tokenMatch) && tokenMatch.indexOf(value) > -1) ||
-      tokenMatch instanceof RegExp && tokenMatch.test(value)
-    );
   }
 
   /**

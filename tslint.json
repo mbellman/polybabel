@@ -23,6 +23,7 @@
     "semicolon": [ true, "always" ],
     "space-before-function-paren": [ false ],
     "trailing-comma": [ false ],
+    "unified-signatures": false,
     "variable-name": [ false ],
     "whitespace": [
       true,

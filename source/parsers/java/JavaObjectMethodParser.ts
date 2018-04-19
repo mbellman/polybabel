@@ -1,12 +1,13 @@
 import AbstractParser from '../common/AbstractParser';
-import JavaClauseParser from './JavaClauseParser';
 import JavaObjectMemberParser from './JavaObjectMemberParser';
 import JavaParameterParser from './JavaParameterParser';
+import JavaSequenceParser from './JavaSequenceParser';
+import JavaTypeParser from './JavaTypeParser';
 import { Implements, Override } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { Match } from '../common/parser-decorators';
-import { TokenType } from 'tokenizer/types';
+import { TokenType } from '../../tokenizer/types';
 
 export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJavaObjectMethod> {
   @Implements protected getDefault (): JavaSyntax.IJavaObjectMethod {
@@ -28,47 +29,45 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
   private onParametersStart (): void {
     this.assert(this.previousCharacterToken.type === TokenType.WORD);
     this.next();
-  }
 
-  @Match(/./)
-  private onParameterDeclaration (): void {
-    const parameter = this.parseNextWith(JavaParameterParser);
+    const parametersParser = new JavaSequenceParser({
+      ValueParser: JavaParameterParser,
+      terminator: ')'
+    });
 
-    this.parsed.parameters.push(parameter);
-  }
+    const { values } = this.parseNextWith(parametersParser);
 
-  @Match(',')
-  private onParameterSeparator (): void {
-    const { previousCharacterToken, nextCharacterToken } = this;
-
-    this.assert(
-      previousCharacterToken.type === TokenType.WORD,
-      `Invalid parameter name '${previousCharacterToken.value}'`
-    );
-
-    this.assert(
-      nextCharacterToken.type === TokenType.WORD || nextCharacterToken.value === ')',
-      `Invalid parameter type '${nextCharacterToken.value}'`
-    );
-
-    this.next();
+    this.parsed.parameters = values;
   }
 
   @Match(')')
   private onParametersEnd (): void {
-    this.assert(this.previousCharacterToken.type === TokenType.WORD);
     this.next();
   }
 
   @Match(JavaConstants.Keyword.THROWS)
-  private onThrowsClause (): void {
-    const throwsClause = this.parseNextWith(JavaClauseParser);
+  private onThrows (): void {
+    this.assert(this.previousCharacterToken.value === ')');
 
-    this.parsed.throws = throwsClause.values;
+    this.next();
+
+    const throwsParser = new JavaSequenceParser({
+      ValueParser: JavaTypeParser,
+      terminator: /[;{]/
+    });
+
+    const { values } = this.parseNextWith(throwsParser);
+
+    this.parsed.throws = values;
   }
 
-  @Match(';')
-  private onFinish (): void {
+  @Match('{')
+  private onBlock (): void {
+    this.next();
+  }
+
+  @Match(/[};]/)
+  private onEnd (): void {
     this.finish();
   }
 }

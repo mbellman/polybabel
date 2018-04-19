@@ -1,5 +1,4 @@
 import AbstractParser from '../common/AbstractParser';
-import JavaClauseParser from './JavaClauseParser';
 import JavaObjectFieldParser from './JavaObjectFieldParser';
 import JavaObjectMethodParser from './JavaObjectMethodParser';
 import { Implements, Override } from 'trampoline-framework';
@@ -7,6 +6,8 @@ import { isAccessModifierKeyword } from './java-utils';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { Lookahead, Match, NegativeLookahead } from '../common/parser-decorators';
+import JavaSequenceParser from './JavaSequenceParser';
+import JavaTypeParser from './JavaTypeParser';
 
 export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJavaInterface> {
   @Implements protected getDefault (): JavaSyntax.IJavaInterface {
@@ -44,10 +45,16 @@ export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJava
   @Match(JavaConstants.Keyword.EXTENDS)
   private onExtends (): void {
     this.assert(this.parsed.extends.length === 0);
+    this.next();
 
-    const clause = this.parseNextWith(JavaClauseParser);
+    const extendsParser = new JavaSequenceParser({
+      ValueParser: JavaTypeParser,
+      terminator: '{'
+    });
 
-    this.parsed.extends = clause.values;
+    const { values } = this.parseNextWith(extendsParser);
+
+    this.parsed.extends = values;
   }
 
   @Match('{')

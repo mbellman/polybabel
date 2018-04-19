@@ -6,6 +6,7 @@ import { ISyntaxNode } from '../common/syntax-types';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { Match } from '../common/parser-decorators';
+import { Pattern } from '../common/parser-types';
 
 export default class JavaModifiableParser extends AbstractParser<JavaSyntax.IJavaModifiable> {
   @Implements protected getDefault (): JavaSyntax.IJavaModifiable {
@@ -27,7 +28,7 @@ export default class JavaModifiableParser extends AbstractParser<JavaSyntax.IJav
     this.parsed[modifiableKey] = true;
   }
 
-  @Match(/./)
+  @Match(Pattern.ANY)
   private onNonModifier (): void {
     this.stop();
   }

@@ -26,19 +26,21 @@ export interface INamed {
 
 /**
  * A syntatic structure with a particular type. Only applies
- * to explicitly-typed languages.
+ * to explicitly-typed languages. The provided generic parameter
+ * T should be an interface of a language-specific 'type' syntax
+ * node.
  */
-export interface ITyped {
-  type: string;
+export interface ITyped<T> {
+  type: T;
 }
 
 /**
  * A syntactic structure with an assigned value. The provided
- * generic parameter N should be an enum with language-specific
+ * generic parameter V should be an enum with language-specific
  * syntax node constants.
  */
-export interface IValued<N> {
-  value?: ISyntaxNode<N>;
+export interface IValued<V> {
+  value?: ISyntaxNode<V>;
 }
 
 /**
@@ -47,7 +49,7 @@ export interface IValued<N> {
  * P should be a type signature for a language-specific parameter
  * syntax node.
  */
-export interface IWithParameters<P> {
+export interface IWithParameters<P extends ISyntaxNode> {
   parameters: P[];
 }
 

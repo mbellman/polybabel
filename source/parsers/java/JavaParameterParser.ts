@@ -1,4 +1,5 @@
 import AbstractParser from '../common/AbstractParser';
+import JavaTypeParser from './JavaTypeParser';
 import { Implements, Override } from 'trampoline-framework';
 import { isReservedWord } from './java-utils';
 import { IToken, TokenType } from 'tokenizer/types';
@@ -25,24 +26,9 @@ export default class JavaParameterParser extends AbstractParser<JavaSyntax.IJava
       this.next();
     }
 
-    this.validateParameter(this.currentToken, this.nextToken);
+    this.parsed.type = this.parseNextWith(JavaTypeParser);
+    this.parsed.name = this.currentToken.value;
 
-    this.parsed.type = this.currentToken.value;
-    this.parsed.name = this.nextToken.value;
-
-    this.skip(2);
-    this.stop();
-  }
-
-  private validateParameter (typeToken: IToken, nameToken: IToken): void {
-    this.assert(
-      typeToken.type === TokenType.WORD && nameToken.type === TokenType.WORD,
-      `Invalid parameter '${typeToken.value} ${nameToken.value}'`
-    );
-
-    this.assert(
-      !isReservedWord(nameToken.value),
-      `Invalid parameter name '${nameToken.value}'`
-    );
+    this.finish();
   }
 }

@@ -23,9 +23,7 @@ export default class JavaParser extends AbstractParser<JavaSyntax.IJavaSyntaxTre
 
   @Match(JavaConstants.Keyword.PACKAGE)
   private onPackage (): void {
-    const javaPackage = this.parseNextWith(JavaPackageParser);
-
-    this.parsed.package = javaPackage;
+    this.parsed.package = this.parseNextWith(JavaPackageParser);
   }
 
   @Match(JavaConstants.Keyword.IMPORT)
