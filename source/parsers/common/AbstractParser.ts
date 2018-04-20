@@ -71,8 +71,8 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
     }
   }
 
-  protected assertCurrentTokenValue (targetValue: string, errorMessage?: string): void {
-    this.assert(this.currentToken.value === targetValue, errorMessage);
+  protected assertCurrentTokenMatch (tokenMatch: TokenMatch, errorMessage?: string): void {
+    this.assert(this.currentTokenMatches(tokenMatch), errorMessage);
   }
 
   @Bound protected currentLineHasMatch (tokenMatch: TokenMatch): boolean {
@@ -213,7 +213,7 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
   }
 
   /**
-   * Stops the parser without any error, but with the intent of letting
+   * Stops the parser without any errors, but with the intent of letting
    * the parent parser continue from the current token.
    *
    * See: finish()
@@ -299,7 +299,7 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
     return token;
   }
 
-  private getColorizedLinePreview (range: number = 3): string {
+  private getColorizedLinePreview (range: number = 5): string {
     let n = range;
     let localToken = this.currentToken;
     const localTokenValues: string[] = [];

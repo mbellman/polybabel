@@ -1,13 +1,13 @@
 import AbstractParser from '../common/AbstractParser';
 import JavaObjectFieldParser from './JavaObjectFieldParser';
 import JavaObjectMethodParser from './JavaObjectMethodParser';
+import JavaTypeParser from './JavaTypeParser';
+import SequenceParser from '../common/SequenceParser';
 import { Implements, Override } from 'trampoline-framework';
 import { isAccessModifierKeyword } from './java-utils';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { Lookahead, Match, NegativeLookahead } from '../common/parser-decorators';
-import JavaSequenceParser from './JavaSequenceParser';
-import JavaTypeParser from './JavaTypeParser';
 
 export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJavaInterface> {
   @Implements protected getDefault (): JavaSyntax.IJavaInterface {
@@ -30,7 +30,7 @@ export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJava
       this.next();
     }
 
-    this.assertCurrentTokenValue(
+    this.assertCurrentTokenMatch(
       JavaConstants.Keyword.INTERFACE,
       `Invalid interface modifier '${this.currentToken.value}'`
     );
@@ -47,9 +47,10 @@ export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJava
     this.assert(this.parsed.extends.length === 0);
     this.next();
 
-    const extendsParser = new JavaSequenceParser({
+    const extendsParser = new SequenceParser({
       ValueParser: JavaTypeParser,
-      terminator: '{'
+      terminator: '{',
+      delimiter: ','
     });
 
     const { values } = this.parseNextWith(extendsParser);

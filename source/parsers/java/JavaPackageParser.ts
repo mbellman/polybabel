@@ -14,7 +14,7 @@ export default class JavaPackageParser extends AbstractParser<JavaSyntax.IJavaPa
   }
 
   @Override protected onFirstToken (): void {
-    this.assertCurrentTokenValue(JavaConstants.Keyword.PACKAGE);
+    this.assertCurrentTokenMatch(JavaConstants.Keyword.PACKAGE);
     this.next();
   }
 

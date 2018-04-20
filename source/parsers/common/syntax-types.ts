@@ -54,6 +54,17 @@ export interface IWithParameters<P extends ISyntaxNode> {
 }
 
 /**
+ * A syntactic structure representing a sequence of values, such
+ * as a list of parameters, arguments, list entries, etc. The
+ * provided generic parameter V should be an enum with language-
+ * specific syntax node constants, or a single language-specific
+ * syntax node constant.
+ */
+export interface ISequence<V extends ISyntaxNode> {
+  values: V[];
+}
+
+/**
  * A syntactic structure which can contain an arbitrary number
  * of syntax nodes. The provided generic parameter N should be
  * an enum of language-specific syntax node constants.

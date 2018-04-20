@@ -15,7 +15,7 @@ export default class JavaImportParser extends AbstractParser<JavaSyntax.IJavaImp
   }
 
   @Override protected onFirstToken (): void {
-    this.assertCurrentTokenValue(JavaConstants.Keyword.IMPORT);
+    this.assertCurrentTokenMatch(JavaConstants.Keyword.IMPORT);
     this.next();
   }
 

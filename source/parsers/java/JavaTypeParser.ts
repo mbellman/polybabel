@@ -1,4 +1,5 @@
 import AbstractParser from '../common/AbstractParser';
+import SequenceParser from '../common/SequenceParser';
 import { Implements, Override } from 'trampoline-framework';
 import { ISyntaxNode, ITyped } from '../common/syntax-types';
 import { JavaSyntax } from './java-syntax';
@@ -10,8 +11,9 @@ export default class JavaTypeParser extends AbstractParser<JavaSyntax.IJavaType>
   @Implements protected getDefault (): JavaSyntax.IJavaType {
     return {
       node: JavaSyntax.JavaSyntaxNode.TYPE,
+      name: null,
       genericTypes: [],
-      name: null
+      arrayDimensions: 0
     };
   }
 
@@ -34,29 +36,43 @@ export default class JavaTypeParser extends AbstractParser<JavaSyntax.IJavaType>
   private onCloseBracket (): void {
     this.assert(this.previousToken.value === '[');
 
-    this.parsed.isArray = true;
-  }
-
-  @Match('<')
-  private onOpenAngleBracket (): void {
-    this.assert(this.previousToken.type === TokenType.WORD);
-    this.next();
-
-    // TODO: Handle a sequence of generic types
-    const genericType = this.parseNextWith(JavaTypeParser);
-
-    this.parsed.genericTypes.push(genericType);
+    this.parsed.arrayDimensions++;
   }
 
   /**
-   * TODO: Require the correct number of generic bracket terminators
+   * TODO: Diamond notation generics (List<>)
    */
+  @Match('<')
+  private onOpenAngleBracket (): void {
+    this.assert(
+      this.parsed.arrayDimensions === 0,
+      `[] type '${this.parsed.name}' cannot be generic`
+    );
+
+    this.next();
+
+    const genericTypesParser = new SequenceParser({
+      ValueParser: JavaTypeParser,
+      terminator: '>',
+      delimiter: ','
+    });
+
+    const { values } = this.parseNextWith(genericTypesParser);
+
+    this.parsed.genericTypes = values;
+
+    if (this.nextToken.value !== '[') {
+      this.finish();
+    }
+  }
+
   @Match('>')
   private onCloseAngleBracket (): void {
-    // Closing angle brackets will be encountered by a child
-    // JavaTypeParser handling a generic type parameter, so we
-    // finish to break out of the generic parameter declaration
-    this.finish();
+    const hasGenericTypes = this.parsed.genericTypes.length > 0;
+
+    if (this.nextToken.value !== '[' || !hasGenericTypes) {
+      this.stop();
+    }
   }
 
   @Match(Pattern.ANY)

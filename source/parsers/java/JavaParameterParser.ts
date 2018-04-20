@@ -29,6 +29,7 @@ export default class JavaParameterParser extends AbstractParser<JavaSyntax.IJava
     this.parsed.type = this.parseNextWith(JavaTypeParser);
     this.parsed.name = this.currentToken.value;
 
+    this.assert(this.currentToken.type === TokenType.WORD);
     this.finish();
   }
 }

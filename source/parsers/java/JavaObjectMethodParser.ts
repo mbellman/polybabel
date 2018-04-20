@@ -1,8 +1,8 @@
 import AbstractParser from '../common/AbstractParser';
 import JavaObjectMemberParser from './JavaObjectMemberParser';
 import JavaParameterParser from './JavaParameterParser';
-import JavaSequenceParser from './JavaSequenceParser';
 import JavaTypeParser from './JavaTypeParser';
+import SequenceParser from '../common/SequenceParser';
 import { Implements, Override } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
@@ -30,9 +30,10 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
     this.assert(this.previousCharacterToken.type === TokenType.WORD);
     this.next();
 
-    const parametersParser = new JavaSequenceParser({
+    const parametersParser = new SequenceParser({
       ValueParser: JavaParameterParser,
-      terminator: ')'
+      terminator: ')',
+      delimiter: ','
     });
 
     const { values } = this.parseNextWith(parametersParser);
@@ -51,9 +52,10 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
 
     this.next();
 
-    const throwsParser = new JavaSequenceParser({
+    const throwsParser = new SequenceParser({
       ValueParser: JavaTypeParser,
-      terminator: /[;{]/
+      terminator: /[;{]/,
+      delimiter: ','
     });
 
     const { values } = this.parseNextWith(throwsParser);

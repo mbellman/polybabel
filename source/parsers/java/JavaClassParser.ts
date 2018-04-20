@@ -2,8 +2,8 @@ import AbstractParser from '../common/AbstractParser';
 import JavaModifiableParser from './JavaModifiableParser';
 import JavaObjectFieldParser from './JavaObjectFieldParser';
 import JavaObjectMethodParser from './JavaObjectMethodParser';
-import JavaSequenceParser from './JavaSequenceParser';
 import JavaTypeParser from './JavaTypeParser';
+import SequenceParser from '../common/SequenceParser';
 import { Implements, Override } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
@@ -26,7 +26,7 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
   @Override protected onFirstToken (): void {
     this.emulate(JavaModifiableParser);
 
-    this.assertCurrentTokenValue(
+    this.assertCurrentTokenMatch(
       JavaConstants.Keyword.CLASS,
       `Invalid class modifier ${this.currentToken.value}`
     );
@@ -43,14 +43,14 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
     this.assert(this.parsed.extends.length === 0);
     this.next();
 
-    const extendsTypes = this.getIncomingTypeSequence();
+    const extendees = this.getIncomingTypeSequence();
 
     this.assert(
-      extendsTypes.length === 1,
+      extendees.length === 1,
       'Classes can only extend one base class'
     );
 
-    this.parsed.extends = extendsTypes;
+    this.parsed.extends = extendees;
   }
 
   @Match(JavaConstants.Keyword.IMPLEMENTS)
@@ -58,9 +58,9 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
     this.assert(this.parsed.implements.length === 0);
     this.next();
 
-    const implementsTypes = this.getIncomingTypeSequence();
+    const implementees = this.getIncomingTypeSequence();
 
-    this.parsed.implements = implementsTypes;
+    this.parsed.implements = implementees;
   }
 
   @Match('{')
@@ -98,9 +98,10 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
   }
 
   private getIncomingTypeSequence (): JavaSyntax.IJavaType[] {
-    const typesParser = new JavaSequenceParser({
+    const typesParser = new SequenceParser({
       ValueParser: JavaTypeParser,
-      terminator: [ ...JavaConstants.ReservedWords, '{' ]
+      terminator: [ ...JavaConstants.ReservedWords, '{' ],
+      delimiter: ','
     });
 
     const { values } = this.parseNextWith(typesParser);

@@ -2,15 +2,15 @@ package HelloWorld;
 
 import goodbye.GoodbyeWorld;
 
-protected interface ITest extends Div, Something[], Else {
+protected interface ITest {
   String string;
   Bool boolean;
   Object object;
 
-  Thing getThing (String<Test<Thing<What>>>[] thing, final Number id) throws Exception;
+  Thing getThing (String<X, X>[] thing, final Number id) throws Exception;
 }
 
-public final class HelloWorld implements ITest {
+public final class HelloWorld extends What implements ITest {
   public static void main (String[] args) {
     console.log('Hello!');
 

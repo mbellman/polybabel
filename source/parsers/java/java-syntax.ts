@@ -61,15 +61,10 @@ export namespace JavaSyntax {
     nestedClasses: IJavaClass[];
   }
 
-  export interface IJavaSequence<T extends IJavaSyntaxNode> extends IJavaSyntaxNode {
-    node: JavaSyntaxNode.SEQUENCE;
-    values: T[];
-  }
-
   export interface IJavaType extends IJavaSyntaxNode, INamed {
     node: JavaSyntaxNode.TYPE;
     genericTypes: IJavaType[];
-    isArray?: true;
+    arrayDimensions: number;
   }
 
   export interface IJavaObjectMember extends IJavaModifiable, ITyped<IJavaType>, INamed {
