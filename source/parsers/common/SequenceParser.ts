@@ -36,8 +36,6 @@ export default class SequenceParser<V extends ISyntaxNode> extends AbstractParse
   @Override protected onFirstToken (): void {
     const { ValueParser, terminator, delimiter } = this.configuration;
 
-    // TODO: Why does 'while (!this.currentTokenMatches(terminator)) { }'
-    // break generics?
     while (true) {
       const nextValue = this.parseNextWith(ValueParser);
 

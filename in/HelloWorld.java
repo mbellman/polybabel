@@ -7,7 +7,7 @@ protected interface ITest {
   Bool boolean;
   Object object;
 
-  Thing getThing (String<X, X>[] thing, final Number id) throws Exception;
+  Thing getThing (String thing, final Number id) throws Exception;
 }
 
 public final class HelloWorld extends What implements ITest {

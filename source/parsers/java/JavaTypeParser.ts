@@ -39,9 +39,6 @@ export default class JavaTypeParser extends AbstractParser<JavaSyntax.IJavaType>
     this.parsed.arrayDimensions++;
   }
 
-  /**
-   * TODO: Diamond notation generics (List<>)
-   */
   @Match('<')
   private onOpenAngleBracket (): void {
     this.assert(
@@ -50,6 +47,13 @@ export default class JavaTypeParser extends AbstractParser<JavaSyntax.IJavaType>
     );
 
     this.next();
+
+    if (this.currentTokenMatches('>')) {
+      // Generic diamond notation, e.g. List<>
+      this.next();
+
+      return;
+    }
 
     const genericTypesParser = new SequenceParser({
       ValueParser: JavaTypeParser,
