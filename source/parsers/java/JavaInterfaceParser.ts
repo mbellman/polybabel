@@ -43,7 +43,7 @@ export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJava
   }
 
   @Match(JavaConstants.Keyword.EXTENDS)
-  private onExtends (): void {
+  protected onExtends (): void {
     this.assert(this.parsed.extends.length === 0);
     this.next();
 
@@ -59,7 +59,7 @@ export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJava
   }
 
   @Match('{')
-  private onEnter (): void {
+  protected onEnter (): void {
     const { fields, methods } = this.parsed;
 
     this.assert(fields.length === 0 && methods.length === 0);
@@ -67,21 +67,21 @@ export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJava
   }
 
   @NegativeLookahead('(')
-  private onField (): void {
+  protected onField (): void {
     const field = this.parseNextWith(JavaObjectFieldParser);
 
     this.parsed.fields.push(field);
   }
 
   @Lookahead('(')
-  private onMethod (): void {
+  protected onMethod (): void {
     const method = this.parseNextWith(JavaObjectMethodParser);
 
     this.parsed.methods.push(method);
   }
 
   @Match('}')
-  private onExit(): void {
+  protected onExit(): void {
     this.finish();
   }
 }

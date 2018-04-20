@@ -1,4 +1,5 @@
 import AbstractParser from '../common/AbstractParser';
+import JavaBlockParser from './JavaBlockParser';
 import JavaObjectMemberParser from './JavaObjectMemberParser';
 import JavaParameterParser from './JavaParameterParser';
 import JavaTypeParser from './JavaTypeParser';
@@ -26,7 +27,7 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
   }
 
   @Match('(')
-  private onParametersStart (): void {
+  protected onParametersStart (): void {
     this.assert(this.previousCharacterToken.type === TokenType.WORD);
     this.next();
 
@@ -42,12 +43,12 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
   }
 
   @Match(')')
-  private onParametersEnd (): void {
+  protected onParametersEnd (): void {
     this.next();
   }
 
   @Match(JavaConstants.Keyword.THROWS)
-  private onThrows (): void {
+  protected onThrows (): void {
     this.assert(this.previousCharacterToken.value === ')');
 
     this.next();
@@ -64,12 +65,12 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
   }
 
   @Match('{')
-  private onBlock (): void {
+  protected onBlock (): void {
     this.next();
   }
 
   @Match(/[};]/)
-  private onEnd (): void {
+  protected onEnd (): void {
     this.finish();
   }
 }

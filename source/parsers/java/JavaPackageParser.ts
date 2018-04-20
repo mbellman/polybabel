@@ -19,17 +19,17 @@ export default class JavaPackageParser extends AbstractParser<JavaSyntax.IJavaPa
   }
 
   @Match(Pattern.WORD)
-  private onWord (): void {
+  protected onWord (): void {
     this.parsed.path += this.currentToken.value;
   }
 
   @Match('.')
-  private onDot (): void {
+  protected onDot (): void {
     this.parsed.path += '.';
   }
 
   @Match(';')
-  private onEnd (): void {
+  protected onEnd (): void {
     this.finish();
   }
 }

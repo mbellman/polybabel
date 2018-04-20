@@ -22,19 +22,19 @@ export default class JavaParser extends AbstractParser<JavaSyntax.IJavaSyntaxTre
   }
 
   @Match(JavaConstants.Keyword.PACKAGE)
-  private onPackage (): void {
+  protected onPackage (): void {
     this.parsed.package = this.parseNextWith(JavaPackageParser);
   }
 
   @Match(JavaConstants.Keyword.IMPORT)
-  private onImport (): void {
+  protected onImport (): void {
     const javaImport = this.parseNextWith(JavaImportParser);
 
     this.parsed.nodes.push(javaImport);
   }
 
   @Lookahead(JavaConstants.Keyword.INTERFACE)
-  private onInterface (): void {
+  protected onInterface (): void {
     const javaInterface = this.parseNextWith(JavaInterfaceParser);
 
     console.log(JSON.stringify(javaInterface));
@@ -43,7 +43,7 @@ export default class JavaParser extends AbstractParser<JavaSyntax.IJavaSyntaxTre
   }
 
   @Lookahead(JavaConstants.Keyword.CLASS)
-  private onClass (): void {
+  protected onClass (): void {
     const javaClass = this.parseNextWith(JavaClassParser);
 
     this.parsed.nodes.push(javaClass);

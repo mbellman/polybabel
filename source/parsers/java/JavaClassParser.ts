@@ -39,7 +39,7 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
   }
 
   @Match(JavaConstants.Keyword.EXTENDS)
-  private onExtends (): void {
+  protected onExtends (): void {
     this.assert(this.parsed.extends.length === 0);
     this.next();
 
@@ -54,7 +54,7 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
   }
 
   @Match(JavaConstants.Keyword.IMPLEMENTS)
-  private onImplements (): void {
+  protected onImplements (): void {
     this.assert(this.parsed.implements.length === 0);
     this.next();
 
@@ -64,7 +64,7 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
   }
 
   @Match('{')
-  private onOpenBrace (): void {
+  protected onOpenBrace (): void {
     const { fields, methods } = this.parsed;
 
     this.assert(fields.length === 0 && methods.length === 0);
@@ -72,28 +72,28 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
   }
 
   @NegativeLookahead('(')
-  private onField (): void {
+  protected onField (): void {
     const field = this.parseNextWith(JavaObjectFieldParser);
 
     this.parsed.fields.push(field);
   }
 
   @Lookahead('(')
-  private onMethod (): void {
+  protected onMethod (): void {
     const method = this.parseNextWith(JavaObjectMethodParser);
 
     this.parsed.methods.push(method);
   }
 
   @Lookahead(JavaConstants.Keyword.CLASS)
-  private onNestedClass (): void {
+  protected onNestedClass (): void {
     const javaClass = this.parseNextWith(JavaClassParser);
 
     this.parsed.nestedClasses.push(javaClass);
   }
 
   @Lookahead(JavaConstants.Keyword.INTERFACE)
-  private onNestedInterface (): void {
+  protected onNestedInterface (): void {
 
   }
 

@@ -20,17 +20,17 @@ export default class JavaImportParser extends AbstractParser<JavaSyntax.IJavaImp
   }
 
   @Match(Pattern.WORD)
-  private onWord (): void {
+  protected onWord (): void {
     this.parsed.path += this.currentToken.value;
   }
 
   @Match('.')
-  private onDot (): void {
+  protected onDot (): void {
     this.parsed.path += '/';
   }
 
   @Match(';')
-  private onEnd (): void {
+  protected onEnd (): void {
     this.parsed.name = this.previousToken.value;
 
     this.finish();

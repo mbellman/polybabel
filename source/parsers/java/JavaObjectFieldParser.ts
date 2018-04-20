@@ -20,14 +20,14 @@ export default abstract class JavaObjectFieldParser extends AbstractParser<JavaS
   }
 
   @Match('=')
-  private onAssignment (): void {
+  protected onAssignment (): void {
     const expression = this.parseNextWith(JavaExpressionParser);
 
     this.parsed.value = expression;
   }
 
   @Match(';')
-  private onEnd (): void {
+  protected onEnd (): void {
     this.finish();
   }
 }
