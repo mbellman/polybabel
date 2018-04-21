@@ -1,10 +1,10 @@
 import AbstractParser from '../common/AbstractParser';
 import JavaTypeParser from './JavaTypeParser';
 import { Implements, Override } from 'trampoline-framework';
-import { isReservedWord } from './java-utils';
-import { IToken, TokenType } from 'tokenizer/types';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
+import { TokenType } from '../../tokenizer/types';
+import { TokenUtils } from '../../tokenizer/token-utils';
 
 export default class JavaParameterParser extends AbstractParser<JavaSyntax.IJavaParameter> {
   @Implements protected getDefault (): JavaSyntax.IJavaParameter {
@@ -16,8 +16,6 @@ export default class JavaParameterParser extends AbstractParser<JavaSyntax.IJava
   }
 
   @Override protected onFirstToken (): void {
-    this.assert(/[(,]/.test(this.previousToken.value));
-
     const isFinalParameter = this.currentToken.value === JavaConstants.Keyword.FINAL;
 
     if (isFinalParameter) {
@@ -29,7 +27,7 @@ export default class JavaParameterParser extends AbstractParser<JavaSyntax.IJava
     this.parsed.type = this.parseNextWith(JavaTypeParser);
     this.parsed.name = this.currentToken.value;
 
-    this.assert(this.currentToken.type === TokenType.WORD);
+    this.assert(TokenUtils.isWord(this.currentToken));
     this.finish();
   }
 }

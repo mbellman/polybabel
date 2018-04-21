@@ -28,3 +28,17 @@ export interface IConstructable<T = any> {
  * Any class constructor, including that of an abstract class.
  */
 export type Constructor<T = any> = IConstructable<T> | Function & { prototype: T };
+
+/**
+ * A conditional type which enforces that the type B is a base
+ * of T.
+ */
+export type BaseOf<T, B> = T extends B
+  ? { [K in keyof B]?: B[K] }
+  : never;
+
+/**
+ * Defines a type T without the properties defined in a string
+ * union type P.
+ */
+export type Without<T, P extends keyof T> = { [K in Exclude<keyof T, P>]: T[K] };

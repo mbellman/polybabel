@@ -1,12 +1,9 @@
 import AbstractParser from '../common/AbstractParser';
-import { IHashMap } from '../../system/types';
-import { Implements, Override } from 'trampoline-framework';
-import { isAccessModifierKeyword, isModifierKeyword } from './java-utils';
-import { ISyntaxNode } from '../common/syntax-types';
+import { Implements } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { Match } from '../common/parser-decorators';
-import { Pattern } from '../common/parser-types';
+import { TokenUtils } from '../../tokenizer/token-utils';
 
 export default class JavaModifiableParser extends AbstractParser<JavaSyntax.IJavaModifiable> {
   @Implements protected getDefault (): JavaSyntax.IJavaModifiable {
@@ -28,7 +25,7 @@ export default class JavaModifiableParser extends AbstractParser<JavaSyntax.IJav
     this.parsed[modifiableKey] = true;
   }
 
-  @Match(Pattern.ANY)
+  @Match(TokenUtils.isAny)
   protected onNonModifier (): void {
     this.stop();
   }

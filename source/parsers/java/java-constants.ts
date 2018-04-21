@@ -17,7 +17,10 @@ export namespace JavaConstants {
     STATIC = 'static',
     FINAL = 'final',
     ABSTRACT = 'abstract',
-    NEW = 'new'
+    NEW = 'new',
+    TRUE = 'true',
+    FALSE = 'false',
+    NULL = 'null'
   }
 
   export enum Type {

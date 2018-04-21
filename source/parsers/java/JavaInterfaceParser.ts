@@ -4,9 +4,9 @@ import JavaObjectMethodParser from './JavaObjectMethodParser';
 import JavaTypeParser from './JavaTypeParser';
 import SequenceParser from '../common/SequenceParser';
 import { Implements, Override } from 'trampoline-framework';
-import { isAccessModifierKeyword } from './java-utils';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
+import { JavaUtils } from './java-utils';
 import { Lookahead, Match, NegativeLookahead } from '../common/parser-decorators';
 
 export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJavaInterface> {
@@ -24,7 +24,7 @@ export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJava
   @Override protected onFirstToken (): void {
     const { value } = this.currentToken;
 
-    if (isAccessModifierKeyword(value)) {
+    if (JavaUtils.isAccessModifierKeyword(value)) {
       this.parsed.access = JavaConstants.AccessModifierMap[value];
 
       this.next();
@@ -49,8 +49,8 @@ export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJava
 
     const extendsParser = new SequenceParser({
       ValueParser: JavaTypeParser,
-      terminator: '{',
-      delimiter: ','
+      delimiter: ',',
+      terminator: '{'
     });
 
     const { values } = this.parseNextWith(extendsParser);

@@ -2,15 +2,26 @@ import { Callback } from '../../system/types';
 import { TokenMatch, TokenMatcher } from './parser-types';
 
 /**
- * @todo @description
+ * A token matchers sorting comparator which sorts TokenMatchers
+ * using the following order scheme:
+ *
+ *  1) string TokenMatchers
+ *  2) string/regex array TokenMatchers
+ *  3) token predicate function TokenMatchers
+ *  4) regex TokenMatchers
+ *
  * @internal
  */
-function sortStringsBeforeArraysBeforeRegexes ([ tokenMatchA ]: TokenMatcher, [ tokenMatchB ]: TokenMatcher) {
-  return typeof tokenMatchA === 'string'
-    ? -1
-    : Array.isArray(tokenMatchA) && typeof tokenMatchB !== 'string'
-      ? -1
-      : 1;
+function sortTokenMatchers ([ tokenMatchA ]: TokenMatcher, [ tokenMatchB ]: TokenMatcher) {
+  return (
+    typeof tokenMatchA === 'string'
+      ? -1 :
+    (Array.isArray(tokenMatchA) && typeof tokenMatchB !== 'string')
+      ? -1 :
+    (typeof tokenMatchA === 'function' && tokenMatchB instanceof RegExp)
+      ? -1 :
+    1
+  );
 }
 
 /**
@@ -29,7 +40,7 @@ function createTokenMatcherManagerDecorator (tokenMatcherKey: string): Callback<
       const tokenMatchers: TokenMatcher[] = constructor[tokenMatcherKey];
 
       tokenMatchers.push([ tokenMatch, propertyDescriptor.value ]);
-      tokenMatchers.sort(sortStringsBeforeArraysBeforeRegexes);
+      tokenMatchers.sort(sortTokenMatchers);
     };
   };
 }

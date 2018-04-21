@@ -35,12 +35,10 @@ export interface ITyped<T> {
 }
 
 /**
- * A syntactic structure with an assigned value. The provided
- * generic parameter V should be an enum with language-specific
- * syntax node constants.
+ * A syntactic structure with an assigned value.
  */
 export interface IValued<V> {
-  value?: ISyntaxNode<V>;
+  value: V;
 }
 
 /**

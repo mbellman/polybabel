@@ -2,7 +2,7 @@ import AbstractParser from '../common/AbstractParser';
 import JavaModifiableParser from './JavaModifiableParser';
 import JavaTypeParser from './JavaTypeParser';
 import { Implements, Override } from 'trampoline-framework';
-import { IToken, TokenType } from 'tokenizer/types';
+import { IToken, TokenType } from '../../tokenizer/types';
 import { JavaSyntax } from './java-syntax';
 
 export default class JavaObjectMemberParser extends AbstractParser<JavaSyntax.IJavaObjectMember> {

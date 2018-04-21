@@ -14,8 +14,9 @@ export namespace JavaSyntax {
     PARAMETER,
     BLOCK,
     VARIABLE,
-    REFERENCE,
-    EXPRESSION
+    EXPRESSION,
+    LITERAL,
+    INSTANTIATION
   }
 
   export const enum JavaAccessModifier {
@@ -71,17 +72,17 @@ export namespace JavaSyntax {
     node: JavaSyntaxNode;
   }
 
-  export interface IJavaObjectField extends IJavaObjectMember, IValued<JavaSyntaxNode> {
+  export interface IJavaObjectField extends IJavaObjectMember, IValued<IJavaExpression> {
     node: JavaSyntaxNode.OBJECT_FIELD;
   }
 
   export interface IJavaObjectMethod extends IJavaObjectMember, IWithParameters<IJavaParameter> {
     node: JavaSyntaxNode.OBJECT_METHOD;
-    throws?: IJavaType[];
+    throws: IJavaType[];
     block: IJavaBlock;
   }
 
-  export interface IJavaParameter extends IJavaSyntaxNode, INamed, ITyped<IJavaType>, Pick<IJavaModifiable, 'isFinal'> {
+  export interface IJavaParameter extends IJavaSyntaxNode, Pick<IJavaModifiable, 'isFinal'>, ITyped<IJavaType>, INamed {
     node: JavaSyntaxNode.PARAMETER;
   }
 
@@ -89,21 +90,24 @@ export namespace JavaSyntax {
     node: JavaSyntaxNode.BLOCK;
   }
 
-  export interface IJavaVariable extends IJavaSyntaxNode, INamed, ITyped<IJavaType>, Pick<IJavaModifiable, 'isFinal'>, IValued<JavaSyntaxNode> {
+  export interface IJavaVariable extends IJavaSyntaxNode, Pick<IJavaModifiable, 'isFinal'>, ITyped<IJavaType>, INamed, IValued<IJavaExpression> {
     node: JavaSyntaxNode.VARIABLE;
   }
 
-  export interface IJavaReference extends IJavaSyntaxNode, INamed {
-    node: JavaSyntaxNode.REFERENCE;
+  export interface IJavaExpression extends IJavaSyntaxNode, IValued<IJavaSyntaxNode> { }
+
+  export interface IJavaLiteral extends IJavaSyntaxNode {
+    node: JavaSyntaxNode.LITERAL;
+    value: string;
   }
 
-  export interface IJavaExpression extends IJavaSyntaxNode {
-    node: JavaSyntaxNode.EXPRESSION;
+  export interface IJavaInstantiation extends IJavaSyntaxNode {
+    node: JavaSyntaxNode.INSTANTIATION;
+    constructor: IJavaType;
+    arguments: IJavaExpression[];
   }
 
   export interface IJavaSyntaxTree extends ISyntaxTree<IJavaSyntaxNode> {
     package: IJavaPackage;
   }
-
-  export type JavaParsedSyntax = IJavaSyntaxNode | IJavaSyntaxTree;
 }

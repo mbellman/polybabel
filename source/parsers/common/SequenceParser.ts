@@ -13,8 +13,8 @@ type SyntaxNodeSequence<V extends ISyntaxNode> = ISyntaxNode & ISequence<V>;
  */
 interface ISequenceParserConfiguration<V extends ISyntaxNode> {
   ValueParser: Constructor<AbstractParser<V>>;
-  terminator: TokenMatch;
   delimiter: TokenMatch;
+  terminator: TokenMatch;
 }
 
 export default class SequenceParser<V extends ISyntaxNode> extends AbstractParser<SyntaxNodeSequence<V>> {
@@ -34,19 +34,21 @@ export default class SequenceParser<V extends ISyntaxNode> extends AbstractParse
   }
 
   @Override protected onFirstToken (): void {
-    const { ValueParser, terminator, delimiter } = this.configuration;
+    const { terminator, ValueParser, delimiter } = this.configuration;
 
-    while (true) {
-      const nextValue = this.parseNextWith(ValueParser);
+    if (!this.currentTokenMatches(terminator)) {
+      while (true) {
+        const nextValue = this.parseNextWith(ValueParser);
 
-      this.parsed.values.push(nextValue);
+        this.parsed.values.push(nextValue);
 
-      if (this.currentTokenMatches(terminator)) {
-        break;
+        if (this.currentTokenMatches(terminator)) {
+          break;
+        }
+
+        this.assertCurrentTokenMatch(delimiter);
+        this.next();
       }
-
-      this.assertCurrentTokenMatch(delimiter);
-      this.next();
     }
 
     this.stop();

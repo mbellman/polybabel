@@ -1,5 +1,4 @@
 import AbstractParser from '../common/AbstractParser';
-import JavaExpressionParser from './JavaExpressionParser';
 import JavaObjectMemberParser from './JavaObjectMemberParser';
 import { Implements, Override } from 'trampoline-framework';
 import { JavaSyntax } from './java-syntax';
@@ -10,20 +9,14 @@ export default abstract class JavaObjectFieldParser extends AbstractParser<JavaS
     return {
       node: JavaSyntax.JavaSyntaxNode.OBJECT_FIELD,
       access: JavaSyntax.JavaAccessModifier.PACKAGE,
+      type: null,
       name: null,
-      type: null
+      value: null
     };
   }
 
   @Override protected onFirstToken (): void {
     this.emulate(JavaObjectMemberParser);
-  }
-
-  @Match('=')
-  protected onAssignment (): void {
-    const expression = this.parseNextWith(JavaExpressionParser);
-
-    this.parsed.value = expression;
   }
 
   @Match(';')

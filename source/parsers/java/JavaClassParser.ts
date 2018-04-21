@@ -43,7 +43,7 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
     this.assert(this.parsed.extends.length === 0);
     this.next();
 
-    const extendees = this.getIncomingTypeSequence();
+    const extendees = this.getClauseTypeSequence();
 
     this.assert(
       extendees.length === 1,
@@ -58,17 +58,16 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
     this.assert(this.parsed.implements.length === 0);
     this.next();
 
-    const implementees = this.getIncomingTypeSequence();
+    const implementees = this.getClauseTypeSequence();
 
     this.parsed.implements = implementees;
   }
 
   @Match('{')
-  protected onOpenBrace (): void {
+  protected onEnterClassBody (): void {
     const { fields, methods } = this.parsed;
 
     this.assert(fields.length === 0 && methods.length === 0);
-    this.next();
   }
 
   @NegativeLookahead('(')
@@ -97,11 +96,11 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
 
   }
 
-  private getIncomingTypeSequence (): JavaSyntax.IJavaType[] {
+  private getClauseTypeSequence (): JavaSyntax.IJavaType[] {
     const typesParser = new SequenceParser({
       ValueParser: JavaTypeParser,
-      terminator: [ ...JavaConstants.ReservedWords, '{' ],
-      delimiter: ','
+      delimiter: ',',
+      terminator: [ ...JavaConstants.ReservedWords, '{' ]
     });
 
     const { values } = this.parseNextWith(typesParser);

@@ -12,10 +12,6 @@ protected interface ITest {
 
 public final class HelloWorld extends What implements ITest {
   public static void main (String[] args) {
-    console.log('Hello!');
-
     GoodbyeWorld goodbyeWorld = new GoodbyeWorld();
-
-    goodbyeWorld.printGoodbyeWorld();
   }
 }

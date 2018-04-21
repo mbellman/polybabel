@@ -1,11 +1,9 @@
 import AbstractParser from '../common/AbstractParser';
 import SequenceParser from '../common/SequenceParser';
 import { Implements, Override } from 'trampoline-framework';
-import { ISyntaxNode, ITyped } from '../common/syntax-types';
 import { JavaSyntax } from './java-syntax';
 import { Match } from '../common/parser-decorators';
-import { Pattern } from '../common/parser-types';
-import { TokenType } from '../../tokenizer/types';
+import { TokenUtils } from '../../tokenizer/token-utils';
 
 export default class JavaTypeParser extends AbstractParser<JavaSyntax.IJavaType> {
   @Implements protected getDefault (): JavaSyntax.IJavaType {
@@ -18,29 +16,27 @@ export default class JavaTypeParser extends AbstractParser<JavaSyntax.IJavaType>
   }
 
   @Override protected onFirstToken (): void {
-    const { type, value } = this.currentToken;
+    this.assert(TokenUtils.isWord(this.currentToken));
 
-    this.assert(type === TokenType.WORD);
-
-    this.parsed.name = value;
+    this.parsed.name = this.currentToken.value;
 
     this.next();
   }
 
   @Match('[')
-  private onOpenBracket (): void {
+  private onArrayStart (): void {
     this.assert(this.nextToken.value === ']');
   }
 
   @Match(']')
-  private onCloseBracket (): void {
+  private onArrayEnd (): void {
     this.assert(this.previousToken.value === '[');
 
     this.parsed.arrayDimensions++;
   }
 
   @Match('<')
-  private onOpenAngleBracket (): void {
+  private onGenericBlockStart (): void {
     this.assert(
       this.parsed.arrayDimensions === 0,
       `[] type '${this.parsed.name}' cannot be generic`
@@ -49,37 +45,41 @@ export default class JavaTypeParser extends AbstractParser<JavaSyntax.IJavaType>
     this.next();
 
     if (this.currentTokenMatches('>')) {
-      // Generic diamond notation, e.g. List<>
+      // Diamond notation generic, e.g. List<>
       this.next();
+    } else {
+      const genericTypesParser = new SequenceParser({
+        ValueParser: JavaTypeParser,
+        delimiter: ',',
+        terminator: '>'
+      });
 
-      return;
-    }
+      const { values } = this.parseNextWith(genericTypesParser);
 
-    const genericTypesParser = new SequenceParser({
-      ValueParser: JavaTypeParser,
-      terminator: '>',
-      delimiter: ','
-    });
+      this.parsed.genericTypes = values;
 
-    const { values } = this.parseNextWith(genericTypesParser);
-
-    this.parsed.genericTypes = values;
-
-    if (this.nextToken.value !== '[') {
-      this.finish();
+      if (this.nextToken.value !== '[') {
+        this.finish();
+      }
     }
   }
 
   @Match('>')
-  private onCloseAngleBracket (): void {
+  private onGenericBlockEnd (): void {
     const hasGenericTypes = this.parsed.genericTypes.length > 0;
 
     if (this.nextToken.value !== '[' || !hasGenericTypes) {
+      // If the type isn't a [], we stop here. If the type
+      // doesn't have generic types, we stop without halting
+      // since A) this could be a child type parser handling
+      // an argument to a generic, and B) if it isn't, and
+      // the > was typed improperly, the parent parser will
+      // encounter the erroneous token and halt.
       this.stop();
     }
   }
 
-  @Match(Pattern.ANY)
+  @Match(TokenUtils.isAny)
   private onEnd (): void {
     this.stop();
   }

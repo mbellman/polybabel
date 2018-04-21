@@ -18,6 +18,7 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
       type: null,
       name: null,
       parameters: [],
+      throws: [],
       block: null
     };
   }
@@ -33,8 +34,8 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
 
     const parametersParser = new SequenceParser({
       ValueParser: JavaParameterParser,
-      terminator: ')',
-      delimiter: ','
+      delimiter: ',',
+      terminator: ')'
     });
 
     const { values } = this.parseNextWith(parametersParser);
@@ -50,13 +51,12 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
   @Match(JavaConstants.Keyword.THROWS)
   protected onThrows (): void {
     this.assert(this.previousCharacterToken.value === ')');
-
     this.next();
 
     const throwsParser = new SequenceParser({
       ValueParser: JavaTypeParser,
-      terminator: /[;{]/,
-      delimiter: ','
+      delimiter: ',',
+      terminator: /[;{]/
     });
 
     const { values } = this.parseNextWith(throwsParser);
@@ -67,10 +67,15 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
   @Match('{')
   protected onBlock (): void {
     this.next();
+
+    this.parsed.block = this.parseNextWith(JavaBlockParser);
+
+    this.stop();
   }
 
-  @Match(/[};]/)
+  @Match(';')
   protected onEnd (): void {
+    this.assert(this.parsed.block === null);
     this.finish();
   }
 }

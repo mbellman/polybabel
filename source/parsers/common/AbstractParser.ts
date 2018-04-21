@@ -1,10 +1,11 @@
 import chalk from 'chalk';
-import { Callback, Constructor, IConstructable, IHashMap } from '../../system/types';
-import { getNextToken, getPreviousToken, isCharacterToken } from '../../tokenizer/token-utils';
-import { ISyntaxNode, ISyntaxTree } from './syntax-types';
-import { IToken, TokenType } from '../../tokenizer/types';
-import { TokenMatch, TokenMatcher } from './parser-types';
+import { BaseOf, Callback, Constructor, IConstructable, Without } from '../../system/types';
 import { Bound } from 'trampoline-framework';
+import { ISyntaxNode } from './syntax-types';
+import { IToken, TokenType } from '../../tokenizer/types';
+import { ParserUtils } from './parser-utils';
+import { TokenMatch, TokenMatcher } from './parser-types';
+import { TokenUtils } from '../../tokenizer/token-utils';
 
 export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode> {
   protected currentToken: IToken;
@@ -13,7 +14,7 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
   private isStopped: boolean = false;
 
   protected get nextCharacterToken (): IToken {
-    return this.findMatchingToken(getNextToken, isCharacterToken);
+    return this.findMatchingToken(TokenUtils.getNextToken, TokenUtils.isCharacterToken);
   }
 
   protected get nextToken (): IToken {
@@ -21,7 +22,7 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
   }
 
   protected get previousCharacterToken (): IToken {
-    return this.findMatchingToken(getPreviousToken, isCharacterToken);
+    return this.findMatchingToken(TokenUtils.getPreviousToken, TokenUtils.isCharacterToken);
   }
 
   protected get previousToken (): IToken {
@@ -75,27 +76,18 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
     this.assert(this.currentTokenMatches(tokenMatch), errorMessage);
   }
 
-  @Bound protected currentLineHasMatch (tokenMatch: TokenMatch): boolean {
-    return (
-      (Array.isArray(tokenMatch) && tokenMatch.some(this.lineContains)) ||
-      this.lineContains(tokenMatch as string | RegExp)
-    );
-  }
-
   @Bound protected currentTokenMatches (tokenMatch: TokenMatch): boolean {
-    const { value } = this.currentToken;
-
-    return (
-      value === tokenMatch ||
-      (Array.isArray(tokenMatch) && tokenMatch.indexOf(value) > -1) ||
-      tokenMatch instanceof RegExp && tokenMatch.test(value)
-    );
+    return ParserUtils.tokenMatches(this.currentToken, tokenMatch);
   }
 
   /**
-   * @todo @description
+   * Parses over the incoming token stream with a parser class
+   * and merges the parsed result onto this instance's parsed
+   * syntax node object. Provided parser classes must parse a
+   * syntax node whose type signature is a subset of the
+   * instance's parsed syntax node.
    */
-  protected emulate <T extends ISyntaxNode & { [K in keyof Exclude<P, T>]: any }>(ParserClass: Constructor<AbstractParser<T>>): void {
+  protected emulate <T extends ISyntaxNode & BaseOf<Without<P, 'node'>, Without<T, 'node'>>>(ParserClass: Constructor<AbstractParser<T>>): void {
     const { node, ...parsed } = this.parseNextWith(ParserClass) as any;
 
     Object.assign(this.parsed, parsed);
@@ -116,14 +108,10 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
 
   protected halt (tokenName?: string): void {
     const tokenType =
-      tokenName ?
-        tokenName :
-      this.currentToken.type === TokenType.WORD ?
-        'word' :
-      this.currentToken.type === TokenType.NUMBER ?
-        'number' :
-      this.currentToken.type === TokenType.SYMBOL ?
-        'symbol' :
+      tokenName ? tokenName :
+      this.currentToken.type === TokenType.WORD ? 'word' :
+      this.currentToken.type === TokenType.NUMBER ? 'number' :
+      this.currentToken.type === TokenType.SYMBOL ? 'symbol' :
       'token';
 
     this.throw(`Unexpected ${tokenType} '${this.currentToken.value}'`);
@@ -134,20 +122,16 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
   }
 
   /**
-   * Determines whether a target value or regex is contained within the
+   * Determines whether a token match is contained within the
    * current parsing line.
    */
-  @Bound protected lineContains (targetValue: string | RegExp): boolean {
-    if (this.currentTokenMatches(targetValue)) {
+  @Bound protected lineContains (tokenMatch: TokenMatch): boolean {
+    if (this.currentTokenMatches(tokenMatch)) {
       return true;
     }
 
-    const targetToken = this.findMatchingToken(getNextToken, ({ value, type }) => {
-      return (
-        value === targetValue ||
-        targetValue instanceof RegExp && targetValue.test(value) ||
-        type === TokenType.NEWLINE
-      );
+    const targetToken = this.findMatchingToken(TokenUtils.getNextToken, token => {
+      return ParserUtils.tokenMatches(token, tokenMatch) || token.type === TokenType.NEWLINE;
     });
 
     return targetToken.type !== TokenType.NEWLINE;
@@ -165,6 +149,12 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
    * in the parsing stream.
    */
   protected onFirstToken (): void { }
+
+  /**
+   * An optionally overridable hook which runs on each new line in
+   * the parsing stream.
+   */
+  protected onLineStart (): void { }
 
   /**
    * Attempts to parse a token stream starting from the current token
@@ -263,11 +253,11 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
     }
 
     if (this.isStartOfLine()) {
-      if (this.checkTokenMatchersWithPredicate(lookaheads, this.currentLineHasMatch)) {
+      if (this.checkTokenMatchersWithPredicate(lookaheads, this.lineContains)) {
         return;
       }
 
-      if (this.checkTokenMatchersWithPredicate(negativeLookaheads, match => !this.currentLineHasMatch(match))) {
+      if (this.checkTokenMatchersWithPredicate(negativeLookaheads, tokenMatch => !this.lineContains(tokenMatch))) {
         return;
       }
     }
@@ -306,14 +296,14 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
 
     // Walk backward to the start of the range, or the
     // beginning of the current line
-    while (--n >= 0 && localToken.previousToken && isCharacterToken(localToken.previousToken)) {
+    while (--n >= 0 && localToken.previousToken && TokenUtils.isCharacterToken(localToken.previousToken)) {
       localToken = localToken.previousToken;
     }
 
     // Walk forward to the end of the range, or the end
     // of the current line, adding each encountered token
     // to the list of local token values
-    while (n++ < (2 * range) && localToken.nextToken && isCharacterToken(localToken)) {
+    while (n++ < (2 * range) && localToken.nextToken && TokenUtils.isCharacterToken(localToken)) {
       const colorize = localToken === this.currentToken
         ? chalk.bold.red
         : chalk.gray;
@@ -354,6 +344,8 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
 
       if (this.currentToken.type !== TokenType.NEWLINE) {
         this.checkTokenMatchers();
+      } else {
+        this.onLineStart();
       }
 
       if (this.isStopped) {
