@@ -2,12 +2,12 @@
 
 import assert from './system/assert';
 import chalk from 'chalk';
-import parse from './parsers/parse';
+import parse from './parser/parse';
 import tokenize from './tokenizer/tokenize';
 import { getFileContents, resolveFilesDeep } from './system/file';
 import { getFlags, IFlags } from './system/flags';
 import { IConfiguration, resolveConfiguration } from './system/configuration';
-import { ISyntaxTree } from 'parsers/common/syntax-types';
+import { ISyntaxTree } from 'parser/common/syntax-types';
 import { Language } from './system/constants';
 import { IHashMap } from 'system/types';
 
