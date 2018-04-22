@@ -21,30 +21,31 @@ export default class JavaLiteralParser extends AbstractParser<JavaSyntax.IJavaLi
   ])
   @Match(TokenUtils.isNumber)
   protected onLiteralToken (): void {
-    this.assert(this.parsed.value === '');
-
-    this.parsed.value = this.currentToken.value;
-
+    this.addTokenToValue();
     this.finish();
   }
 
-  @Match('"')
-  @Match("'")
+  @Match(/['"]/)
   protected onOpenQuote (): void {
-    this.assert(this.parsed.value === '');
-
     const isSingleQuote = this.currentTokenMatches("'");
     const terminatorQuote = isSingleQuote ? "'" : '"';
+    let isBackslashed = false;
 
     while (!this.isEOF()) {
       this.addTokenToValue();
       this.next();
 
-      if (this.currentTokenMatches(terminatorQuote)) {
+      if (TokenUtils.isNewline(this.nextToken)) {
+        this.throw('Quotes must be single-line only');
+      }
+
+      if (this.currentTokenMatches(terminatorQuote) && !isBackslashed) {
         this.addTokenToValue();
 
         break;
       }
+
+      isBackslashed = this.currentTokenMatches('\\') && !isBackslashed;
     }
 
     this.finish();
@@ -52,7 +53,7 @@ export default class JavaLiteralParser extends AbstractParser<JavaSyntax.IJavaLi
 
   @Match('{')
   protected onArray (): void {
-    this.assert(this.parsed.value === '');
+
   }
 
   private addTokenToValue (): void {

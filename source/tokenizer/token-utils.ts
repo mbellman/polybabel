@@ -22,6 +22,10 @@ export namespace TokenUtils {
     return type === TokenType.NUMBER;
   }
 
+  export function isNewline ({ type }: IToken): boolean {
+    return type === TokenType.NEWLINE;
+  }
+
   export function isCharacterToken ({ type }: IToken): boolean {
     return type !== TokenType.NEWLINE;
   }

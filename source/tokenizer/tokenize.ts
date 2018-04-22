@@ -9,7 +9,7 @@ import { IToken, Tokenizer, TokenType } from './types';
  * @internal
  */
 const tokenizers: Tokenizer[] = [
-  createTokenizer(TokenType.SYMBOL, /[$|=`:;<>?,.\-*+\/%&!^~\[\]{}()'"]/),
+  createTokenizer(TokenType.SYMBOL, /[$|=`:;<>?,.\-*+\/\\%&!^~\[\]{}()'"]/),
   createTokenizer(TokenType.NUMBER, /[\d.]/),
   createTokenizer(TokenType.WORD, /\w/),
   createTokenizer(TokenType.NEWLINE, /[\r\n]/),
@@ -57,7 +57,7 @@ export default function tokenize (input: string): IToken[] {
 
     assert(
       totalFailedTokenizers < tokenizers.length,
-      `Unexpected character: '${input[offset]}'`
+      `Line ${tokens[tokens.length - 1].line}: Unable to tokenize character '${input[offset]}'`
     );
   }
 

@@ -325,7 +325,7 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
 
     return messageIsAlreadyNormalized
       ? message
-      : ` ${chalk.blueBright(message)} ${chalk.cyan(`(${this.constructor.name})`)} -> ${this.getColorizedLinePreview()}\n`;
+      : `${chalk.blueBright(message)} -> ${this.getColorizedLinePreview()}`;
   }
 
   /**

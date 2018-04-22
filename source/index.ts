@@ -9,6 +9,12 @@ import { getFlags, IFlags } from './system/flags';
 import { IConfiguration, resolveConfiguration } from './system/configuration';
 import { ISyntaxTree } from 'parsers/common/syntax-types';
 import { Language } from './system/constants';
+import { IHashMap } from 'system/types';
+
+/**
+ * @internal
+ */
+type FileErrorMessage = [ string, string ];
 
 /**
  * @internal
@@ -25,31 +31,39 @@ function getLanguageByExtension (extension: string): Language {
 /**
  * @internal
  */
+function handleFileErrorMessages (fileErrorMessages: FileErrorMessage[]): void {
+  for (const [ file, message ] of fileErrorMessages) {
+    console.log(chalk.bgBlue(' Compilation Error: '), chalk.bgRed(` ${file} `));
+    console.log(` ${message}`);
+  }
+
+  console.log(chalk.red('\nFailed to compile.\n'));
+}
+
+/**
+ * @internal
+ */
 async function processFiles (directory: string, files: string[]): Promise<void> {
-  let totalFailedFiles = 0;
+  const fileErrorMessages: FileErrorMessage[] = [];
 
   for (const file of files) {
     const extension = file.split('.').pop();
 
     try {
-      console.log(chalk.yellow(`Parsing ${file}...`));
-
       const language = getLanguageByExtension(extension);
       const fileContents = await getFileContents(`${process.cwd()}/${directory}/${file}`);
       const tokens = tokenize(fileContents);
       const syntaxTree: ISyntaxTree<any> = parse(tokens, language);
     } catch (e) {
-      console.log(chalk.bgBlue('\n Parsing Error: '), chalk.bgRed(` ${file} `));
-      console.log(e.message);
-
-      ++totalFailedFiles;
+      fileErrorMessages.push([ file, e.message ]);
     }
   }
 
-  assert(
-    totalFailedFiles === 0,
-    chalk.red('Failed to compile!')
-  );
+  if (fileErrorMessages.length > 0) {
+    handleFileErrorMessages(fileErrorMessages);
+  } else {
+    console.log(chalk.green(`Compiled ${files.length} files.\n`));
+  }
 }
 
 /**
@@ -65,7 +79,7 @@ async function main (args: string[]) {
 
   await processFiles(inputFolderName, inputFiles);
 
-  console.log(chalk.white.bold(`\nCompiled in ${Date.now() - startTime} ms!`));
+  console.log(chalk.white.bold(`Done. ${Date.now() - startTime}ms`));
 }
 
 main(process.argv);
