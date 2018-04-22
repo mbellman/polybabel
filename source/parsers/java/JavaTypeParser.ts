@@ -1,7 +1,9 @@
 import AbstractParser from '../common/AbstractParser';
+import JavaPropertyChainParser from './JavaPropertyChainParser';
 import SequenceParser from '../common/SequenceParser';
 import { Implements, Override } from 'trampoline-framework';
 import { JavaSyntax } from './java-syntax';
+import { JavaUtils } from './java-utils';
 import { Match } from '../common/parser-decorators';
 import { TokenUtils } from '../../tokenizer/token-utils';
 
@@ -18,7 +20,13 @@ export default class JavaTypeParser extends AbstractParser<JavaSyntax.IJavaType>
   @Override protected onFirstToken (): void {
     this.assert(TokenUtils.isWord(this.currentToken));
 
-    this.parsed.name = this.currentToken.value;
+    this.parsed.name = this.nextToken.value !== '.'
+      // By default, we assume type names are just strings
+      ? this.currentToken.value
+      // Type names may also be a namespace field; where
+      // the name doesn't seem to follow the default
+      // pattern we parse it as a property chain
+      : this.parseNextWith(JavaPropertyChainParser);
 
     this.next();
   }
@@ -79,7 +87,7 @@ export default class JavaTypeParser extends AbstractParser<JavaSyntax.IJavaType>
     }
   }
 
-  @Match(TokenUtils.isAny)
+  @Match(/./)
   private onEnd (): void {
     this.stop();
   }

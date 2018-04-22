@@ -3,22 +3,20 @@ import JavaTypeParser from './JavaTypeParser';
 import { Implements, Override } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
-import { TokenType } from '../../tokenizer/types';
+import { Match } from '../common/parser-decorators';
 import { TokenUtils } from '../../tokenizer/token-utils';
 
-export default class JavaParameterParser extends AbstractParser<JavaSyntax.IJavaParameter> {
-  @Implements protected getDefault (): JavaSyntax.IJavaParameter {
+export default class JavaVariableDeclarationParser extends AbstractParser<JavaSyntax.IJavaVariableDeclaration> {
+  @Implements protected getDefault (): JavaSyntax.IJavaVariableDeclaration {
     return {
-      node: JavaSyntax.JavaSyntaxNode.PARAMETER,
+      node: JavaSyntax.JavaSyntaxNode.VARIABLE_DECLARATION,
       type: null,
       name: null
     };
   }
 
   @Override protected onFirstToken (): void {
-    const isFinalParameter = this.currentToken.value === JavaConstants.Keyword.FINAL;
-
-    if (isFinalParameter) {
+    if (this.currentTokenMatches(JavaConstants.Keyword.FINAL)) {
       this.parsed.isFinal = true;
 
       this.next();

@@ -8,6 +8,7 @@ import { Implements, Override } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { Lookahead, Match, NegativeLookahead } from '../common/parser-decorators';
+import { TokenUtils } from '../../tokenizer/token-utils';
 
 export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClass> {
   @Implements protected getDefault (): JavaSyntax.IJavaClass {
@@ -32,6 +33,7 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
     );
 
     this.next();
+    this.assert(TokenUtils.isWord(this.currentToken));
 
     this.parsed.name = this.currentToken.value;
 
@@ -47,7 +49,7 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
 
     this.assert(
       extendees.length === 1,
-      'Classes can only extend one base class'
+      `Derived class '${this.parsed.name}' can only extend one base class`
     );
 
     this.parsed.extends = extendees;

@@ -2,8 +2,8 @@ import AbstractParser from '../common/AbstractParser';
 import JavaModifiableParser from './JavaModifiableParser';
 import JavaTypeParser from './JavaTypeParser';
 import { Implements, Override } from 'trampoline-framework';
-import { IToken, TokenType } from '../../tokenizer/types';
 import { JavaSyntax } from './java-syntax';
+import { TokenUtils } from '../../tokenizer/token-utils';
 
 export default class JavaObjectMemberParser extends AbstractParser<JavaSyntax.IJavaObjectMember> {
   @Implements protected getDefault (): JavaSyntax.IJavaObjectMember {
@@ -21,7 +21,7 @@ export default class JavaObjectMemberParser extends AbstractParser<JavaSyntax.IJ
     this.parsed.type = this.parseNextWith(JavaTypeParser);
     this.parsed.name = this.currentToken.value;
 
-    this.assert(this.currentToken.type === TokenType.WORD);
+    this.assert(TokenUtils.isWord(this.currentToken));
     this.finish();
   }
 }

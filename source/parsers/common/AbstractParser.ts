@@ -84,8 +84,8 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
    * Parses over the incoming token stream with a parser class
    * and merges the parsed result onto this instance's parsed
    * syntax node object. Provided parser classes must parse a
-   * syntax node whose type signature is a subset of the
-   * instance's parsed syntax node.
+   * syntax node whose type signature is a subset of that of
+   * the instance's.
    */
   protected emulate <T extends ISyntaxNode & BaseOf<Without<P, 'node'>, Without<T, 'node'>>>(ParserClass: Constructor<AbstractParser<T>>): void {
     const { node, ...parsed } = this.parseNextWith(ParserClass) as any;
@@ -93,7 +93,25 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
     Object.assign(this.parsed, parsed);
   }
 
-  protected abstract getDefault (): P;
+  /**
+   * Performs a token search, starting from the current token, using a step
+   * function to define how to change the lookup position on each search
+   * step, and a {predicate} function to determine when a target token has
+   * been found. If a token satisfying the predicate function is matched,
+   * that token is returned.
+   *
+   * The current token will not be counted as a match even if it happens
+   * to satisfy the predicate function.
+   */
+  protected findMatchingToken (stepFunction: Callback<IToken, IToken>, predicate: Callback<IToken, boolean>): IToken {
+    let token = stepFunction(this.currentToken);
+
+    while (token && !predicate(token)) {
+      token = stepFunction(token);
+    }
+
+    return token;
+  }
 
   /**
    * Finishes parsing and ensures that the current token will be
@@ -106,15 +124,23 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
     this.isFinished = true;
   }
 
+  protected abstract getDefault (): P;
+
   protected halt (tokenName?: string): void {
+    const { currentToken } = this;
+
     const tokenType =
       tokenName ? tokenName :
-      this.currentToken.type === TokenType.WORD ? 'word' :
-      this.currentToken.type === TokenType.NUMBER ? 'number' :
-      this.currentToken.type === TokenType.SYMBOL ? 'symbol' :
+      TokenUtils.isWord(currentToken) ? 'word' :
+      TokenUtils.isNumber(currentToken) ? 'number' :
+      TokenUtils.isSymbol(currentToken) ? 'symbol' :
       'token';
 
-    this.throw(`Unexpected ${tokenType} '${this.currentToken.value}'`);
+    this.throw(`Unexpected ${tokenType} '${currentToken.value}'`);
+  }
+
+  protected isEOF (): boolean {
+    return !this.nextToken;
   }
 
   protected isStartOfLine (): boolean {
@@ -149,12 +175,6 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
    * in the parsing stream.
    */
   protected onFirstToken (): void { }
-
-  /**
-   * An optionally overridable hook which runs on each new line in
-   * the parsing stream.
-   */
-  protected onLineStart (): void { }
 
   /**
    * Attempts to parse a token stream starting from the current token
@@ -269,26 +289,6 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
     return new (ParserClass as IConstructable<A>)();
   }
 
-  /**
-   * Performs a token search, starting from the current token, using a step
-   * function to define how to change the lookup position on each search
-   * step, and a {predicate} function to determine when a target token has
-   * been found. If a token satisfying the predicate function is matched,
-   * that token is returned.
-   *
-   * The current token will not be counted as a match even if it happens
-   * to satisfy the predicate function.
-   */
-  private findMatchingToken (stepFunction: Callback<IToken, IToken>, predicate: Callback<IToken, boolean>): IToken {
-    let token = stepFunction(this.currentToken);
-
-    while (token && !predicate(token)) {
-      token = stepFunction(token);
-    }
-
-    return token;
-  }
-
   private getColorizedLinePreview (range: number = 5): string {
     let n = range;
     let localToken = this.currentToken;
@@ -344,8 +344,6 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
 
       if (this.currentToken.type !== TokenType.NEWLINE) {
         this.checkTokenMatchers();
-      } else {
-        this.onLineStart();
       }
 
       if (this.isStopped) {

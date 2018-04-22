@@ -69,7 +69,7 @@ export namespace JavaConstants {
     [Keyword.PRIVATE]: JavaSyntax.JavaAccessModifier.PRIVATE
   };
 
-  export const ModifierFlagMap: IHashMap<keyof JavaSyntax.IJavaModifiable> = {
+  export const ModifiableKeyMap: IHashMap<keyof JavaSyntax.IJavaModifiable> = {
     [JavaConstants.Keyword.ABSTRACT]: 'isAbstract',
     [JavaConstants.Keyword.FINAL]: 'isFinal',
     [JavaConstants.Keyword.STATIC]: 'isStatic'

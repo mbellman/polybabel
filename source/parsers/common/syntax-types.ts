@@ -9,7 +9,7 @@ export interface ISyntaxNode<N = any> {
 }
 
 /**
- * A syntactic structure with an access modifier. The provided
+ * A syntactic construct with an access modifier. The provided
  * generic parameter A should be an enum with language-specific
  * access modifier constants.
  */
@@ -18,14 +18,17 @@ export interface IAccessible<A> {
 }
 
 /**
- * A syntactic structure identifiable by name.
+ * A syntactic construct identifiable by name. The provided generic
+ * parameter T defaults to <string>, but can be any type if the
+ * construct it represents the name for can have a name identifier
+ * of other types or constructs.
  */
-export interface INamed {
-  name: string;
+export interface INamed<T = string> {
+  name: T;
 }
 
 /**
- * A syntatic structure with a particular type. Only applies
+ * A syntatic construct with a particular type. Only applies
  * to explicitly-typed languages. The provided generic parameter
  * T should be an interface of a language-specific 'type' syntax
  * node.
@@ -35,14 +38,14 @@ export interface ITyped<T> {
 }
 
 /**
- * A syntactic structure with an assigned value.
+ * A syntactic construct with an assigned value.
  */
 export interface IValued<V> {
   value: V;
 }
 
 /**
- * A syntactic structure which has associated parameters, such
+ * A syntactic construct which has associated parameters, such
  * as a class method or function. The provided generic parameter
  * P should be a type signature for a language-specific parameter
  * syntax node.
@@ -52,7 +55,16 @@ export interface IWithParameters<P extends ISyntaxNode> {
 }
 
 /**
- * A syntactic structure representing a sequence of values, such
+ * A syntactic construct which has arguments, such as a function
+ * call. The provided generic parameter A should be a type signature
+ * for a language-specific expression syntax node.
+ */
+export interface IWithArguments<A extends ISyntaxNode> {
+  arguments: A[];
+}
+
+/**
+ * A syntactic construct representing a sequence of values, such
  * as a list of parameters, arguments, list entries, etc. The
  * provided generic parameter V should be an enum with language-
  * specific syntax node constants, or a single language-specific
@@ -63,9 +75,10 @@ export interface ISequence<V extends ISyntaxNode> {
 }
 
 /**
- * A syntactic structure which can contain an arbitrary number
+ * A syntactic construct which can contain an arbitrary number
  * of syntax nodes. The provided generic parameter N should be
- * an enum of language-specific syntax node constants.
+ * an enum of language-specific syntax node constants, or a
+ * single language-specific syntax node constant.
  */
 export interface IBlock<N extends ISyntaxNode> {
   nodes: N[];

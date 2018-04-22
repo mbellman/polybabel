@@ -1,26 +1,26 @@
 import AbstractParser from '../common/AbstractParser';
 import JavaStatementParser from './JavaStatementParser';
-import JavaTypeParser from './JavaTypeParser';
 import SequenceParser from '../common/SequenceParser';
 import { Implements, Override } from 'trampoline-framework';
-import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { Match } from '../common/parser-decorators';
+import { TokenUtils } from '../../tokenizer/token-utils';
 
-export default class JavaInstantiationParser extends AbstractParser<JavaSyntax.IJavaInstantiation> {
-  @Implements protected getDefault (): JavaSyntax.IJavaInstantiation {
+export default class JavaFunctionCallParser extends AbstractParser<JavaSyntax.IJavaFunctionCall> {
+  @Implements protected getDefault (): JavaSyntax.IJavaFunctionCall {
     return {
-      node: JavaSyntax.JavaSyntaxNode.INSTANTIATION,
-      constructor: null,
+      node: JavaSyntax.JavaSyntaxNode.FUNCTION_CALL,
+      function: null,
       arguments: []
     };
   }
 
   @Override protected onFirstToken (): void {
-    this.assertCurrentTokenMatch(JavaConstants.Keyword.NEW);
-    this.next();
+    this.assert(TokenUtils.isWord(this.currentToken));
 
-    this.parsed.constructor = this.parseNextWith(JavaTypeParser);
+    this.parsed.function = this.currentToken.value;
+
+    this.next();
   }
 
   @Match('(')
@@ -38,11 +38,8 @@ export default class JavaInstantiationParser extends AbstractParser<JavaSyntax.I
     this.parsed.arguments = values;
   }
 
-  /**
-   * TODO: Add support for anonymous classes/instance overrides
-   */
   @Match(')')
-  protected onEnd (): void {
+  protected onArgumentsEnd (): void {
     this.finish();
   }
 }

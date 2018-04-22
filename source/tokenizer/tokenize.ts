@@ -3,14 +3,15 @@ import createTokenizer from './createTokenizer';
 import { IToken, Tokenizer, TokenType } from './types';
 
 /**
- * An array of tokenizer functions for matching specific token patterns.
+ * An array of tokenizer functions for matching specific
+ * token patterns.
  *
  * @internal
  */
 const tokenizers: Tokenizer[] = [
-  createTokenizer(TokenType.NUMBER, /\d/),
+  createTokenizer(TokenType.SYMBOL, /[$|=`:;<>?,.\-*+\/%&!^~\[\]{}()'"]/),
+  createTokenizer(TokenType.NUMBER, /[\d.]/),
   createTokenizer(TokenType.WORD, /\w/),
-  createTokenizer(TokenType.SYMBOL, /[$_|=`:;<>?,.\-*+\/%&!^~\[\]{}()'"]/),
   createTokenizer(TokenType.NEWLINE, /[\r\n]/),
   createTokenizer(TokenType.WHITESPACE, /[\s\t]/),
 ];

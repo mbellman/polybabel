@@ -1,5 +1,5 @@
 class GoodbyeWorld {
   public void printGoodbye () {
-    console.log('Goodbye.');
+    console.log('Goodbye.', 5).getThing();
   }
 }

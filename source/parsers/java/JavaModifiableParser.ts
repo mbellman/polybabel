@@ -20,12 +20,12 @@ export default class JavaModifiableParser extends AbstractParser<JavaSyntax.IJav
 
   @Match(JavaConstants.Modifiers)
   protected onModifier (): void {
-    const modifiableKey = JavaConstants.ModifierFlagMap[this.currentToken.value];
+    const modifiableKey = JavaConstants.ModifiableKeyMap[this.currentToken.value];
 
     this.parsed[modifiableKey] = true;
   }
 
-  @Match(TokenUtils.isAny)
+  @Match(/./)
   protected onNonModifier (): void {
     this.stop();
   }

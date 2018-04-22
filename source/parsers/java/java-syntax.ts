@@ -1,4 +1,4 @@
-import { IAccessible, IBlock, INamed, ISyntaxNode, ISyntaxTree, ITyped, IValued, IWithParameters } from '../common/syntax-types';
+import { IAccessible, IBlock, INamed, ISyntaxNode, ISyntaxTree, ITyped, IValued, IWithArguments, IWithParameters } from '../common/syntax-types';
 
 export namespace JavaSyntax {
   export const enum JavaSyntaxNode {
@@ -13,8 +13,10 @@ export namespace JavaSyntax {
     OBJECT_METHOD,
     PARAMETER,
     BLOCK,
-    VARIABLE,
-    EXPRESSION,
+    STATEMENT,
+    VARIABLE_DECLARATION,
+    PROPERTY_CHAIN,
+    FUNCTION_CALL,
     LITERAL,
     INSTANTIATION
   }
@@ -24,6 +26,14 @@ export namespace JavaSyntax {
     PROTECTED,
     PRIVATE,
     PACKAGE
+  }
+
+  export const enum JavaOperator {
+    ADD,
+    SUBTRACT,
+    MULTIPLY,
+    DIVIDE,
+    ASSIGN
   }
 
   export interface IJavaSyntaxNode extends ISyntaxNode<JavaSyntaxNode> { }
@@ -62,7 +72,7 @@ export namespace JavaSyntax {
     nestedClasses: IJavaClass[];
   }
 
-  export interface IJavaType extends IJavaSyntaxNode, INamed {
+  export interface IJavaType extends IJavaSyntaxNode, INamed<string | IJavaPropertyChain> {
     node: JavaSyntaxNode.TYPE;
     genericTypes: IJavaType[];
     arrayDimensions: number;
@@ -72,39 +82,49 @@ export namespace JavaSyntax {
     node: JavaSyntaxNode;
   }
 
-  export interface IJavaObjectField extends IJavaObjectMember, IValued<IJavaExpression> {
+  export interface IJavaObjectField extends IJavaObjectMember, IValued<IJavaStatement> {
     node: JavaSyntaxNode.OBJECT_FIELD;
   }
 
-  export interface IJavaObjectMethod extends IJavaObjectMember, IWithParameters<IJavaParameter> {
+  export interface IJavaObjectMethod extends IJavaObjectMember, IWithParameters<IJavaVariableDeclaration> {
     node: JavaSyntaxNode.OBJECT_METHOD;
     throws: IJavaType[];
     block: IJavaBlock;
   }
 
-  export interface IJavaParameter extends IJavaSyntaxNode, Pick<IJavaModifiable, 'isFinal'>, ITyped<IJavaType>, INamed {
-    node: JavaSyntaxNode.PARAMETER;
-  }
-
-  export interface IJavaBlock extends IJavaSyntaxNode, IBlock<IJavaSyntaxNode> {
+  export interface IJavaBlock extends IJavaSyntaxNode, IBlock<IJavaStatement> {
     node: JavaSyntaxNode.BLOCK;
   }
 
-  export interface IJavaVariable extends IJavaSyntaxNode, Pick<IJavaModifiable, 'isFinal'>, ITyped<IJavaType>, INamed, IValued<IJavaExpression> {
-    node: JavaSyntaxNode.VARIABLE;
+  export interface IJavaStatement extends IJavaSyntaxNode {
+    node: JavaSyntaxNode.STATEMENT;
+    leftSide: IJavaSyntaxNode;
+    operator?: JavaOperator;
+    rightSide?: IJavaSyntaxNode;
   }
 
-  export interface IJavaExpression extends IJavaSyntaxNode, IValued<IJavaSyntaxNode> { }
+  export interface IJavaVariableDeclaration extends IJavaSyntaxNode, Pick<IJavaModifiable, 'isFinal'>, ITyped<IJavaType>, INamed {
+    node: JavaSyntaxNode.VARIABLE_DECLARATION;
+  }
+
+  export interface IJavaPropertyChain extends IJavaSyntaxNode {
+    node: JavaSyntaxNode.PROPERTY_CHAIN;
+    properties: (string | IJavaFunctionCall)[];
+  }
+
+  export interface IJavaFunctionCall extends IJavaSyntaxNode, IWithArguments<IJavaStatement> {
+    node: JavaSyntaxNode.FUNCTION_CALL;
+    function: string;
+  }
 
   export interface IJavaLiteral extends IJavaSyntaxNode {
     node: JavaSyntaxNode.LITERAL;
     value: string;
   }
 
-  export interface IJavaInstantiation extends IJavaSyntaxNode {
+  export interface IJavaInstantiation extends IJavaSyntaxNode, IWithArguments<IJavaStatement> {
     node: JavaSyntaxNode.INSTANTIATION;
     constructor: IJavaType;
-    arguments: IJavaExpression[];
   }
 
   export interface IJavaSyntaxTree extends ISyntaxTree<IJavaSyntaxNode> {

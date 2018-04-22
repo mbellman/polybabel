@@ -37,7 +37,7 @@ export default class SequenceParser<V extends ISyntaxNode> extends AbstractParse
     const { terminator, ValueParser, delimiter } = this.configuration;
 
     if (!this.currentTokenMatches(terminator)) {
-      while (true) {
+      while (!this.isEOF()) {
         const nextValue = this.parseNextWith(ValueParser);
 
         this.parsed.values.push(nextValue);

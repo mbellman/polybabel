@@ -22,10 +22,6 @@ export namespace TokenUtils {
     return type === TokenType.NUMBER;
   }
 
-  export function isAny (token: IToken): boolean {
-    return true;
-  }
-
   export function isCharacterToken ({ type }: IToken): boolean {
     return type !== TokenType.NEWLINE;
   }

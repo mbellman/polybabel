@@ -32,6 +32,8 @@ async function processFiles (directory: string, files: string[]): Promise<void> 
     const extension = file.split('.').pop();
 
     try {
+      console.log(chalk.yellow(`Parsing ${file}...`));
+
       const language = getLanguageByExtension(extension);
       const fileContents = await getFileContents(`${process.cwd()}/${directory}/${file}`);
       const tokens = tokenize(fileContents);
@@ -54,7 +56,7 @@ async function processFiles (directory: string, files: string[]): Promise<void> 
  * Polybabel entry point.
  */
 async function main (args: string[]) {
-  console.log(chalk.green(`\nStarting...\n`));
+  console.log(chalk.white.bold(`\nStarting...\n`));
 
   const startTime = Date.now();
   const flags = getFlags(args);
@@ -63,7 +65,7 @@ async function main (args: string[]) {
 
   await processFiles(inputFolderName, inputFiles);
 
-  console.log(`Compiled in ${Date.now() - startTime} ms!`);
+  console.log(chalk.white.bold(`\nCompiled in ${Date.now() - startTime} ms!`));
 }
 
 main(process.argv);
