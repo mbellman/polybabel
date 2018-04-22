@@ -14,5 +14,7 @@ public final class HelloWorld extends What implements ITest {
   public static void main (String[] args) {
     GoodbyeWorld goodbyeWorld = new GoodbyeWorld();
     Number num = 5;
+
+    HelloWorld[('hello')]<ITest>main()(5);
   }
 }

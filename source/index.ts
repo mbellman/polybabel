@@ -17,15 +17,25 @@ import { IHashMap } from 'system/types';
 type FileErrorMessage = [ string, string ];
 
 /**
+ * Maps file extensions to language constants.
+ *
+ * @internal
+ */
+const LanguageMap: IHashMap<Language> = {
+  java: Language.JAVA
+};
+
+/**
  * @internal
  */
 function getLanguageByExtension (extension: string): Language {
-  switch (extension) {
-    case 'java':
-      return Language.JAVA;
-    default:
-      throw new Error(`Extension '.${extension}' not currently supported!`);
+  const language = LanguageMap[extension];
+
+  if (typeof language !== 'undefined') {
+    return language;
   }
+
+  throw new Error(`Extension '.${extension}' not currently supported!`);
 }
 
 /**

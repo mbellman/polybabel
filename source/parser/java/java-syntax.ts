@@ -109,12 +109,12 @@ export namespace JavaSyntax {
 
   export interface IJavaPropertyChain extends IJavaSyntaxNode {
     node: JavaSyntaxNode.PROPERTY_CHAIN;
-    properties: (string | IJavaFunctionCall)[];
+    properties: Array<string | IJavaStatement | IJavaFunctionCall>;
   }
 
-  export interface IJavaFunctionCall extends IJavaSyntaxNode, IWithArguments<IJavaStatement> {
+  export interface IJavaFunctionCall extends IJavaSyntaxNode, INamed, IWithArguments<IJavaStatement> {
     node: JavaSyntaxNode.FUNCTION_CALL;
-    function: string;
+    genericArguments: IJavaType[];
   }
 
   export interface IJavaLiteral extends IJavaSyntaxNode {

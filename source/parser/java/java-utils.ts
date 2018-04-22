@@ -82,11 +82,29 @@ export namespace JavaUtils {
    * @example
    *
    *  object.
+   *  object[
    *  .property
+   *  .<
+   *  ].
+   *  ]<
    */
   export function isPropertyChain (token: IToken): boolean {
-    const isPropertyName = TokenUtils.isWord(token) && ParserUtils.tokenMatches(token.nextToken, '.');
-    const isPropertyDelimiter = ParserUtils.tokenMatches(token, '.') && TokenUtils.isWord(token.nextToken);
+    // object. OR object[
+    const isPropertyName = (
+      TokenUtils.isWord(token) &&
+      ParserUtils.tokenMatches(token.nextToken, /[.[]/)
+    );
+
+    const isPropertyDelimiter = (
+      // .property OR .<
+      ParserUtils.tokenMatches(token, '.') &&
+      TokenUtils.isWord(token.nextToken) ||
+      ParserUtils.tokenMatches(token.nextToken, '<')
+    ) || (
+      // ]. OR ]<
+      ParserUtils.tokenMatches(token, ']') &&
+      ParserUtils.tokenMatches(token.nextToken, /[.<]/)
+    );
 
     return isPropertyName || isPropertyDelimiter;
   }
@@ -98,11 +116,18 @@ export namespace JavaUtils {
    * @example
    *
    *  callFunction(
+   *  ](
+   *  )(
    */
   export function isFunctionCall (token: IToken): boolean {
     return (
+      // callFunction(
       TokenUtils.isWord(token) &&
       ParserUtils.tokenMatches(token.nextToken, '(')
+    ) || (
+      // ]( OR )(
+      ParserUtils.tokenMatches(token.previousToken, /[\])]/) &&
+      ParserUtils.tokenMatches(token, '(')
     );
   }
 
