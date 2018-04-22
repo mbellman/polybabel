@@ -39,7 +39,7 @@ async function processFiles (directory: string, files: string[]): Promise<void> 
       const tokens = tokenize(fileContents);
       const syntaxTree: ISyntaxTree<any> = parse(tokens, language);
     } catch (e) {
-      console.log(chalk.bgBlue(' Parsing Error: '), chalk.bgRed(` ${file} `));
+      console.log(chalk.bgBlue('\n Parsing Error: '), chalk.bgRed(` ${file} `));
       console.log(e.message);
 
       ++totalFailedFiles;
