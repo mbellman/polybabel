@@ -4,7 +4,7 @@ Polybabel is an aspiring many-to-one, source-to-source compiler written in TypeS
 
 The emphasis on idiomatic programming means the standard libraries and APIs normally available in these languages will not be available with Polybabel. What you write ultimately runs as JavaScript, but *uses* other languages' grammar and conventions.
 
-## Roadmap
+## Progress
 
 ### General architecture
 
@@ -63,3 +63,5 @@ Pending initial work.
 ### Additional Languages
 * Elixir?
 * C/C++?
+* Scala?
+* Haskell?

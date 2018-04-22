@@ -85,7 +85,7 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
    * and merges the parsed result onto this instance's parsed
    * syntax node object. Provided parser classes must parse a
    * syntax node whose type signature is a subset of that of
-   * the instance's.
+   * this one's.
    */
   protected emulate <T extends ISyntaxNode & BaseOf<Without<P, 'node'>, Without<T, 'node'>>>(ParserClass: Constructor<AbstractParser<T>>): void {
     const { node, ...parsed } = this.parseNextWith(ParserClass) as any;
@@ -96,17 +96,17 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
   /**
    * Performs a token search, starting from the current token, using a step
    * function to define how to change the lookup position on each search
-   * step, and a {predicate} function to determine when a target token has
+   * step, and a predicate function to determine when a target token has
    * been found. If a token satisfying the predicate function is matched,
    * that token is returned.
    *
    * The current token will not be counted as a match even if it happens
    * to satisfy the predicate function.
    */
-  protected findMatchingToken (stepFunction: Callback<IToken, IToken>, predicate: Callback<IToken, boolean>): IToken {
+  protected findMatchingToken (stepFunction: Callback<IToken, IToken>, tokenPredicate: Callback<IToken, boolean>): IToken {
     let token = stepFunction(this.currentToken);
 
-    while (token && !predicate(token)) {
+    while (token && !tokenPredicate(token)) {
       token = stepFunction(token);
     }
 
@@ -178,11 +178,11 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
 
   /**
    * Attempts to parse a token stream starting from the current token
-   * using a provided parser class which subclasses AbstractParser.
-   * If successful, assigns the current token to the final token
-   * reached by the parser and returns the parsed syntax object its
-   * own parse() returned. Otherwise the parser class will control
-   * halting and error messaging behavior.
+   * using a provided parser class which subclasses AbstractParser, or
+   * instance thereof. If successful, assigns the current token to the
+   * final token reached by the parser and returns the parsed syntax
+   * object its parse() returned. Otherwise the provided parser class
+   * will control halting and error messaging behavior.
    *
    * This method is intended as the main API for parsing recursively.
    * Rather than requiring parent parser classes to be responsible
@@ -243,12 +243,12 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
   /**
    * @todo @description
    */
-  private checkTokenMatchersWithPredicate (tokenMatchers: TokenMatcher[], predicate: Callback<TokenMatch, boolean>): boolean {
+  private checkTokenMatchersWithPredicate (tokenMatchers: TokenMatcher[], tokenMatchPredicate: Callback<TokenMatch, boolean>): boolean {
     const { value } = this.currentToken;
 
     if (tokenMatchers) {
       for (const [ tokenMatch, callback ] of tokenMatchers) {
-        if (predicate(tokenMatch)) {
+        if (tokenMatchPredicate(tokenMatch)) {
           callback.call(this);
 
           return true;
@@ -289,19 +289,23 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
     return new (ParserClass as IConstructable<A>)();
   }
 
+  /**
+   * Returns a preview of the current line, centered on the current
+   * token and extending to {range} tokens on either side.
+   */
   private getColorizedLinePreview (range: number = 5): string {
     let n = range;
     let localToken = this.currentToken;
     const localTokenValues: string[] = [];
 
-    // Walk backward to the start of the range, or the
-    // beginning of the current line
+    // Walk backward to the start of the range,
+    // or the beginning of the current line
     while (--n >= 0 && localToken.previousToken && TokenUtils.isCharacterToken(localToken.previousToken)) {
       localToken = localToken.previousToken;
     }
 
-    // Walk forward to the end of the range, or the end
-    // of the current line, adding each encountered token
+    // Walk forward to the end of the range, or the
+    // end of the current line, adding each token
     // to the list of local token values
     while (n++ < (2 * range) && localToken.nextToken && TokenUtils.isCharacterToken(localToken)) {
       const colorize = localToken === this.currentToken
@@ -330,7 +334,7 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
 
   /**
    * Steps through tokens starting from the current token until either
-   * the subclass finishes, stops, or halts.
+   * the parser finishes, stops, or halts.
    */
   private stream (): void {
     if (this.currentToken.type === TokenType.NEWLINE) {
