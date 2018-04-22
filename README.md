@@ -1,8 +1,8 @@
 # polybabel
 
-Polybabel is an aspiring many-to-one, source-to-source compiler written in TypeScript and operating in Node. Its design goal is to allow developers to write idiomatic code in other languages which can compile to JavaScript.
+Polybabel is an aspiring many-to-one, source-to-source compiler written in TypeScript and Node. Its design goal is to allow developers to write idiomatic code in other languages which can compile to JavaScript.
 
-The emphasis on idiomatic programming means the standard libraries and APIs normally available in these languages will not be available with Polybabel. What you write is ultimately JavaScript, *using* other languages' grammar and conventions.
+The emphasis on idiomatic programming means the standard libraries and APIs normally available in these languages will not be available with Polybabel. What you write ultimately runs as JavaScript, but *uses* other languages' grammar and conventions.
 
 ## Roadmap
 
