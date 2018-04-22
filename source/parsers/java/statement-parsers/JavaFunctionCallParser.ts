@@ -1,10 +1,10 @@
-import AbstractParser from '../common/AbstractParser';
-import JavaStatementParser from './JavaStatementParser';
-import SequenceParser from '../common/SequenceParser';
+import AbstractParser from '../../common/AbstractParser';
+import JavaStatementParser from '../JavaStatementParser';
+import SequenceParser from '../../common/SequenceParser';
 import { Implements, Override } from 'trampoline-framework';
-import { JavaSyntax } from './java-syntax';
-import { Match } from '../common/parser-decorators';
-import { TokenUtils } from '../../tokenizer/token-utils';
+import { JavaSyntax } from '../java-syntax';
+import { Match } from '../../common/parser-decorators';
+import { TokenUtils } from '../../../tokenizer/token-utils';
 
 export default class JavaFunctionCallParser extends AbstractParser<JavaSyntax.IJavaFunctionCall> {
   @Implements protected getDefault (): JavaSyntax.IJavaFunctionCall {

@@ -1,11 +1,11 @@
 import AbstractParser from '../common/AbstractParser';
-import JavaFunctionCallParser from './JavaFunctionCallParser';
-import JavaInstantiationParser from './JavaInstantiationParser';
-import JavaLiteralParser from './JavaLiteralParser';
-import JavaPropertyChainParser from './JavaPropertyChainParser';
-import JavaVariableDeclarationParser from './JavaVariableDeclarationParser';
-import { Constructor } from 'system/types';
-import { Implements, Callback } from 'trampoline-framework';
+import JavaFunctionCallParser from './statement-parsers/JavaFunctionCallParser';
+import JavaInstantiationParser from './statement-parsers/JavaInstantiationParser';
+import JavaLiteralParser from './statement-parsers/JavaLiteralParser';
+import JavaPropertyChainParser from './statement-parsers/JavaPropertyChainParser';
+import JavaVariableDeclarationParser from './statement-parsers/JavaVariableDeclarationParser';
+import { Callback, Implements } from 'trampoline-framework';
+import { Constructor } from '../../system/types';
 import { JavaSyntax } from './java-syntax';
 import { JavaUtils } from './java-utils';
 import { Match } from '../common/parser-decorators';
@@ -31,7 +31,7 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
    *
    * A getter is used to circumvent circular dependency
    * issues with CommonJS; returning the list in a method
-   * allows the dependencies time to become defined.
+   * allows the parser classes time to become defined.
    */
   private static get StatementMatchers (): StatementMatcher[] {
     return [

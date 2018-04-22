@@ -2,7 +2,7 @@ import AbstractParser from '../common/AbstractParser';
 import JavaBlockParser from './JavaBlockParser';
 import JavaObjectMemberParser from './JavaObjectMemberParser';
 import JavaTypeParser from './JavaTypeParser';
-import JavaVariableDeclarationParser from './JavaVariableDeclarationParser';
+import JavaVariableDeclarationParser from './statement-parsers/JavaVariableDeclarationParser';
 import SequenceParser from '../common/SequenceParser';
 import { Implements, Override } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';

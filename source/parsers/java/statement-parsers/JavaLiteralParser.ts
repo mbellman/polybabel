@@ -1,10 +1,10 @@
-import AbstractParser from '../common/AbstractParser';
+import AbstractParser from '../../common/AbstractParser';
 import { Implements } from 'trampoline-framework';
-import { JavaConstants } from './java-constants';
-import { JavaSyntax } from './java-syntax';
-import { Match } from '../common/parser-decorators';
-import { ParserUtils } from '../common/parser-utils';
-import { TokenUtils } from '../../tokenizer/token-utils';
+import { JavaConstants } from '../java-constants';
+import { JavaSyntax } from '../java-syntax';
+import { Match } from '../../common/parser-decorators';
+import { ParserUtils } from '../../common/parser-utils';
+import { TokenUtils } from '../../../tokenizer/token-utils';
 
 export default class JavaLiteralParser extends AbstractParser<JavaSyntax.IJavaLiteral> {
   @Implements protected getDefault (): JavaSyntax.IJavaLiteral {

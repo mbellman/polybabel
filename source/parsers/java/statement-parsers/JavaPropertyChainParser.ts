@@ -1,9 +1,9 @@
-import AbstractParser from '../common/AbstractParser';
+import AbstractParser from '../../common/AbstractParser';
 import JavaFunctionCallParser from './JavaFunctionCallParser';
 import { Implements } from 'trampoline-framework';
-import { JavaSyntax } from './java-syntax';
-import { JavaUtils } from './java-utils';
-import { Match } from '../common/parser-decorators';
+import { JavaSyntax } from '../java-syntax';
+import { JavaUtils } from '../java-utils';
+import { Match } from '../../common/parser-decorators';
 
 export default class JavaPropertyChainParser extends AbstractParser<JavaSyntax.IJavaPropertyChain> {
   @Implements protected getDefault (): JavaSyntax.IJavaPropertyChain {

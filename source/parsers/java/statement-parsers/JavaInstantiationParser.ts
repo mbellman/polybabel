@@ -1,11 +1,11 @@
-import AbstractParser from '../common/AbstractParser';
-import JavaStatementParser from './JavaStatementParser';
-import JavaTypeParser from './JavaTypeParser';
-import SequenceParser from '../common/SequenceParser';
+import AbstractParser from '../../common/AbstractParser';
+import JavaStatementParser from '../JavaStatementParser';
+import JavaTypeParser from '../JavaTypeParser';
+import SequenceParser from '../../common/SequenceParser';
 import { Implements, Override } from 'trampoline-framework';
-import { JavaConstants } from './java-constants';
-import { JavaSyntax } from './java-syntax';
-import { Match } from '../common/parser-decorators';
+import { JavaConstants } from '../java-constants';
+import { JavaSyntax } from '../java-syntax';
+import { Match } from '../../common/parser-decorators';
 
 export default class JavaInstantiationParser extends AbstractParser<JavaSyntax.IJavaInstantiation> {
   @Implements protected getDefault (): JavaSyntax.IJavaInstantiation {

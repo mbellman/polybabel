@@ -1,10 +1,10 @@
-import AbstractParser from '../common/AbstractParser';
-import JavaTypeParser from './JavaTypeParser';
+import AbstractParser from '../../common/AbstractParser';
+import JavaTypeParser from '../JavaTypeParser';
 import { Implements, Override } from 'trampoline-framework';
-import { JavaConstants } from './java-constants';
-import { JavaSyntax } from './java-syntax';
-import { Match } from '../common/parser-decorators';
-import { TokenUtils } from '../../tokenizer/token-utils';
+import { JavaConstants } from '../java-constants';
+import { JavaSyntax } from '../java-syntax';
+import { Match } from '../../common/parser-decorators';
+import { TokenUtils } from '../../../tokenizer/token-utils';
 
 export default class JavaVariableDeclarationParser extends AbstractParser<JavaSyntax.IJavaVariableDeclaration> {
   @Implements protected getDefault (): JavaSyntax.IJavaVariableDeclaration {

@@ -1,5 +1,5 @@
 import AbstractParser from '../common/AbstractParser';
-import JavaPropertyChainParser from './JavaPropertyChainParser';
+import JavaPropertyChainParser from './statement-parsers/JavaPropertyChainParser';
 import SequenceParser from '../common/SequenceParser';
 import { Implements, Override } from 'trampoline-framework';
 import { JavaSyntax } from './java-syntax';
