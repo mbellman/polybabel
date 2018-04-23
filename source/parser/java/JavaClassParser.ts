@@ -9,6 +9,7 @@ import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { Lookahead, Match, NegativeLookahead } from '../common/parser-decorators';
 import { TokenUtils } from '../../tokenizer/token-utils';
+import JavaInterfaceParser from './JavaInterfaceParser';
 
 export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClass> {
   @Implements protected getDefault (): JavaSyntax.IJavaClass {
@@ -18,9 +19,10 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
       name: null,
       extends: [],
       implements: [],
-      nestedClasses: [],
       fields: [],
-      methods: []
+      methods: [],
+      nestedClasses: [],
+      nestedInterfaces: []
     };
   }
 
@@ -95,7 +97,14 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
 
   @Lookahead(JavaConstants.Keyword.INTERFACE)
   protected onNestedInterface (): void {
+    const javaInterface = this.parseNextWith(JavaInterfaceParser);
 
+    this.parsed.nestedInterfaces.push(javaInterface);
+  }
+
+  @Match('}')
+  protected onExit(): void {
+    this.finish();
   }
 
   private getClauseTypeSequence (): JavaSyntax.IJavaType[] {

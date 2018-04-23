@@ -40,7 +40,6 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
     return [
       [ JavaUtils.isLiteral, JavaLiteralParser ],
       [ JavaUtils.isInstantiation, JavaInstantiationParser ],
-      [ JavaUtils.isFunctionCall, JavaFunctionCallParser ],
       [ JavaUtils.isPropertyChain, JavaPropertyChainParser ],
       [ JavaUtils.isTypeName, JavaVariableDeclarationParser ]
     ];
@@ -81,6 +80,27 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
     this.halt();
   }
 
+  /**
+   * Since a function call may precede a property chain, we need
+   * a separate handler for function call statements to resolve
+   * the correct statement type.
+   */
+  @Match(JavaUtils.isFunctionCall)
+  protected onFunctionCall (): void {
+    const functionCall = this.parseNextWith(JavaFunctionCallParser);
+    const isChained = this.currentTokenMatches('.');
+
+    if (isChained) {
+      const propertyChain = this.parseNextWith(JavaPropertyChainParser);
+
+      propertyChain.properties.unshift(functionCall);
+
+      this.parsed.leftSide = propertyChain;
+    } else {
+      this.parsed.leftSide = functionCall;
+    }
+  }
+
   @Match('=')
   protected onAssignment (): void {
     this.assert(this.parsed.leftSide !== null);
@@ -104,7 +124,10 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
     }
   }
 
-  @Match(/[;,\]]/)
+  @Match(';')
+  @Match(',')
+  @Match(']')
+  @Match('}')
   protected onEnd (): void {
     this.assert(this.parentheses === 0);
     this.stop();

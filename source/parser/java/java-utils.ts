@@ -83,30 +83,25 @@ export namespace JavaUtils {
    *
    *  object.
    *  object[
-   *  .property
-   *  .<
-   *  ].
-   *  ]<
+   *  ).
    */
   export function isPropertyChain (token: IToken): boolean {
     // object. OR object[
     const isPropertyName = (
       TokenUtils.isWord(token) &&
-      ParserUtils.tokenMatches(token.nextToken, /[.[]/)
+      ParserUtils.tokenMatches(token.nextToken, /[.[]/) &&
+      // Avoid confusion with token patterns of the form
+      // Object[], which signify array types
+      !ParserUtils.tokenMatches(token.nextToken.nextToken, ']')
     );
 
-    const isPropertyDelimiter = (
-      // .property OR .<
+    // ).
+    const isFunctionCallChain = (
       ParserUtils.tokenMatches(token, '.') &&
-      TokenUtils.isWord(token.nextToken) ||
-      ParserUtils.tokenMatches(token.nextToken, '<')
-    ) || (
-      // ]. OR ]<
-      ParserUtils.tokenMatches(token, ']') &&
-      ParserUtils.tokenMatches(token.nextToken, /[.<]/)
+      ParserUtils.tokenMatches(TokenUtils.getPreviousCharacterToken(token), ')')
     );
 
-    return isPropertyName || isPropertyDelimiter;
+    return isPropertyName || isFunctionCallChain;
   }
 
   /**

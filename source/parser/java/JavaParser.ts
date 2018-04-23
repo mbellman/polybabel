@@ -7,6 +7,7 @@ import { Implements } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { Lookahead, Match } from '../common/parser-decorators';
+import { TokenUtils } from '../../tokenizer/token-utils';
 
 export default class JavaParser extends AbstractParser<JavaSyntax.IJavaSyntaxTree> {
   public constructor () {

@@ -36,6 +36,13 @@ export namespace JavaSyntax {
     ASSIGN
   }
 
+  export const enum JavaLiteralType {
+    KEYWORD,
+    STRING,
+    NUMBER,
+    ARRAY
+  }
+
   export interface IJavaSyntaxNode extends ISyntaxNode<JavaSyntaxNode> { }
 
   export interface IJavaAccessible extends IAccessible<JavaAccessModifier> { }
@@ -70,6 +77,7 @@ export namespace JavaSyntax {
     fields: IJavaObjectField[];
     methods: IJavaObjectMethod[];
     nestedClasses: IJavaClass[];
+    nestedInterfaces: IJavaInterface[];
   }
 
   export interface IJavaType extends IJavaSyntaxNode, INamed<string | IJavaPropertyChain> {
@@ -119,7 +127,8 @@ export namespace JavaSyntax {
 
   export interface IJavaLiteral extends IJavaSyntaxNode {
     node: JavaSyntaxNode.LITERAL;
-    value: string;
+    type: JavaLiteralType;
+    value: string | IJavaStatement[];
   }
 
   export interface IJavaInstantiation extends IJavaSyntaxNode, IWithArguments<IJavaStatement> {

@@ -1,10 +1,12 @@
 import AbstractParser from '../../common/AbstractParser';
 import JavaFunctionCallParser from './JavaFunctionCallParser';
+import JavaStatementParser from '../JavaStatementParser';
 import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../java-syntax';
 import { JavaUtils } from '../java-utils';
 import { Match } from '../../common/parser-decorators';
-import JavaStatementParser from '../JavaStatementParser';
+import { TokenUtils } from '../../../tokenizer/token-utils';
+import { ParserUtils } from '../../common/parser-utils';
 
 /**
  * Parses property chains. Stops when a non-property chain or
@@ -16,8 +18,10 @@ import JavaStatementParser from '../JavaStatementParser';
  *  object.method(...).value
  *  object.<...>method(...).value
  *  object[...].value
+ *  object[...][...].value
  *  object[...](...).value
  *  object[...]<...>method(...).value
+ *  method(...).value
  */
 export default class JavaPropertyChainParser extends AbstractParser<JavaSyntax.IJavaPropertyChain> {
   @Implements protected getDefault (): JavaSyntax.IJavaPropertyChain {
@@ -27,13 +31,15 @@ export default class JavaPropertyChainParser extends AbstractParser<JavaSyntax.I
     };
   }
 
-  @Match(JavaUtils.isPropertyChain)
-  protected onPropertyChainStream (): void {
-    const isDelimiter = this.currentTokenMatches(/[.\]]/);
+  @Match(TokenUtils.isWord)
+  protected onStringProperty (): void {
+    this.parsed.properties.push(this.currentToken.value);
+  }
 
-    if (!isDelimiter) {
-      this.parsed.properties.push(this.currentToken.value);
-    }
+  @Match('.')
+  protected onDelimiter (): void {
+    this.assert(TokenUtils.isCharacterToken(this.nextToken));
+    this.next();
   }
 
   @Match('[')
@@ -43,13 +49,22 @@ export default class JavaPropertyChainParser extends AbstractParser<JavaSyntax.I
     const property = this.parseNextWith(JavaStatementParser);
 
     this.parsed.properties.push(property);
+  }
 
-    this.next();
+  @Match(']')
+  protected onEndBracketProperty (): void {
+    const isContinuing = ParserUtils.tokenMatches(this.nextToken, /[.<[]/);
+
+    if (isContinuing) {
+      this.next();
+    } else {
+      this.finish();
+    }
   }
 
   @Match('<')
   @Match(JavaUtils.isFunctionCall)
-  protected onFunctionCall (): void {
+  protected onFunctionCallProperty (): void {
     const functionCall = this.parseNextWith(JavaFunctionCallParser);
 
     this.parsed.properties.push(functionCall);

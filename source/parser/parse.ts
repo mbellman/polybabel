@@ -1,10 +1,10 @@
+import AbstractParser from './common/AbstractParser';
 import JavaParser from './java/JavaParser';
+import { IConstructable } from 'system/types';
+import { IHashMap } from 'trampoline-framework';
 import { ISyntaxTree } from './common/syntax-types';
 import { IToken } from '../tokenizer/types';
 import { Language } from '../system/constants';
-import { IHashMap, Constructor } from 'trampoline-framework';
-import AbstractParser from './common/AbstractParser';
-import { IConstructable } from 'system/types';
 
 /**
  * Maps language constants to their root parser classes.

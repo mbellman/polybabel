@@ -15,6 +15,16 @@ public final class HelloWorld extends What implements ITest {
     GoodbyeWorld goodbyeWorld = new GoodbyeWorld();
     Number num = 5;
 
-    HelloWorld[('hello')]<ITest>main()(5);
+    HelloWorld[('hello')]['whoa']<ITest>main()(5);
+
+    String[] strings = { 'hello', HelloWorld.main(), 5.0 };
+
+    this.test = 5;
+
+    method().getValue();
+  }
+
+  private interface IHello {
+    Map<String>[] stringMaps;
   }
 }

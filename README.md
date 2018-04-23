@@ -22,24 +22,23 @@ The emphasis on idiomatic programming means the standard libraries and APIs norm
 * * Package statements ✔
 * * Import statements - 90%?
 * * - Aliasing - 0%
-* * Classes - 85%?
-* * - Nested interfaces - 0%
+* * Classes ✔
 * * Interfaces ✔
 * * Fields ✔
 * * Methods ✔
+* * Varargs - 0%
 * * Generics - 70%?
 * * - Generic syntax ✔
 * * - Extensible generic types - 0%
 * * - Method generics ✔
-* * Statements - 20%?
+* * Statements - 30%?
 * * - Variables ✔
 * * - Property chains ✔
 * * - Method calls ✔
 * * - Instantiation ✔
 * * - - Anonymous class/instance overrides - 0%
-* * - Literals - 70%?
-* * - - Array literals - 0%
-* * - Operators - 0%
+* * - Literals ✔
+* * - Operators - 10%?
 * * - Conditions - 0%
 * * - Loops - 0%
 * * - Anonymous functions (lambda expressions) - 0%

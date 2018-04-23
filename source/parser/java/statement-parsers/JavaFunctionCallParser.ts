@@ -9,7 +9,7 @@ import { TokenUtils } from '../../../tokenizer/token-utils';
 import JavaTypeParser from '../JavaTypeParser';
 
 /**
- * Parses function calls. Finishes when a ) token is encountered.
+ * Parses function calls and finishes when a ) token is encountered.
  *
  * @example Function calls:
  *

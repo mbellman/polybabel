@@ -14,7 +14,7 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
   private isStopped: boolean = false;
 
   protected get nextCharacterToken (): IToken {
-    return this.findMatchingToken(TokenUtils.getNextToken, TokenUtils.isCharacterToken);
+    return TokenUtils.getNextCharacterToken(this.currentToken);
   }
 
   protected get nextToken (): IToken {
@@ -22,7 +22,7 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
   }
 
   protected get previousCharacterToken (): IToken {
-    return this.findMatchingToken(TokenUtils.getPreviousToken, TokenUtils.isCharacterToken);
+    return TokenUtils.getPreviousCharacterToken(this.currentToken);
   }
 
   protected get previousToken (): IToken {
@@ -94,26 +94,6 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
   }
 
   /**
-   * Performs a token search, starting from the current token, using a step
-   * function to define how to change the lookup position on each search
-   * step, and a predicate function to determine when a target token has
-   * been found. If a token satisfying the predicate function is matched,
-   * that token is returned.
-   *
-   * The current token will not be counted as a match even if it happens
-   * to satisfy the predicate function.
-   */
-  protected findMatchingToken (stepFunction: Callback<IToken, IToken>, tokenPredicate: Callback<IToken, boolean>): IToken {
-    let token = stepFunction(this.currentToken);
-
-    while (token && !tokenPredicate(token)) {
-      token = stepFunction(token);
-    }
-
-    return token;
-  }
-
-  /**
    * Finishes parsing and ensures that the current token will be
    * advanced upon returning to the parent parser, stepping 'out'
    * of the parsed chunk.
@@ -140,7 +120,7 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
   }
 
   protected isEOF (): boolean {
-    return !this.nextToken;
+    return !this.nextCharacterToken;
   }
 
   protected isStartOfLine (): boolean {
@@ -164,10 +144,14 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
   }
 
   /**
-   * A shorthand method for only skipping one character token.
+   * A shorthand method for skipping to the next character token.
    */
   protected next (): void {
-    this.skip(1);
+    if (!this.nextCharacterToken) {
+      this.isFinished = true;
+    } else {
+      this.currentToken = this.nextCharacterToken;
+    }
   }
 
   /**
@@ -203,23 +187,6 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
     this.currentToken = parserInstance.token();
 
     return parsed;
-  }
-
-  /**
-   * A mechanism for skipping an arbitrary number of character tokens.
-   * Newline tokens are skipped over without counting toward the total
-   * number of skips.
-   */
-  protected skip (steps: number): void {
-    while (--steps >= 0) {
-      if (!this.nextCharacterToken) {
-        this.isFinished = true;
-
-        break;
-      }
-
-      this.currentToken = this.nextCharacterToken;
-    }
   }
 
   /**
@@ -290,6 +257,26 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
   }
 
   /**
+   * Performs a token search, starting from the current token, using a step
+   * function to define how to change the lookup position on each search
+   * step, and a predicate function to determine when a target token has
+   * been found. If a token satisfying the predicate function is matched,
+   * that token is returned.
+   *
+   * The current token will not be counted as a match even if it happens
+   * to satisfy the predicate function.
+   */
+  private findMatchingToken (stepFunction: Callback<IToken, IToken>, tokenPredicate: Callback<IToken, boolean>): IToken {
+    let token = stepFunction(this.currentToken);
+
+    while (token && !tokenPredicate(token)) {
+      token = stepFunction(token);
+    }
+
+    return token;
+  }
+
+  /**
    * Returns a preview of the current line, centered on the current
    * token and extending to {range} tokens on either side.
    */
@@ -329,7 +316,7 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
 
     return messageIsAlreadyNormalized
       ? message
-      : `${chalk.blueBright(message)} -> ${this.getColorizedLinePreview()}`;
+      : `${chalk.blueBright(message)} (${this.constructor.name}) -> ${this.getColorizedLinePreview()}`;
   }
 
   /**
@@ -350,9 +337,10 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
         this.checkTokenMatchers();
       }
 
-      if (this.isStopped) {
-        // Break out of the token loop, keep the current token where it
-        // is, and let the parent parser handle things from there
+      if (this.isStopped || !this.nextCharacterToken) {
+        // Break out of the token loop, keep the current
+        // token where it is, and let the parent parser
+        // handle things from there
         break;
       }
 
@@ -361,9 +349,9 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
       }
     }
 
-    if (!this.isStopped && this.nextToken) {
-      // Advance the token stream after finishing so as to break 'out'
-      // of the parsing chunk
+    if (this.isFinished) {
+      // Advance the token stream after finishing so as
+      // to break 'out' of the parsing chunk
       this.next();
     }
   }

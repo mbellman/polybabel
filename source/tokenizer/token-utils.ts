@@ -2,12 +2,24 @@ import { Callback } from '../system/types';
 import { IToken, TokenType } from './types';
 
 export namespace TokenUtils {
-  export function getPreviousToken ({ previousToken }: IToken) {
+  export function getPreviousToken ({ previousToken }: IToken): IToken {
     return previousToken;
+  }
+
+  export function getPreviousCharacterToken (token: IToken): IToken {
+    while ((token = getPreviousToken(token)) && !isCharacterToken(token)) { }
+
+    return token;
   }
 
   export function getNextToken ({ nextToken }: IToken): IToken {
     return nextToken;
+  }
+
+  export function getNextCharacterToken (token: IToken): IToken {
+    while ((token = getNextToken(token)) && !isCharacterToken(token)) { }
+
+    return token;
   }
 
   export function isWord ({ type }: IToken): boolean {
