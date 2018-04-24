@@ -148,7 +148,7 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
       // Variable name must be a word! Normally this would be
       // asserted by JavaVariableDeclarationParser, but we have
       // to assert it here due to the circumstances.
-      this.assert(TokenUtils.isWord(this.currentToken));
+      this.assertCurrentTokenMatch(TokenUtils.isWord);
 
       const type: JavaSyntax.IJavaType = {
         node: JavaSyntax.JavaSyntaxNode.TYPE,
@@ -160,7 +160,7 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
       const variableDeclaration: JavaSyntax.IJavaVariableDeclaration = {
         node: JavaSyntax.JavaSyntaxNode.VARIABLE_DECLARATION,
         type,
-        name: this.nextToken.value
+        name: this.currentToken.value
       };
 
       this.parsed.leftSide = variableDeclaration;
