@@ -7,7 +7,7 @@ protected interface ITest {
   Bool boolean;
   Object object;
 
-  Thing getThing (String thing, final Number id) throws Exception;
+  Thing getThing (String thing, final Math.Arithmetic.Number<Utils.Map<String>, NumericType> id) throws Exception;
 }
 
 public final class HelloWorld extends What implements ITest {
@@ -18,6 +18,8 @@ public final class HelloWorld extends What implements ITest {
     HelloWorld[('hello')]['whoa']<ITest>main()(5);
 
     String[] strings = { 'hello', HelloWorld.main(), 5.0 };
+
+    Namespace.Map<String>[] hello = 5;
 
     this.test = 5;
 

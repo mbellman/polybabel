@@ -1,12 +1,12 @@
 import AbstractParser from '../../common/AbstractParser';
 import JavaStatementParser from '../JavaStatementParser';
+import JavaTypeParser from '../JavaTypeParser';
 import SequenceParser from '../../common/SequenceParser';
 import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../java-syntax';
 import { JavaUtils } from '../java-utils';
 import { Match } from '../../common/parser-decorators';
 import { TokenUtils } from '../../../tokenizer/token-utils';
-import JavaTypeParser from '../JavaTypeParser';
 
 /**
  * Parses function calls and finishes when a ) token is encountered.

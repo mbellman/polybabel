@@ -80,8 +80,9 @@ export namespace JavaSyntax {
     nestedInterfaces: IJavaInterface[];
   }
 
-  export interface IJavaType extends IJavaSyntaxNode, INamed<string | IJavaPropertyChain> {
+  export interface IJavaType extends IJavaSyntaxNode {
     node: JavaSyntaxNode.TYPE;
+    namespaceChain: string[];
     genericTypes: IJavaType[];
     arrayDimensions: number;
   }
@@ -117,7 +118,7 @@ export namespace JavaSyntax {
 
   export interface IJavaPropertyChain extends IJavaSyntaxNode {
     node: JavaSyntaxNode.PROPERTY_CHAIN;
-    properties: Array<string | IJavaStatement | IJavaFunctionCall>;
+    properties: Array<string | IJavaStatement | IJavaFunctionCall | IJavaType>;
   }
 
   export interface IJavaFunctionCall extends IJavaSyntaxNode, INamed, IWithArguments<IJavaStatement> {

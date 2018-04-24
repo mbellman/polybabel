@@ -10,6 +10,7 @@ import { JavaSyntax } from './java-syntax';
 import { JavaUtils } from './java-utils';
 import { Match } from '../common/parser-decorators';
 import { TokenPredicate } from '../common/parser-types';
+import { TokenUtils } from '../../tokenizer/token-utils';
 
 /**
  * A 2-tuple which contains a token predicate and a parser
@@ -40,8 +41,7 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
     return [
       [ JavaUtils.isLiteral, JavaLiteralParser ],
       [ JavaUtils.isInstantiation, JavaInstantiationParser ],
-      [ JavaUtils.isPropertyChain, JavaPropertyChainParser ],
-      [ JavaUtils.isTypeName, JavaVariableDeclarationParser ]
+      [ JavaUtils.isType, JavaVariableDeclarationParser ]
     ];
   }
 
@@ -66,11 +66,11 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
   }
 
   @Match(/./)
-  protected onStatement (): void {
+  protected onLeftSideStatement (): void {
+    this.assert(this.parsed.leftSide === null);
+
     for (const [ tokenPredicate, Parser ] of JavaStatementParser.StatementMatchers) {
       if (tokenPredicate(this.currentToken)) {
-        this.assert(this.parsed.leftSide === null);
-
         this.parsed.leftSide = this.parseNextWith(Parser);
 
         return;
@@ -81,23 +81,96 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
   }
 
   /**
-   * Since a function call may precede a property chain, we need
-   * a separate handler for function call statements to resolve
-   * the correct statement type.
+   * Function call statements must be handled with a fallback
+   * for property chaining, since predetermining the statement
+   * to be a property chain would be impossible without expensive
+   * token lookaheads.
    */
   @Match(JavaUtils.isFunctionCall)
   protected onFunctionCall (): void {
-    const functionCall = this.parseNextWith(JavaFunctionCallParser);
-    const isChained = this.currentTokenMatches('.');
+    this.assert(this.parsed.leftSide === null);
 
-    if (isChained) {
+    const functionCall = this.parseNextWith(JavaFunctionCallParser);
+    const isPropertyChain = this.currentTokenMatches('.');
+
+    if (isPropertyChain) {
       const propertyChain = this.parseNextWith(JavaPropertyChainParser);
 
+      // Retroactively set the function call statement
+      // as the first of the property chain
       propertyChain.properties.unshift(functionCall);
 
       this.parsed.leftSide = propertyChain;
     } else {
       this.parsed.leftSide = functionCall;
+    }
+  }
+
+  /**
+   * Property chain statements must be handled with a fallback
+   * for namespaced-type variable declarations, since the two are
+   * indistinguishable without expensive token stream lookaheads.
+   *
+   * Despite the awkward implementation, this solution avoids
+   * any unnecessary backtracking.
+   *
+   * @example
+   *
+   *  this.factories.itemFactory.createItem();
+   *
+   *  Namespace.Utils.DataType dataType = ...;
+   */
+  @Match(JavaUtils.isPropertyChain)
+  protected onPropertyChain (): void {
+    this.assert(this.parsed.leftSide === null);
+
+    const propertyChain = this.parseNextWith(JavaPropertyChainParser);
+    const lastProperty = propertyChain.properties.slice(-1).pop();
+
+    const isNamespacedType = (
+      typeof lastProperty !== 'string' &&
+      lastProperty.node === JavaSyntax.JavaSyntaxNode.TYPE
+    );
+
+    if (isNamespacedType) {
+      // If the last property in the chain is a type, we need
+      // to handle this statement as a namespaced-type variable
+      // declaration. JavaPropertyChainParser already asserts
+      // that all previous properties are strings when the last
+      // property is a type, so we can safely combine the string
+      // properties and the type name to define the type's full
+      // namespace chain.
+      const { properties } = propertyChain;
+      const { namespaceChain, genericTypes, arrayDimensions } = lastProperty as JavaSyntax.IJavaType;
+      const stringProperties = properties.slice(0, -1) as string[];
+      const typeName = namespaceChain[0];
+
+      // Variable name must be a word! Normally this would be
+      // asserted by JavaVariableDeclarationParser, but we have
+      // to assert it here due to the circumstances.
+      this.assert(TokenUtils.isWord(this.currentToken));
+
+      const type: JavaSyntax.IJavaType = {
+        node: JavaSyntax.JavaSyntaxNode.TYPE,
+        namespaceChain: [ ...stringProperties, typeName ],
+        genericTypes,
+        arrayDimensions
+      };
+
+      const variableDeclaration: JavaSyntax.IJavaVariableDeclaration = {
+        node: JavaSyntax.JavaSyntaxNode.VARIABLE_DECLARATION,
+        type,
+        name: this.nextToken.value
+      };
+
+      this.parsed.leftSide = variableDeclaration;
+
+      // Skip over the variable name so we don't encounter it
+      // again on the next token cycle
+      this.next();
+    } else {
+      // Just a normal property chain!
+      this.parsed.leftSide = propertyChain;
     }
   }
 

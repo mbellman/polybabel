@@ -4,27 +4,6 @@ import { ParserUtils } from '../common/parser-utils';
 import { TokenPredicate } from '../common/parser-types';
 import { TokenUtils } from '../../tokenizer/token-utils';
 
-/**
- * Determines whether a token corresponds to the beginning
- * of a type name declaration.
- *
- * @example
- *
- *  Type type
- *  Type[
- *  Type<
- *
- * @internal
- */
-function isStringTypeName (token: IToken): boolean {
-  return (
-    TokenUtils.isWord(token) && (
-      TokenUtils.isWord(token.nextToken) ||
-      ParserUtils.tokenMatches(token.nextToken, /[<[]/)
-    )
-  );
-}
-
 export namespace JavaUtils {
   export function isAccessModifierKeyword (word: string): boolean {
     return JavaConstants.AccessModifiers.indexOf(word) > -1;
@@ -44,64 +23,47 @@ export namespace JavaUtils {
 
   /**
    * Determines whether a token corresponds to the beginning of
-   * a type name denoted either by a string or property chain,
-   * such as a type in a namespace.
+   * a type. Uses a maximum of two token lookaheads to distinguish
+   * [] types from property chains using brackets.
    *
    * @example
    *
    *  Type type
    *  Type<
-   *  Type[
-   *  Namespace.Type type
-   *  Namespace.Type<
-   *  Namespace.Type[
+   *  Type[]
    */
-  export function isTypeName (token: IToken): boolean {
-    if (!TokenUtils.isWord(token)) {
-      return false;
-    }
-
-    if (isStringTypeName(token)) {
-      // The most common type declarations will be those
-      // with non-namespaced names, so we can optimize
-      // slightly by checking for these first
-      return true;
-    }
-
-    while (isPropertyChain(token)) {
-      token = token.nextToken;
-    }
-
-    return isStringTypeName(token);
+  export function isType (token: IToken): boolean {
+    return (
+      TokenUtils.isWord(token) &&
+      // Type type
+      TokenUtils.isWord(token.nextToken) ||
+      // Type<
+      ParserUtils.tokenMatches(token.nextToken, '<') ||
+      // Type[]
+      ParserUtils.tokenMatches(token.nextToken, '[') &&
+      ParserUtils.tokenMatches(token.nextToken.nextToken, ']')
+    );
   }
 
   /**
-   * Determines whether a token corresponds to the beginning or
-   * part of a property chain.
+   * Determines whether a token corresponds to the beginning or part
+   * of a property chain. Uses two token lookaheads to distinguish
+   * property chains using brackets from [] types.
    *
    * @example
    *
    *  object.
    *  object[
-   *  ).
    */
   export function isPropertyChain (token: IToken): boolean {
     // object. OR object[
-    const isPropertyName = (
+    return (
       TokenUtils.isWord(token) &&
       ParserUtils.tokenMatches(token.nextToken, /[.[]/) &&
       // Avoid confusion with token patterns of the form
       // Object[], which signify array types
       !ParserUtils.tokenMatches(token.nextToken.nextToken, ']')
     );
-
-    // ).
-    const isFunctionCallChain = (
-      ParserUtils.tokenMatches(token, '.') &&
-      ParserUtils.tokenMatches(TokenUtils.getPreviousCharacterToken(token), ')')
-    );
-
-    return isPropertyName || isFunctionCallChain;
   }
 
   /**

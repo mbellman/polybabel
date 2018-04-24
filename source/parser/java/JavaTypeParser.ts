@@ -6,12 +6,28 @@ import { JavaSyntax } from './java-syntax';
 import { JavaUtils } from './java-utils';
 import { Match } from '../common/parser-decorators';
 import { TokenUtils } from '../../tokenizer/token-utils';
+import { ParserUtils } from '../common/parser-utils';
 
+/**
+ * Parses type declarations and stops when a token other
+ * than a word, [, ], <, or > is encountered.
+ *
+ * @example Types:
+ *
+ *  Type
+ *  Type[]
+ *  Type<...>
+ *  Type<...>[]
+ *  Namespaced...Type
+ *  Namespaced...Type[]
+ *  Namespaced...Type<...>
+ *  Namespaced...Type<...>[]
+ */
 export default class JavaTypeParser extends AbstractParser<JavaSyntax.IJavaType> {
   @Implements protected getDefault (): JavaSyntax.IJavaType {
     return {
       node: JavaSyntax.JavaSyntaxNode.TYPE,
-      name: null,
+      namespaceChain: [],
       genericTypes: [],
       arrayDimensions: 0
     };
@@ -20,13 +36,35 @@ export default class JavaTypeParser extends AbstractParser<JavaSyntax.IJavaType>
   @Override protected onFirstToken (): void {
     this.assert(TokenUtils.isWord(this.currentToken));
 
-    this.parsed.name = this.nextToken.value !== '.'
-      // By default, we assume type names are just strings
-      ? this.currentToken.value
-      // Type names may also be a namespace field; where
-      // the name doesn't seem to follow the default
-      // pattern we parse it as a property chain
-      : this.parseNextWith(JavaPropertyChainParser);
+    const isNamespacedType = ParserUtils.tokenMatches(this.nextToken, '.');
+
+    if (isNamespacedType) {
+      // Note: types can be namespaced, and JavaTypeParser can
+      // handle namespace chains here. However, inside blocks,
+      // JavaStatementParser and JavaPropertyChainParser together
+      // handle namespaced-type variable declaration statements,
+      // since property chains and namespaced-type variable
+      // declarations cannot be distinguished without expensive
+      // token lookaheads and/or backtracking. Namespace handling
+      // here works for types on method parameters and class/type
+      // instantiation statements.
+      while (!this.isEOF()) {
+        if (this.currentTokenMatches(TokenUtils.isWord)) {
+          this.parsed.namespaceChain.push(this.currentToken.value);
+
+          if (!ParserUtils.tokenMatches(this.nextToken, '.')) {
+            // End of namespace chain
+            break;
+          }
+        } else if (this.currentTokenMatches('.')) {
+          this.assert(TokenUtils.isWord(this.nextToken));
+        }
+
+        this.next();
+      }
+    } else {
+      this.parsed.namespaceChain.push(this.currentToken.value);
+    }
 
     this.next();
   }
@@ -47,9 +85,10 @@ export default class JavaTypeParser extends AbstractParser<JavaSyntax.IJavaType>
   private onGenericBlockStart (): void {
     this.assert(
       this.parsed.arrayDimensions === 0,
-      `[] type '${this.parsed.name}' cannot be generic`
+      `[] type '${this.parsed.namespaceChain.slice(-1).pop()}' cannot be generic`
     );
 
+    this.assert(this.parsed.genericTypes.length === 0);
     this.next();
 
     if (this.currentTokenMatches('>')) {

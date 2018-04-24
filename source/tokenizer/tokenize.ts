@@ -9,7 +9,7 @@ import { IToken, Tokenizer, TokenType } from './types';
  * @internal
  */
 const tokenizers: Tokenizer[] = [
-  createTokenizer(TokenType.SYMBOL, /[$|=`:;<>?,.\-*+\/\\%&!^~\[\]{}()'"]/),
+  createTokenizer(TokenType.SYMBOL, /[$|=`:;<>?,.\-*+\/\\%&!^~\[\]{}()'"#]/),
   createTokenizer(TokenType.NUMBER, /[\d.]/),
   createTokenizer(TokenType.WORD, /\w/),
   createTokenizer(TokenType.NEWLINE, /[\r\n]/),
