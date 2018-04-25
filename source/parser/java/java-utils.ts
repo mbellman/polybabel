@@ -78,6 +78,16 @@ export namespace JavaUtils {
    *  )(
    */
   export function isFunctionCall (token: IToken): boolean {
+    if (ParserUtils.tokenMatches(token, [
+      JavaConstants.Keyword.IF,
+      JavaConstants.Keyword.WHILE,
+      JavaConstants.Keyword.FOR
+    ])) {
+      // Avoid confusion between method names and
+      // if/while/for statements
+      return false;
+    }
+
     return (
       // callFunction(
       TokenUtils.isWord(token) &&
@@ -125,5 +135,17 @@ export namespace JavaUtils {
    */
   export function isInstantiation (token: IToken): boolean {
     return ParserUtils.tokenMatches(token, JavaConstants.Keyword.NEW);
+  }
+
+  /**
+   * Determines whether a token corresponds to the beginning
+   * of an if-else conditional statement.
+   *
+   * @example
+   *
+   *  if
+   */
+  export function isIfElse (token: IToken): boolean {
+    return ParserUtils.tokenMatches(token, JavaConstants.Keyword.IF);
   }
 }

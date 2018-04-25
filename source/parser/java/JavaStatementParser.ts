@@ -1,5 +1,6 @@
 import AbstractParser from '../common/AbstractParser';
 import JavaFunctionCallParser from './statement-parsers/JavaFunctionCallParser';
+import JavaIfElseParser from './statement-parsers/JavaIfElseParser';
 import JavaInstantiationParser from './statement-parsers/JavaInstantiationParser';
 import JavaLiteralParser from './statement-parsers/JavaLiteralParser';
 import JavaPropertyChainParser from './statement-parsers/JavaPropertyChainParser';
@@ -22,7 +23,22 @@ import { TokenUtils } from '../../tokenizer/token-utils';
 type StatementMatcher = [ TokenPredicate, Constructor<AbstractParser> ];
 
 /**
- * @todo @description
+ * Parses block-level statements. Stops when the following
+ * tokens are encountered:
+ *
+ * ; , ] }
+ *
+ * Also stops when a ) token is encountered if the closing
+ * parentheses counter decrements to 0.
+ *
+ * @example
+ *
+ *  String name = 'Bob';
+ *  this.carFactory.createCar();
+ *
+ *  if (...) {
+ *    ...
+ *  }
  */
 export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJavaStatement> {
   /**
@@ -41,7 +57,8 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
     return [
       [ JavaUtils.isLiteral, JavaLiteralParser ],
       [ JavaUtils.isInstantiation, JavaInstantiationParser ],
-      [ JavaUtils.isType, JavaVariableDeclarationParser ]
+      [ JavaUtils.isType, JavaVariableDeclarationParser ],
+      [ JavaUtils.isIfElse, JavaIfElseParser ]
     ];
   }
 

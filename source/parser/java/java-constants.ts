@@ -20,7 +20,14 @@ export namespace JavaConstants {
     NEW = 'new',
     TRUE = 'true',
     FALSE = 'false',
-    NULL = 'null'
+    NULL = 'null',
+    IF = 'if',
+    ELSE = 'else',
+    WHILE = 'while',
+    FOR = 'for',
+    TRY = 'try',
+    CATCH = 'catch',
+    FINALLY = 'finally'
   }
 
   export enum Type {

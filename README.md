@@ -39,7 +39,7 @@ The emphasis on idiomatic programming means the standard libraries and APIs norm
 * * - - Anonymous class/instance overrides - 0%
 * * - Literals ✔
 * * - Operators - 10%?
-* * - Conditions - 0%
+* * - If/else blocks ✔
 * * - Loops - 0%
 * * - Anonymous functions (lambda expressions) - 0%
 * * - try/catch/finally - 0%

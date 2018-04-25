@@ -18,7 +18,10 @@ export namespace JavaSyntax {
     PROPERTY_CHAIN,
     FUNCTION_CALL,
     LITERAL,
-    INSTANTIATION
+    INSTANTIATION,
+    IF_ELSE,
+    WHILE_LOOP,
+    FOR_LOOP
   }
 
   export const enum JavaAccessModifier {
@@ -135,6 +138,12 @@ export namespace JavaSyntax {
   export interface IJavaInstantiation extends IJavaSyntaxNode, IWithArguments<IJavaStatement> {
     node: JavaSyntaxNode.INSTANTIATION;
     constructor: IJavaType;
+  }
+
+  export interface IJavaIfElse extends IJavaSyntaxNode {
+    node: JavaSyntaxNode.IF_ELSE;
+    conditions: IJavaStatement[];
+    blocks: IJavaBlock[];
   }
 
   export interface IJavaSyntaxTree extends ISyntaxTree<IJavaSyntaxNode> {

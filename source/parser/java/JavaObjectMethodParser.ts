@@ -66,8 +66,6 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
 
   @Match('{')
   protected onBlock (): void {
-    this.next();
-
     this.parsed.block = this.parseNextWith(JavaBlockParser);
 
     this.stop();

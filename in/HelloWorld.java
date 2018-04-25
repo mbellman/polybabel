@@ -12,18 +12,17 @@ protected interface ITest {
 
 public final class HelloWorld extends What implements ITest {
   public static void main (String[] args) {
-    GoodbyeWorld goodbyeWorld = new GoodbyeWorld();
-    Number num = 5;
-
-    HelloWorld[('hello')]['whoa']<ITest>main()(5);
-
-    String[] strings = { 'hello', HelloWorld.main(), 5.0 };
-
-    Namespace.Map<String>[] hello = 5;
-
-    this.test = 5;
-
-    method().getValue();
+    if (something.test()) {
+      Type thing = 5;
+      Future<Type> future = fetchType();
+    } else if (something.notTest()) {
+      Type thing = 2;
+      Future<Type> future = fetchOtherType();
+    } else if (true) {
+      Type thing = 1;
+    } else {
+      Type thing = 0;
+    }
   }
 
   private interface IHello {

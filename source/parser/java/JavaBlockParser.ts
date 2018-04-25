@@ -12,6 +12,11 @@ export default class JavaBlockParser extends AbstractParser<JavaSyntax.IJavaBloc
     };
   }
 
+  @Match('{')
+  protected onEnterBlock (): void {
+    this.next();
+  }
+
   @Match(/./)
   protected onStatement (): void {
     const statement = this.parseNextWith(JavaStatementParser);
