@@ -9,20 +9,21 @@ import { TokenUtils } from '../../tokenizer/token-utils';
 
 export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode> {
   protected currentToken: IToken;
+  protected indentation: number = 0;
   protected parsed: P = this.getDefault();
   private isFinished: boolean = false;
   private isStopped: boolean = false;
 
-  protected get nextCharacterToken (): IToken {
-    return TokenUtils.getNextCharacterToken(this.currentToken);
+  protected get nextTextToken (): IToken {
+    return TokenUtils.getNextTextToken(this.currentToken);
   }
 
   protected get nextToken (): IToken {
     return this.currentToken.nextToken;
   }
 
-  protected get previousCharacterToken (): IToken {
-    return TokenUtils.getPreviousCharacterToken(this.currentToken);
+  protected get previousTextToken (): IToken {
+    return TokenUtils.getPreviousTextToken(this.currentToken);
   }
 
   protected get previousToken (): IToken {
@@ -120,16 +121,12 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
   }
 
   protected isEOF (): boolean {
-    return !this.nextCharacterToken;
-  }
-
-  protected isStartOfLine (): boolean {
-    return !this.previousToken || this.previousToken.type === TokenType.NEWLINE;
+    return TokenUtils.isEOF(this.currentToken);
   }
 
   /**
    * Determines whether a token match is contained within the
-   * current parsing line.
+   * current parsing line starting from the current token.
    */
   @Bound protected lineContains (tokenMatch: TokenMatch): boolean {
     if (this.currentTokenMatches(tokenMatch)) {
@@ -137,20 +134,28 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
     }
 
     const targetToken = this.findMatchingToken(TokenUtils.getNextToken, token => {
-      return ParserUtils.tokenMatches(token, tokenMatch) || token.type === TokenType.NEWLINE;
+      return ParserUtils.tokenMatches(token, tokenMatch) || TokenUtils.isNewline(token);
     });
 
-    return targetToken.type !== TokenType.NEWLINE;
+    return !TokenUtils.isNewline(targetToken);
   }
 
   /**
-   * A shorthand method for skipping to the next character token.
+   * Skips to the next token of type WORD, NUMBER, or SYMBOL in the
+   * token stream, stopping at the final EOF token in the stream.
+   * Also tracks indentation level.
    */
   protected next (): void {
-    if (!this.nextCharacterToken) {
-      this.isFinished = true;
-    } else {
-      this.currentToken = this.nextCharacterToken;
+    this.currentToken = this.nextTextToken;
+
+    if (this.currentTokenMatches(TokenUtils.isEOF)) {
+      this.finish();
+
+      return;
+    }
+
+    if (TokenUtils.isIndentation(this.previousToken)) {
+      this.indentation = this.previousToken.value.length;
     }
   }
 
@@ -239,7 +244,7 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
       return;
     }
 
-    if (this.isStartOfLine()) {
+    if (this.currentTokenMatches(TokenUtils.isStartOfLine) || TokenUtils.isIndentation(this.previousToken)) {
       if (this.checkTokenMatchersWithPredicate(lookaheads, this.lineContains)) {
         return;
       }
@@ -280,21 +285,23 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
    * Returns a preview of the current line, centered on the current
    * token and extending to {range} tokens on either side.
    */
-  private getColorizedLinePreview (range: number = 5): string {
+  private getColorizedLinePreview (range: number = 6): string {
     let n = range;
     let localToken = this.currentToken;
     const localTokenValues: string[] = [];
 
     // Walk backward to the start of the range,
-    // or the beginning of the current line
-    while (--n >= 0 && localToken.previousToken && TokenUtils.isCharacterToken(localToken.previousToken)) {
+    // or the beginning of the current line, or
+    // the indentation at the beginning of the
+    // current line
+    while (--n >= 0 && !TokenUtils.isStartOfLine(localToken) && !TokenUtils.isIndentation(localToken.previousToken)) {
       localToken = localToken.previousToken;
     }
 
     // Walk forward to the end of the range, or the
     // end of the current line, adding each token
     // to the list of local token values
-    while (n++ < (2 * range) && localToken.nextToken && TokenUtils.isCharacterToken(localToken)) {
+    while (n++ < (2 * range) && !TokenUtils.isNewline(localToken) && !TokenUtils.isEOF(localToken)) {
       const colorize = localToken === this.currentToken
         ? chalk.bold.red
         : chalk.gray;
@@ -324,20 +331,20 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
    * the parser finishes, stops, or halts.
    */
   private stream (): void {
-    if (this.currentToken.type === TokenType.NEWLINE) {
-      this.currentToken = this.nextCharacterToken;
+    if (!this.currentTokenMatches(TokenUtils.isText)) {
+      this.next();
     }
 
     this.onFirstToken();
 
-    while (!this.isStopped && !this.isFinished && this.nextToken) {
+    while (!this.isStopped && !this.isFinished && !this.isEOF()) {
       const initialToken = this.currentToken;
 
       if (this.currentToken.type !== TokenType.NEWLINE) {
         this.checkTokenMatchers();
       }
 
-      if (this.isStopped || !this.nextCharacterToken) {
+      if (this.isStopped || this.isEOF()) {
         // Break out of the token loop, keep the current
         // token where it is, and let the parent parser
         // handle things from there
@@ -351,7 +358,7 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
 
     if (this.isFinished) {
       // Advance the token stream after finishing so as
-      // to break 'out' of the parsing chunk
+      // to break 'out' of the parsed chunk
       this.next();
     }
   }

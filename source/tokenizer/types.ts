@@ -6,7 +6,8 @@ export const enum TokenType {
   NUMBER,
   SYMBOL,
   NEWLINE,
-  WHITESPACE
+  INDENTATION,
+  EOF
 }
 
 /**

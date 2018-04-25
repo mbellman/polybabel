@@ -24,7 +24,7 @@ export namespace JavaUtils {
   /**
    * Determines whether a token corresponds to the beginning of
    * a type. Uses a maximum of two token lookaheads to distinguish
-   * [] types from property chains using brackets.
+   * [] types from bracket properties.
    *
    * @example
    *
@@ -46,9 +46,9 @@ export namespace JavaUtils {
   }
 
   /**
-   * Determines whether a token corresponds to the beginning or part
-   * of a property chain. Uses two token lookaheads to distinguish
-   * property chains using brackets from [] types.
+   * Determines whether a token corresponds to the beginning or
+   * part of a property chain. Uses two token lookaheads to
+   * distinguish bracket properties from [] types.
    *
    * @example
    *
@@ -67,8 +67,9 @@ export namespace JavaUtils {
   }
 
   /**
-   * Determines whether a token corresponds to the beginning
-   * of a function call.
+   * Determines whether a token corresponds to the beginning of
+   * a function call. Uses one token lookahead and potentially
+   * one token lookbehind.
    *
    * @example
    *

@@ -29,7 +29,7 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
 
   @Match('(')
   protected onParametersStart (): void {
-    this.assert(TokenUtils.isWord(this.previousCharacterToken));
+    this.assert(TokenUtils.isWord(this.previousTextToken));
     this.next();
 
     const parametersParser = new SequenceParser({
@@ -50,7 +50,7 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
 
   @Match(JavaConstants.Keyword.THROWS)
   protected onThrows (): void {
-    this.assert(this.previousCharacterToken.value === ')');
+    this.assert(this.previousTextToken.value === ')');
     this.next();
 
     const throwsParser = new SequenceParser({

@@ -66,7 +66,7 @@ export default class JavaPropertyChainParser extends AbstractParser<JavaSyntax.I
 
   @Match('.')
   protected onDelimiter (): void {
-    this.assert(TokenUtils.isCharacterToken(this.nextToken));
+    this.assert(TokenUtils.isText(this.nextToken));
     this.next();
   }
 

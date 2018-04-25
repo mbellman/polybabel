@@ -6,15 +6,15 @@ import { IToken, Tokenizer, TokenType } from './types';
  */
 export default function createTokenizer (tokenType: TokenType, pattern: RegExp): Tokenizer {
   return (input: string, offset: number): IToken => {
-    let incomingChar: string = input[offset];
+    let incoming: string = input[offset];
     let value: string;
 
-    if (pattern.test(incomingChar)) {
+    if (pattern.test(incoming)) {
       value = '';
 
-      while (pattern.test(incomingChar)) {
-        value += incomingChar;
-        incomingChar = input[++offset];
+      while (pattern.test(incoming)) {
+        value += incoming;
+        incoming = input[++offset];
 
         if (tokenType === TokenType.SYMBOL || value === '\r\n') {
           // Terminate symbol tokens after a single character, and

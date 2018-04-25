@@ -18,8 +18,8 @@ export default class JavaPackageParser extends AbstractParser<JavaSyntax.IJavaPa
     this.next();
   }
 
-  @Match(/./)
-  protected onWord (): void {
+  @Match(TokenUtils.isText)
+  protected onPathValue (): void {
     this.parsed.path += this.currentToken.value;
   }
 

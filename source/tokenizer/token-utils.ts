@@ -6,8 +6,8 @@ export namespace TokenUtils {
     return previousToken;
   }
 
-  export function getPreviousCharacterToken (token: IToken): IToken {
-    while ((token = getPreviousToken(token)) && !isCharacterToken(token)) { }
+  export function getPreviousTextToken (token: IToken): IToken {
+    while ((token = getPreviousToken(token)) && !isText(token)) { }
 
     return token;
   }
@@ -16,8 +16,8 @@ export namespace TokenUtils {
     return nextToken;
   }
 
-  export function getNextCharacterToken (token: IToken): IToken {
-    while ((token = getNextToken(token)) && !isCharacterToken(token)) { }
+  export function getNextTextToken (token: IToken): IToken {
+    while ((token = getNextToken(token)) && !isText(token) && !isEOF(token)) { }
 
     return token;
   }
@@ -38,11 +38,19 @@ export namespace TokenUtils {
     return type === TokenType.NEWLINE;
   }
 
-  export function isCharacterToken ({ type }: IToken): boolean {
-    return type !== TokenType.NEWLINE;
+  export function isIndentation ({ type }: IToken): boolean {
+    return type === TokenType.INDENTATION;
   }
 
-  export function isAtStartOfLine ({ type, previousToken }: IToken): boolean {
-    return !previousToken || previousToken.type === TokenType.NEWLINE;
+  export function isEOF ({ type }: IToken): boolean {
+    return type === TokenType.EOF;
+  }
+
+  export function isText (token: IToken): boolean {
+    return isWord(token) || isSymbol(token) || isNumber(token);
+  }
+
+  export function isStartOfLine ({ previousToken }: IToken): boolean {
+    return !previousToken || TokenUtils.isNewline(previousToken);
   }
 }
