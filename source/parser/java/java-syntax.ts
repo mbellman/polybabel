@@ -7,10 +7,10 @@ export namespace JavaSyntax {
     IMPORT,
     CLASS,
     INTERFACE,
-    SEQUENCE,
-    TYPE,
+    ENUM,
     OBJECT_FIELD,
     OBJECT_METHOD,
+    TYPE,
     PARAMETER,
     BLOCK,
     STATEMENT,
@@ -46,43 +46,46 @@ export namespace JavaSyntax {
     ARRAY
   }
 
+  /**
+   * Any Java syntactic construct.
+   */
   export interface IJavaSyntaxNode extends ISyntaxNode<JavaSyntaxNode> { }
 
+  /**
+   * A Java construct with an access level specified by
+   * a constant in JavaAccessModifier.
+   */
   export interface IJavaAccessible extends IAccessible<JavaAccessModifier> { }
 
-  export interface IJavaPackage extends IJavaSyntaxNode {
-    node: JavaSyntaxNode.PACKAGE;
-    path: string;
-  }
-
-  export interface IJavaImport extends IJavaSyntaxNode, INamed {
-    node: JavaSyntaxNode.IMPORT;
-    path: string;
-  }
-
+  /**
+   * A Java construct with modifier flags, including
+   * an access modifier.
+   */
   export interface IJavaModifiable extends IJavaSyntaxNode, IJavaAccessible {
     isAbstract?: true;
     isFinal?: true;
     isStatic?: true;
   }
 
-  export interface IJavaInterface extends IJavaSyntaxNode, INamed, IJavaAccessible {
-    node: JavaSyntaxNode.INTERFACE;
-    extends?: IJavaType[];
-    fields: IJavaObjectField[];
-    methods: IJavaObjectMethod[];
+  /**
+   * A Java package declaration.
+   */
+  export interface IJavaPackage extends IJavaSyntaxNode {
+    node: JavaSyntaxNode.PACKAGE;
+    path: string;
   }
 
-  export interface IJavaClass extends IJavaSyntaxNode, INamed, IJavaModifiable {
-    node: JavaSyntaxNode.CLASS;
-    extends: IJavaType[];
-    implements: IJavaType[];
-    fields: IJavaObjectField[];
-    methods: IJavaObjectMethod[];
-    nestedClasses: IJavaClass[];
-    nestedInterfaces: IJavaInterface[];
+  /**
+   * A Java import statement.
+   */
+  export interface IJavaImport extends IJavaSyntaxNode, INamed {
+    node: JavaSyntaxNode.IMPORT;
+    path: string;
   }
 
+  /**
+   * A Java type reference.
+   */
   export interface IJavaType extends IJavaSyntaxNode {
     node: JavaSyntaxNode.TYPE;
     namespaceChain: string[];
@@ -90,15 +93,59 @@ export namespace JavaSyntax {
     arrayDimensions: number;
   }
 
-  export interface IJavaObjectMember extends IJavaModifiable, ITyped<IJavaType>, INamed {
-    node: JavaSyntaxNode;
+  /**
+   * The body of a Java object construct, containing
+   * an array of its members.
+   */
+  export interface IJavaObjectBody extends IJavaSyntaxNode {
+    members: Array<IJavaObjectField | IJavaObjectMethod | IJavaObject>;
   }
 
-  export interface IJavaObjectField extends IJavaObjectMember, IValued<IJavaStatement> {
+  /**
+   * Any Java construct which represents an 'object'
+   * in the classical OOP sense. Generalizes classes,
+   * interfaces, and enums.
+   */
+  export interface IJavaObject extends IJavaModifiable, INamed, IJavaObjectBody {
+    extended?: IJavaType[];
+    implemented?: IJavaType[];
+  }
+
+  /**
+   * A Java class.
+   */
+  export interface IJavaClass extends IJavaSyntaxNode, IJavaObject {
+    node: JavaSyntaxNode.CLASS;
+  }
+
+  /**
+   * A Java interface.
+   */
+  export interface IJavaInterface extends IJavaSyntaxNode, IJavaObject {
+    node: JavaSyntaxNode.INTERFACE;
+  }
+
+  /**
+   * A Java enum.
+   */
+  export interface IJavaEnum extends IJavaSyntaxNode, IJavaObject {
+    node: JavaSyntaxNode.ENUM;
+    values: IJavaSyntaxNode[];
+  }
+
+  /**
+   * A field on a Java object definition, either uninitialized
+   * or assigned to a statement value.
+   */
+  export interface IJavaObjectField extends IJavaSyntaxNode, IJavaModifiable, ITyped<IJavaType>, INamed, IValued<IJavaStatement> {
     node: JavaSyntaxNode.OBJECT_FIELD;
   }
 
-  export interface IJavaObjectMethod extends IJavaObjectMember, IWithParameters<IJavaVariableDeclaration> {
+  /**
+   * A method on a Java object definition, either uninitialized
+   * or with a block containing statements.
+   */
+  export interface IJavaObjectMethod extends IJavaSyntaxNode, IJavaModifiable, ITyped<IJavaType>, INamed, IWithParameters<IJavaVariableDeclaration> {
     node: JavaSyntaxNode.OBJECT_METHOD;
     throws: IJavaType[];
     block: IJavaBlock;

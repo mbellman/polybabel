@@ -51,6 +51,10 @@ export namespace TokenUtils {
   }
 
   export function isStartOfLine ({ previousToken }: IToken): boolean {
-    return !previousToken || TokenUtils.isNewline(previousToken);
+    return (
+      !previousToken ||
+      TokenUtils.isNewline(previousToken) ||
+      TokenUtils.isIndentation(previousToken)
+    );
   }
 }

@@ -1,6 +1,5 @@
 import AbstractParser from '../common/AbstractParser';
 import JavaBlockParser from './JavaBlockParser';
-import JavaObjectMemberParser from './JavaObjectMemberParser';
 import JavaTypeParser from './JavaTypeParser';
 import JavaVariableDeclarationParser from './statement-parsers/JavaVariableDeclarationParser';
 import SequenceParser from '../common/SequenceParser';
@@ -21,10 +20,6 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
       throws: [],
       block: null
     };
-  }
-
-  @Override protected onFirstToken (): void {
-    this.emulate(JavaObjectMemberParser);
   }
 
   @Match('(')

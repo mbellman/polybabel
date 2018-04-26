@@ -87,6 +87,16 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
    * syntax node object. Provided parser classes must parse a
    * syntax node whose type signature is a subset of that of
    * this one's.
+   *
+   * Note: Partial<P> doesn't work for enforcing a type signature
+   * subset here. Since we purposely remove the 'node' key from
+   * P and T to avoid syntax node type collisions (which would
+   * render this feature useless), we still need to add back
+   * a constraint of ISyntaxNode & ... to satisfy the constraint
+   * on AbstractParser<T>. This would effectively permit any
+   * object with *at least* the interface of ISyntaxNode and
+   * *at least* the interface of Partial<P> without 'node',
+   * yielding a false positive for many invalid objects.
    */
   protected emulate <T extends ISyntaxNode & BaseOf<Without<P, 'node'>, Without<T, 'node'>>>(ParserClass: Constructor<AbstractParser<T>>): void {
     const { node, ...parsed } = this.parseNextWith(ParserClass) as any;
@@ -244,7 +254,7 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
       return;
     }
 
-    if (this.currentTokenMatches(TokenUtils.isStartOfLine) || TokenUtils.isIndentation(this.previousToken)) {
+    if (this.currentTokenMatches(TokenUtils.isStartOfLine)) {
       if (this.checkTokenMatchersWithPredicate(lookaheads, this.lineContains)) {
         return;
       }

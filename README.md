@@ -24,6 +24,7 @@ The emphasis on idiomatic programming means the standard libraries and APIs norm
 * * - Aliasing - 0%
 * * Classes ✔
 * * Interfaces ✔
+* * Enums - 0%
 * * Fields ✔
 * * Methods ✔
 * * Varargs - 0%

@@ -8,6 +8,7 @@ export namespace JavaConstants {
     IMPORT = 'import',
     CLASS = 'class',
     INTERFACE = 'interface',
+    ENUM = 'enum',
     EXTENDS = 'extends',
     IMPLEMENTS = 'implements',
     THROWS = 'throws',
