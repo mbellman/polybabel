@@ -4,6 +4,16 @@ import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from './java-syntax';
 import { Match } from '../common/parser-decorators';
 
+/**
+ * Parses Java code blocks. Finishes upon encountering
+ * a } token.
+ *
+ * @example
+ *
+ *  {
+ *    ...
+ *  }
+ */
 export default class JavaBlockParser extends AbstractParser<JavaSyntax.IJavaBlock> {
   @Implements protected getDefault (): JavaSyntax.IJavaBlock {
     return {

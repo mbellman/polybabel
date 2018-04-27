@@ -41,7 +41,7 @@ The emphasis on idiomatic programming means the standard libraries and APIs norm
 * * - Literals ✔
 * * - Operators - 10%?
 * * - If/else blocks ✔
-* * - Loops - 0%
+* * - Loops - ✔
 * * - Anonymous functions (lambda expressions) - 0%
 * * - try/catch/finally - 0%
 * * - break/continue/return - 0%

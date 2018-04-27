@@ -14,14 +14,15 @@ export namespace JavaSyntax {
     PARAMETER,
     BLOCK,
     STATEMENT,
+    REFERENCE,
     VARIABLE_DECLARATION,
     PROPERTY_CHAIN,
     FUNCTION_CALL,
     LITERAL,
     INSTANTIATION,
     IF_ELSE,
-    WHILE_LOOP,
-    FOR_LOOP
+    FOR_LOOP,
+    WHILE_LOOP
   }
 
   export const enum JavaAccessModifier {
@@ -62,9 +63,9 @@ export namespace JavaSyntax {
    * an access modifier.
    */
   export interface IJavaModifiable extends IJavaSyntaxNode, IJavaAccessible {
-    isAbstract?: true;
-    isFinal?: true;
-    isStatic?: true;
+    isAbstract?: boolean;
+    isFinal?: boolean;
+    isStatic?: boolean;
   }
 
   /**
@@ -162,6 +163,10 @@ export namespace JavaSyntax {
     rightSide?: IJavaSyntaxNode;
   }
 
+  export interface IJavaReference extends IJavaSyntaxNode, IValued<string> {
+    node: JavaSyntaxNode.REFERENCE;
+  }
+
   export interface IJavaVariableDeclaration extends IJavaSyntaxNode, Pick<IJavaModifiable, 'isFinal'>, ITyped<IJavaType>, INamed {
     node: JavaSyntaxNode.VARIABLE_DECLARATION;
   }
@@ -191,6 +196,19 @@ export namespace JavaSyntax {
     node: JavaSyntaxNode.IF_ELSE;
     conditions: IJavaStatement[];
     blocks: IJavaBlock[];
+  }
+
+  export interface IJavaForLoop extends IJavaSyntaxNode {
+    node: JavaSyntaxNode.FOR_LOOP;
+    statements: IJavaStatement[];
+    isEnhanced?: boolean;
+    block: IJavaBlock;
+  }
+
+  export interface IJavaWhileLoop extends IJavaSyntaxNode {
+    node: JavaSyntaxNode.WHILE_LOOP;
+    condition: IJavaStatement;
+    block: IJavaBlock;
   }
 
   export interface IJavaSyntaxTree extends ISyntaxTree<IJavaSyntaxNode> {

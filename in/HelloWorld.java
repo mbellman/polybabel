@@ -7,21 +7,27 @@ protected interface ITest {
   Bool boolean;
   Object object;
 
-  Thing getThing (String thing, final Math.Arithmetic.Number<Utils.Map<String>, NumericType> id) throws Exception;
+  Thing getThing (String thing, final Number id) throws Exception;
 }
 
 public final class HelloWorld extends What implements ITest {
   public static void main (String[] args) {
     if (something.test()) {
-      Type thing = 5;
-      Future<Type> future = fetchType();
     } else if (something.notTest()) {
-      Type thing = 2;
-      Future<Type> future = fetchOtherType();
     } else if (true) {
-      Type thing = 1;
     } else {
-      Type thing = 0;
+    }
+
+    for (int i = 0; update(); add()) {
+      Future<Data> future = Fetcher.fetchData();
+    }
+
+    for (int number : { 1, 2, 3, 4, 5, 6 }) {
+      console.log(number);
+    }
+
+    while (thread.isLocked()) {
+      wait();
     }
   }
 

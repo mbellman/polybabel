@@ -22,6 +22,22 @@ export namespace JavaUtils {
   }
 
   /**
+   * Determines whether a token corresponds to a reference.
+   *
+   * @example
+   *
+   *  name =
+   *  name;
+   *  name)
+   */
+  export function isReference (token: IToken): boolean {
+    return (
+      TokenUtils.isWord(token) &&
+      ParserUtils.tokenMatches(token.nextToken, /[=;)]/)
+    );
+  }
+
+  /**
    * Determines whether a token corresponds to the beginning of
    * a type. Uses a maximum of two token lookaheads to distinguish
    * [] types from bracket properties.
@@ -80,8 +96,8 @@ export namespace JavaUtils {
   export function isFunctionCall (token: IToken): boolean {
     if (ParserUtils.tokenMatches(token, [
       JavaConstants.Keyword.IF,
-      JavaConstants.Keyword.WHILE,
-      JavaConstants.Keyword.FOR
+      JavaConstants.Keyword.FOR,
+      JavaConstants.Keyword.WHILE
     ])) {
       // Avoid confusion between method names and
       // if/while/for statements

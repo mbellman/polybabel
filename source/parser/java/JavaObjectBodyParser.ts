@@ -81,9 +81,15 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
     this.assertCurrentTokenMatch(/[=(;]/);
   }
 
+  /**
+   * Fields lack their own parser class since by the time
+   * we can determine that we're parsing a field, indicated
+   * by an assignment operator, all we have left to parse
+   * is its right-side statement value.
+   */
   @Match('=')
   protected onFieldAssignment (): void {
-    this.assertCurrentMemberTypedAndNamed();
+    this.assertCurrentMemberIsTypedAndNamed();
     this.next();
 
     const node = JavaSyntax.JavaSyntaxNode.OBJECT_FIELD;
@@ -107,7 +113,7 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
 
   @Match('(')
   protected onMethodDefinition (): void {
-    this.assertCurrentMemberTypedAndNamed();
+    this.assertCurrentMemberIsTypedAndNamed();
 
     const { node, parameters, throws, block } = this.parseNextWith(JavaObjectMethodParser);
 
@@ -126,7 +132,7 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
     this.currentMember = null;
   }
 
-  private assertCurrentMemberTypedAndNamed (): void {
+  private assertCurrentMemberIsTypedAndNamed (): void {
     this.assert(this.currentMember !== null);
 
     const { type, name } = this.currentMember as any;

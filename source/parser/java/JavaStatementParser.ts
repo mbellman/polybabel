@@ -1,26 +1,33 @@
 import AbstractParser from '../common/AbstractParser';
+import JavaForLoopParser from './statement-parsers/JavaForLoopParser';
 import JavaFunctionCallParser from './statement-parsers/JavaFunctionCallParser';
 import JavaIfElseParser from './statement-parsers/JavaIfElseParser';
 import JavaInstantiationParser from './statement-parsers/JavaInstantiationParser';
 import JavaLiteralParser from './statement-parsers/JavaLiteralParser';
 import JavaPropertyChainParser from './statement-parsers/JavaPropertyChainParser';
+import JavaReferenceParser from './statement-parsers/JavaReferenceParser';
 import JavaVariableDeclarationParser from './statement-parsers/JavaVariableDeclarationParser';
-import { Callback, Implements, Override } from 'trampoline-framework';
+import JavaWhileLoopParser from './statement-parsers/JavaWhileLoopParser';
 import { Constructor } from '../../system/types';
+import { Implements } from 'trampoline-framework';
+import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { JavaUtils } from './java-utils';
 import { Match } from '../common/parser-decorators';
-import { TokenPredicate } from '../common/parser-types';
+import { ParserUtils } from '../common/parser-utils';
+import { TokenMatch } from '../common/parser-types';
 import { TokenUtils } from '../../tokenizer/token-utils';
 
 /**
- * A 2-tuple which contains a token predicate and a parser
- * class to be used to parse an incoming statement if its
- * predicate returns true.
+ * A 3-tuple which contains a token match, a parser class
+ * to be used to parse an incoming statement if the first
+ * token of the statement satisfies the match, and a boolean
+ * indicating whether the statement is left-side only and
+ * should stop immediately after being parsed.
  *
  * @internal
  */
-type StatementMatcher = [ TokenPredicate, Constructor<AbstractParser> ];
+type StatementMatcher = [ TokenMatch, Constructor<AbstractParser>, boolean ];
 
 /**
  * Parses block-level statements. Stops when the following
@@ -33,12 +40,14 @@ type StatementMatcher = [ TokenPredicate, Constructor<AbstractParser> ];
  *
  * @example
  *
+ *  { 1, 2, 3 }
+ *  new Item(...);
  *  String name = 'Bob';
  *  this.carFactory.createCar();
- *
- *  if (...) {
- *    ...
- *  }
+ *  if (...) { ... }
+ *  for (... ; ... ; ...) { ... }
+ *  for (... : ...) { ... }
+ *  while (...) { ... }
  */
 export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJavaStatement> {
   /**
@@ -55,10 +64,13 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
    */
   private static get StatementMatchers (): StatementMatcher[] {
     return [
-      [ JavaUtils.isLiteral, JavaLiteralParser ],
-      [ JavaUtils.isInstantiation, JavaInstantiationParser ],
-      [ JavaUtils.isType, JavaVariableDeclarationParser ],
-      [ JavaUtils.isIfElse, JavaIfElseParser ]
+      [ JavaUtils.isReference, JavaReferenceParser, false ],
+      [ JavaUtils.isLiteral, JavaLiteralParser, false ],
+      [ JavaUtils.isInstantiation, JavaInstantiationParser, false ],
+      [ JavaUtils.isType, JavaVariableDeclarationParser, false ],
+      [ JavaUtils.isIfElse, JavaIfElseParser, true ],
+      [ JavaConstants.Keyword.FOR, JavaForLoopParser, true ],
+      [ JavaConstants.Keyword.WHILE, JavaWhileLoopParser, true ]
     ];
   }
 
@@ -86,9 +98,13 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
   protected onLeftSideStatement (): void {
     this.assert(this.parsed.leftSide === null);
 
-    for (const [ tokenPredicate, Parser ] of JavaStatementParser.StatementMatchers) {
-      if (tokenPredicate(this.currentToken)) {
+    for (const [ tokenMatch, Parser, isLeftSideOnly ] of JavaStatementParser.StatementMatchers) {
+      if (this.currentTokenMatches(tokenMatch)) {
         this.parsed.leftSide = this.parseNextWith(Parser);
+
+        if (isLeftSideOnly) {
+          this.stop();
+        }
 
         return;
       }
@@ -215,6 +231,7 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
   }
 
   @Match(';')
+  @Match(':')
   @Match(',')
   @Match(']')
   @Match('}')
