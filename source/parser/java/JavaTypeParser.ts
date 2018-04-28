@@ -36,7 +36,10 @@ export default class JavaTypeParser extends AbstractParser<JavaSyntax.IJavaType>
   @Override protected onFirstToken (): void {
     this.assert(TokenUtils.isWord(this.currentToken));
 
-    const isNamespacedType = ParserUtils.tokenMatches(this.nextToken, '.');
+    const isNamespacedType = (
+      ParserUtils.tokenMatches(this.nextToken, '.') &&
+      TokenUtils.isWord(this.nextToken.nextToken)
+    );
 
     if (isNamespacedType) {
       // Note: types can be namespaced, and JavaTypeParser can

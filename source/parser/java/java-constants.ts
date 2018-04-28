@@ -26,6 +26,8 @@ export namespace JavaConstants {
     ELSE = 'else',
     WHILE = 'while',
     FOR = 'for',
+    SWITCH = 'switch',
+    CASE = 'case',
     TRY = 'try',
     CATCH = 'catch',
     FINALLY = 'finally'

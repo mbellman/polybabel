@@ -23,9 +23,27 @@ export default class JavaVariableDeclarationParser extends AbstractParser<JavaSy
     }
 
     this.parsed.type = this.parseNextWith(JavaTypeParser);
+  }
+
+  @Match('.')
+  protected onVarargs (): void {
+    this.assert(!this.parsed.isVariadic);
+
+    for (let i = 0; i < 3; i++) {
+      if (!this.currentTokenMatches('.')) {
+        this.halt();
+      }
+
+      this.next();
+    }
+
+    this.parsed.isVariadic = true;
+  }
+
+  @Match(TokenUtils.isWord)
+  protected onVariableName (): void {
     this.parsed.name = this.currentToken.value;
 
-    this.assert(TokenUtils.isWord(this.currentToken));
     this.finish();
   }
 }

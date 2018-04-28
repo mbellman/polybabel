@@ -134,7 +134,11 @@ export namespace JavaUtils {
    * a type. Uses one lookahead for types with single-word names,
    * two lookaheads to distinguish [] types from bracket properties,
    * and a potentially large number of lookaheads to distinguish
-   * generic types from less-than comparisons.
+   * generic types from less-than comparisons (see: isGenericBlock()).
+   *
+   * Variadic types are omitted from this check, since their use is
+   * only permitted in method parameter blocks, and checking is only
+   * necessary to properly parse statements.
    *
    * @example
    *

@@ -201,6 +201,7 @@ export namespace JavaSyntax {
 
   export interface IJavaVariableDeclaration extends IJavaSyntaxNode, Pick<IJavaModifiable, 'isFinal'>, ITyped<IJavaType>, INamed {
     node: JavaSyntaxNode.VARIABLE_DECLARATION;
+    isVariadic?: boolean;
   }
 
   export interface IJavaPropertyChain extends IJavaSyntaxNode {

@@ -27,7 +27,8 @@ The emphasis on idiomatic programming means the standard libraries and APIs norm
 * * Enums - 0%
 * * Fields ✔
 * * Methods ✔
-* * Varargs - 0%
+* * Varargs ✔
+* * Overloading - 0%
 * * Generics - 70%?
 * * - Generic syntax ✔
 * * - Extensible generic types - 0%
@@ -42,7 +43,7 @@ The emphasis on idiomatic programming means the standard libraries and APIs norm
 * * - Operators ✔
 * * - If/else blocks ✔
 * * - Loops ✔
-* * - Switch - 0%
+* * - Switches - 0%
 * * - Anonymous functions (lambda expressions) - 0%
 * * - try/catch/finally - 0%
 * * - break/continue/return - 0%
