@@ -14,6 +14,7 @@ export namespace JavaSyntax {
     PARAMETER,
     BLOCK,
     STATEMENT,
+    OPERATOR,
     REFERENCE,
     VARIABLE_DECLARATION,
     PROPERTY_CHAIN,
@@ -32,19 +33,45 @@ export namespace JavaSyntax {
     PACKAGE
   }
 
-  export const enum JavaOperator {
-    ADD,
-    SUBTRACT,
-    MULTIPLY,
-    DIVIDE,
-    ASSIGN
-  }
-
   export const enum JavaLiteralType {
     KEYWORD,
     STRING,
     NUMBER,
     ARRAY
+  }
+
+  export enum JavaOperator {
+    ASSIGN,
+    ADD,
+    ADD_ASSIGN,
+    SUBTRACT,
+    SUBTRACT_ASSIGN,
+    MULTIPLY,
+    MULTIPLY_ASSIGN,
+    DIVIDE,
+    DIVIDE_ASSIGN,
+    REMAINDER,
+    REMAINDER_ASSIGN,
+    INCREMENT,
+    DECREMENT,
+    NEGATE,
+    EQUAL_TO,
+    NOT_EQUAL_TO,
+    CONDITIONAL_AND,
+    CONDITIONAL_OR,
+    ELVIS,
+    GREATER_THAN,
+    GREATER_THAN_OR_EQUAL_TO,
+    LESS_THAN,
+    LESS_THAN_OR_EQUAL_TO,
+    BITWISE_COMPLEMENT,
+    SIGNED_LEFT_SHIFT,
+    SIGNED_RIGHT_SHIFT,
+    UNSIGNED_RIGHT_SHIFT,
+    BITWISE_AND,
+    BITWISE_EXCLUSIVE_OR,
+    BITWISE_INCLUSIVE_OR,
+    INSTANCEOF
   }
 
   /**
@@ -159,8 +186,13 @@ export namespace JavaSyntax {
   export interface IJavaStatement extends IJavaSyntaxNode {
     node: JavaSyntaxNode.STATEMENT;
     leftSide: IJavaSyntaxNode;
-    operator?: JavaOperator;
+    operator?: IJavaOperator;
     rightSide?: IJavaSyntaxNode;
+  }
+
+  export interface IJavaOperator extends IJavaSyntaxNode {
+    node: JavaSyntaxNode.OPERATOR;
+    operation: JavaOperator;
   }
 
   export interface IJavaReference extends IJavaSyntaxNode, IValued<string> {

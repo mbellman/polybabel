@@ -1,10 +1,72 @@
 import { IToken } from '../../tokenizer/types';
 import { JavaConstants } from './java-constants';
 import { ParserUtils } from '../common/parser-utils';
-import { TokenPredicate } from '../common/parser-types';
+import { TokenPredicate, TokenMatch } from '../common/parser-types';
 import { TokenUtils } from '../../tokenizer/token-utils';
 
 export namespace JavaUtils {
+  /**
+   * An array of token matches disqualifying a token from being
+   * contained within a generic block. Used by isGenericBlock()
+   * to rule out generic type declarations in situations where
+   * less-than comparisons are valid alternatives.
+   *
+   * @internal
+   */
+  const InvalidGenericTokens: TokenMatch = [
+    /[^?>,\w]/,
+    TokenUtils.isNumber,
+    TokenUtils.isEOF
+  ];
+
+  /**
+   * Determines whether a token corresponds to the beginning of a
+   * generic block. Walks through the token sequence following the
+   * provided token until either a token indicating or not indicating
+   * a generic block 'signature' is encountered, or the end of the
+   * token stream is reached.
+   *
+   * During statement parsing, consideration must be made for whether
+   * a < symbol indicates a generic type or a less-than comparison,
+   * since the two can potentially share the same form:
+   *
+   * ```
+   *  List<String>
+   *  x<y
+   * ```
+   *
+   * In trivial cases a closing > or the presence of certain tokens
+   * before a closing > can quickly qualify or rule out generic blocks,
+   * but for namespaced types or comparisons between property chains
+   * a higher number of lookaheads may be required:
+   *
+   * ```
+   *  while (GenericType<Namespaced.Utils.Thing, Vendor.Tools.Type[]> value = getValue()) { ... }
+   *
+   *  int a;
+   *  while (a<this.properties.chain.value) { ... }
+   * ```
+   *
+   * The computational expense of performing lookaheads to distinguish
+   * statements like these will in most cases be mitigated by their
+   * rarity; many generic blocks end after only a few tokens and many
+   * less-than comparisons introduce tokens invalid in a generic on
+   * their right side within a similarly reasonable range.
+   *
+   * @internal
+   */
+  function isGenericBlock (token: IToken): boolean {
+    while ((token = token.nextToken) && !TokenUtils.isEOF(token)) {
+      if (ParserUtils.tokenMatches(token, '>')) {
+        return true;
+      } else if (ParserUtils.tokenMatches(token, InvalidGenericTokens)) {
+        return false;
+      }
+    }
+
+    return false;
+  }
+
   export function isAccessModifierKeyword (word: string): boolean {
     return JavaConstants.AccessModifiers.indexOf(word) > -1;
   }
@@ -22,42 +84,77 @@ export namespace JavaUtils {
   }
 
   /**
-   * Determines whether a token corresponds to a reference.
+   * Determines whether a token corresponds to an isolated
+   * value reference.
    *
    * @example
    *
-   *  name =
-   *  name;
-   *  name)
+   *  name
    */
   export function isReference (token: IToken): boolean {
+    const { nextToken, previousToken } = token;
+    const isWord = TokenUtils.isWord(token);
+
+    if (!isWord) {
+      // Optimize for non-words; return false immediately
+      return false;
+    }
+
+    const { INSTANCEOF } = JavaConstants.Operator;
+
+    // Flanked tokens are those which are surrounded
+    // by certain tokens which determine them to be
+    // isolated units
+    const isFlanked = (
+      !TokenUtils.isWord(previousToken) ||
+      ParserUtils.tokenMatches(previousToken, INSTANCEOF)
+    ) && (
+      ParserUtils.tokenMatches(nextToken, INSTANCEOF) ||
+      !TokenUtils.isWord(nextToken) &&
+      ParserUtils.tokenMatches(nextToken, /[^.(]/)
+    );
+
+    if (!isFlanked) {
+      // Optimize for non-flanked tokens; return false before
+      // any additional logic checks have to be made
+      return false;
+    }
+
+    const isPotentialGenericType = isWord && ParserUtils.tokenMatches(nextToken, '<');
+
     return (
-      TokenUtils.isWord(token) &&
-      ParserUtils.tokenMatches(token.nextToken, /[=;)]/)
+      isWord &&
+      isFlanked &&
+      !isPotentialGenericType ||
+      !isGenericBlock(nextToken)
     );
   }
 
   /**
    * Determines whether a token corresponds to the beginning of
-   * a type. Uses a maximum of two token lookaheads to distinguish
-   * [] types from bracket properties.
+   * a type. Uses one lookahead for types with single-word names,
+   * two lookaheads to distinguish [] types from bracket properties,
+   * and a potentially large number of lookaheads to distinguish
+   * generic types from less-than comparisons.
    *
    * @example
    *
    *  Type type
-   *  Type<
    *  Type[]
+   *  Type<...>
+   *  Type<...>[]
    */
   export function isType (token: IToken): boolean {
     return (
       TokenUtils.isWord(token) &&
       // Type type
       TokenUtils.isWord(token.nextToken) ||
-      // Type<
-      ParserUtils.tokenMatches(token.nextToken, '<') ||
       // Type[]
       ParserUtils.tokenMatches(token.nextToken, '[') &&
-      ParserUtils.tokenMatches(token.nextToken.nextToken, ']')
+      ParserUtils.tokenMatches(token.nextToken.nextToken, ']') ||
+      // Type<...> OR Type<...>[]
+      ParserUtils.tokenMatches(token.nextToken, '<') &&
+      isGenericBlock(token.nextToken)
     );
   }
 
@@ -72,8 +169,8 @@ export namespace JavaUtils {
    *  object[
    */
   export function isPropertyChain (token: IToken): boolean {
-    // object. OR object[
     return (
+      // object. OR object[
       TokenUtils.isWord(token) &&
       ParserUtils.tokenMatches(token.nextToken, /[.[]/) &&
       // Avoid confusion with token patterns of the form
@@ -163,5 +260,15 @@ export namespace JavaUtils {
    */
   export function isIfElse (token: IToken): boolean {
     return ParserUtils.tokenMatches(token, JavaConstants.Keyword.IF);
+  }
+
+  /**
+   * Determines whether a token corresponds to the beginning
+   * of an operator.
+   *
+   * See: JavaConstants.Operator
+   */
+  export function isOperator (token: IToken): boolean {
+    return ParserUtils.tokenMatches(token, JavaConstants.Operators);
   }
 }

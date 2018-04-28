@@ -4,12 +4,13 @@ import JavaFunctionCallParser from './statement-parsers/JavaFunctionCallParser';
 import JavaIfElseParser from './statement-parsers/JavaIfElseParser';
 import JavaInstantiationParser from './statement-parsers/JavaInstantiationParser';
 import JavaLiteralParser from './statement-parsers/JavaLiteralParser';
+import JavaOperatorParser from './JavaOperatorParser';
 import JavaPropertyChainParser from './statement-parsers/JavaPropertyChainParser';
 import JavaReferenceParser from './statement-parsers/JavaReferenceParser';
 import JavaVariableDeclarationParser from './statement-parsers/JavaVariableDeclarationParser';
 import JavaWhileLoopParser from './statement-parsers/JavaWhileLoopParser';
 import { Constructor } from '../../system/types';
-import { Implements } from 'trampoline-framework';
+import { Implements, Override } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { JavaUtils } from './java-utils';
@@ -89,14 +90,12 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
     };
   }
 
-  @Match('(')
-  protected onOpenParenthesis (): void {
-    this.parentheses++;
-  }
+  @Override protected onFirstToken (): void {
+    while (this.currentTokenMatches('(')) {
+      this.parentheses++;
 
-  @Match(/./)
-  protected onLeftSideStatement (): void {
-    this.assert(this.parsed.leftSide === null);
+      this.next();
+    }
 
     for (const [ tokenMatch, Parser, isLeftSideOnly ] of JavaStatementParser.StatementMatchers) {
       if (this.currentTokenMatches(tokenMatch)) {
@@ -109,8 +108,6 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
         return;
       }
     }
-
-    this.halt();
   }
 
   /**
@@ -207,12 +204,11 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
     }
   }
 
-  @Match('=')
-  protected onAssignment (): void {
+  @Match(JavaUtils.isOperator)
+  protected onOperator (): void {
     this.assert(this.parsed.leftSide !== null);
-    this.next();
 
-    this.parsed.operator = JavaSyntax.JavaOperator.ASSIGN;
+    this.parsed.operator = this.parseNextWith(JavaOperatorParser);
     this.parsed.rightSide = this.parseNextWith(JavaStatementParser);
   }
 

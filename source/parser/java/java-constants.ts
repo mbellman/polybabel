@@ -34,6 +34,7 @@ export namespace JavaConstants {
   export enum Type {
     STRING = 'String',
     NUMBER = 'Number',
+    INTEGER = 'Integer',
     OBJECT = 'Object',
     BYTE = 'byte',
     SHORT = 'short',
@@ -45,8 +46,28 @@ export namespace JavaConstants {
     CHAR = 'char'
   }
 
+  export enum Operator {
+    EQUAL = '=',
+    PLUS = '+',
+    MINUS = '-',
+    STAR = '*',
+    SLASH = '/',
+    EXCLAMATION = '!',
+    QUESTION = '?',
+    COLON = ':',
+    PERCENT = '%',
+    LESS_THAN = '<',
+    GREATER_THAN = '>',
+    PIPE = '|',
+    AND = '&',
+    CARET = '^',
+    TILDE = '~',
+    INSTANCEOF = 'instanceof'
+  }
+
   export const Keywords: string[] = Utils.objectToArray(Keyword);
   export const Types: string[] = Utils.objectToArray(Type);
+  export const Operators: string[] = Utils.objectToArray(Operator);
 
   export const ReservedWords: string[] = [
     ...Keywords,
@@ -59,16 +80,16 @@ export namespace JavaConstants {
     JavaConstants.Keyword.THROWS
   ];
 
-  export const Modifiers: string[] = [
-    Keyword.STATIC,
-    Keyword.FINAL,
-    Keyword.ABSTRACT
-  ];
-
   export const AccessModifiers: string[] = [
     Keyword.PUBLIC,
     Keyword.PROTECTED,
     Keyword.PRIVATE
+  ];
+
+  export const Modifiers: string[] = [
+    Keyword.STATIC,
+    Keyword.FINAL,
+    Keyword.ABSTRACT
   ];
 
   export const AccessModifierMap: IHashMap<JavaSyntax.JavaAccessModifier> = {

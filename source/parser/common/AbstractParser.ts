@@ -284,7 +284,7 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
   private findMatchingToken (stepFunction: Callback<IToken, IToken>, tokenPredicate: Callback<IToken, boolean>): IToken {
     let token = stepFunction(this.currentToken);
 
-    while (token && !tokenPredicate(token)) {
+    while (token && !TokenUtils.isEOF(token) && !tokenPredicate(token)) {
       token = stepFunction(token);
     }
 

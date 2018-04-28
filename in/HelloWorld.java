@@ -12,13 +12,11 @@ protected interface ITest {
 
 public final class HelloWorld extends What implements ITest {
   public static void main (String[] args) {
-    if (something.test()) {
-    } else if (something.notTest()) {
-    } else if (true) {
-    } else {
+    if (this instanceof HelloWorld) {
+      console.log('Hello, world!');
     }
 
-    for (int i = 0; update(); add()) {
+    for (int i = 0; i < x; i++) {
       Future<Data> future = Fetcher.fetchData();
     }
 
