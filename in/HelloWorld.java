@@ -27,6 +27,15 @@ public final class HelloWorld extends What implements ITest {
     while (thread.isLocked()) {
       wait();
     }
+
+    switch (value) {
+      case 1:
+        doSomething();
+        break;
+      default:
+        int number = 5;
+        break;
+    }
   }
 
   private interface IHello {

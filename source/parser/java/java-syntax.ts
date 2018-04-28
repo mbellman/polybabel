@@ -23,7 +23,9 @@ export namespace JavaSyntax {
     INSTANTIATION,
     IF_ELSE,
     FOR_LOOP,
-    WHILE_LOOP
+    WHILE_LOOP,
+    SWITCH,
+    INSTRUCTION
   }
 
   export const enum JavaAccessModifier {
@@ -72,6 +74,13 @@ export namespace JavaSyntax {
     BITWISE_EXCLUSIVE_OR,
     BITWISE_INCLUSIVE_OR,
     INSTANCEOF
+  }
+
+  export enum JavaInstruction {
+    RETURN,
+    BREAK,
+    CONTINUE,
+    THROW
   }
 
   /**
@@ -242,6 +251,18 @@ export namespace JavaSyntax {
     node: JavaSyntaxNode.WHILE_LOOP;
     condition: IJavaStatement;
     block: IJavaBlock;
+  }
+
+  export interface IJavaSwitch extends IJavaSyntaxNode, IValued<IJavaStatement> {
+    node: JavaSyntaxNode.SWITCH;
+    cases: IJavaStatement[];
+    blocks: IJavaBlock[];
+    defaultBlock: IJavaBlock;
+  }
+
+  export interface IJavaInstruction extends IJavaSyntaxNode, IValued<IJavaStatement> {
+    node: JavaSyntaxNode.INSTRUCTION;
+    instruction: JavaInstruction;
   }
 
   export interface IJavaSyntaxTree extends ISyntaxTree<IJavaSyntaxNode> {

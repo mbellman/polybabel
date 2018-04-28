@@ -3,10 +3,12 @@ import JavaForLoopParser from './statement-parsers/JavaForLoopParser';
 import JavaFunctionCallParser from './statement-parsers/JavaFunctionCallParser';
 import JavaIfElseParser from './statement-parsers/JavaIfElseParser';
 import JavaInstantiationParser from './statement-parsers/JavaInstantiationParser';
+import JavaInstructionParser from './statement-parsers/JavaInstructionParser';
 import JavaLiteralParser from './statement-parsers/JavaLiteralParser';
 import JavaOperatorParser from './JavaOperatorParser';
 import JavaPropertyChainParser from './statement-parsers/JavaPropertyChainParser';
 import JavaReferenceParser from './statement-parsers/JavaReferenceParser';
+import JavaSwitchParser from './statement-parsers/JavaSwitchParser';
 import JavaVariableDeclarationParser from './statement-parsers/JavaVariableDeclarationParser';
 import JavaWhileLoopParser from './statement-parsers/JavaWhileLoopParser';
 import { Constructor } from '../../system/types';
@@ -34,21 +36,10 @@ type StatementMatcher = [ TokenMatch, Constructor<AbstractParser>, boolean ];
  * Parses block-level statements. Stops when the following
  * tokens are encountered:
  *
- * ; , ] }
+ * ; : , ] }
  *
  * Also stops when a ) token is encountered if the closing
  * parentheses counter decrements to 0.
- *
- * @example
- *
- *  { 1, 2, 3 }
- *  new Item(...);
- *  String name = 'Bob';
- *  this.carFactory.createCar();
- *  if (...) { ... }
- *  for (... ; ... ; ...) { ... }
- *  for (... : ...) { ... }
- *  while (...) { ... }
  */
 export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJavaStatement> {
   /**
@@ -65,13 +56,15 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
    */
   private static get StatementMatchers (): StatementMatcher[] {
     return [
+      [ JavaUtils.isInstruction, JavaInstructionParser, true ],
       [ JavaUtils.isReference, JavaReferenceParser, false ],
       [ JavaUtils.isLiteral, JavaLiteralParser, false ],
       [ JavaUtils.isInstantiation, JavaInstantiationParser, false ],
       [ JavaUtils.isType, JavaVariableDeclarationParser, false ],
       [ JavaUtils.isIfElse, JavaIfElseParser, true ],
       [ JavaConstants.Keyword.FOR, JavaForLoopParser, true ],
-      [ JavaConstants.Keyword.WHILE, JavaWhileLoopParser, true ]
+      [ JavaConstants.Keyword.WHILE, JavaWhileLoopParser, true ],
+      [ JavaConstants.Keyword.SWITCH, JavaSwitchParser, true ]
     ];
   }
 

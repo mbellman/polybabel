@@ -119,14 +119,9 @@ export namespace JavaUtils {
       return false;
     }
 
-    const isPotentialGenericType = isWord && ParserUtils.tokenMatches(nextToken, '<');
+    const isPotentialGenericType = ParserUtils.tokenMatches(nextToken, '<');
 
-    return (
-      isWord &&
-      isFlanked &&
-      !isPotentialGenericType ||
-      !isGenericBlock(nextToken)
-    );
+    return !isPotentialGenericType || !isGenericBlock(nextToken);
   }
 
   /**
@@ -273,5 +268,18 @@ export namespace JavaUtils {
    */
   export function isOperator (token: IToken): boolean {
     return ParserUtils.tokenMatches(token, JavaConstants.Operators);
+  }
+
+  /**
+   * Determines whether a token corresponds to the beginning
+   * of an instruction.
+   */
+  export function isInstruction (token: IToken): boolean {
+    return ParserUtils.tokenMatches(token, [
+      JavaConstants.Keyword.RETURN,
+      JavaConstants.Keyword.THROW,
+      JavaConstants.Keyword.CONTINUE,
+      JavaConstants.Keyword.BREAK
+    ]);
   }
 }

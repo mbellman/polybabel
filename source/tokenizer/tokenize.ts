@@ -60,7 +60,6 @@ export default function tokenize (input: string): IToken[] {
         const previousToken = tokens[tokens.length - 1];
 
         if (previousToken) {
-          // Allow the tokens to be streamed through as a linked list
           token.previousToken = previousToken;
           previousToken.nextToken = token;
         }

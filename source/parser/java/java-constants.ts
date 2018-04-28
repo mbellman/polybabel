@@ -28,6 +28,11 @@ export namespace JavaConstants {
     FOR = 'for',
     SWITCH = 'switch',
     CASE = 'case',
+    DEFAULT = 'default',
+    RETURN = 'return',
+    BREAK = 'break',
+    CONTINUE = 'continue',
+    THROW = 'throw',
     TRY = 'try',
     CATCH = 'catch',
     FINALLY = 'finally'
