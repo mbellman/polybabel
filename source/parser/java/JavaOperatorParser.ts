@@ -169,7 +169,7 @@ export default class JavaOperatorParser extends AbstractParser<JavaSyntax.IJavaO
           }
 
           // Matching so far, but not to the end
-          // of the list
+          // of the operator matcher yet
           localToken = localToken.nextToken;
         } else {
           // Token stream doesn't match one of the

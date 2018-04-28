@@ -102,9 +102,8 @@ export namespace JavaUtils {
 
     const { INSTANCEOF } = JavaConstants.Operator;
 
-    // Flanked tokens are those which are surrounded
-    // by certain tokens which determine them to be
-    // isolated units
+    // Flanked tokens are those which have tokens on both
+    // sides isolating them as singular syntactic units
     const isFlanked = (
       !TokenUtils.isWord(previousToken) ||
       ParserUtils.tokenMatches(previousToken, INSTANCEOF)
