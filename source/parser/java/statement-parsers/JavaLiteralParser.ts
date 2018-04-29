@@ -61,7 +61,8 @@ export default class JavaLiteralParser extends AbstractParser<JavaSyntax.IJavaLi
     while (!this.isEOF()) {
       this.parsed.value += this.currentToken.value;
 
-      this.next();
+      // Advance one token at a time to preserve whitespace
+      this.currentToken = this.nextToken;
 
       if (TokenUtils.isNewline(this.nextToken)) {
         this.throw('String literals must be single-line only');

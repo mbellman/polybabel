@@ -85,14 +85,19 @@ export namespace JavaUtils {
 
   /**
    * Determines whether a token corresponds to an isolated
-   * value reference.
+   * value reference. Uses a potentially large number of
+   * lookaheads to distinguish references on the left side
+   * of less-than comparisons from generic types, though
+   * these cases should be rare (see isGenericBlock()),
+   * and can be mitigated entirely as long as less-than
+   * comparisons include whitespace in between the reference
+   * and the < operator.
    *
    * @example
    *
    *  name
    */
   export function isReference (token: IToken): boolean {
-    const { nextToken, previousToken } = token;
     const isWord = TokenUtils.isWord(token);
 
     if (!isWord) {
@@ -105,12 +110,12 @@ export namespace JavaUtils {
     // Flanked tokens are those which have tokens on both
     // sides isolating them as singular syntactic units
     const isFlanked = (
-      !TokenUtils.isWord(previousToken) ||
-      ParserUtils.tokenMatches(previousToken, INSTANCEOF)
+      !TokenUtils.isWord(token.previousTextToken) ||
+      ParserUtils.tokenMatches(token.previousTextToken, INSTANCEOF)
     ) && (
-      ParserUtils.tokenMatches(nextToken, INSTANCEOF) ||
-      !TokenUtils.isWord(nextToken) &&
-      ParserUtils.tokenMatches(nextToken, /[^.(]/)
+      ParserUtils.tokenMatches(token.nextTextToken, INSTANCEOF) ||
+      !TokenUtils.isWord(token.nextTextToken) &&
+      ParserUtils.tokenMatches(token.nextTextToken, /[^.(]/)
     );
 
     if (!isFlanked) {
@@ -119,9 +124,9 @@ export namespace JavaUtils {
       return false;
     }
 
-    const isPotentialGenericType = ParserUtils.tokenMatches(nextToken, '<');
+    const isPotentialGenericType = ParserUtils.tokenMatches(token.nextToken, '<');
 
-    return !isPotentialGenericType || !isGenericBlock(nextToken);
+    return !isPotentialGenericType || !isGenericBlock(token.nextToken);
   }
 
   /**
@@ -142,7 +147,7 @@ export namespace JavaUtils {
     return (
       TokenUtils.isWord(token) &&
       // Type type
-      TokenUtils.isWord(token.nextToken) ||
+      TokenUtils.isWord(token.nextTextToken) ||
       // Type[]
       ParserUtils.tokenMatches(token.nextToken, '[') &&
       ParserUtils.tokenMatches(token.nextToken.nextToken, ']') ||

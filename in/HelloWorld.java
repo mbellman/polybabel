@@ -36,6 +36,8 @@ public final class HelloWorld extends What implements ITest {
         int number = 5;
         break;
     }
+
+    return getSomething().value;
   }
 
   private interface IHello {

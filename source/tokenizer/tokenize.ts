@@ -14,10 +14,7 @@ const tokenizers: Tokenizer[] = [
   createTokenizer(TokenType.NUMBER, /[\d.]/),
   createTokenizer(TokenType.WORD, /\w/),
   createTokenizer(TokenType.NEWLINE, /[\r\n]/),
-  // Classify all whitespace tokens as indentation; only
-  // 'indentation' at the start of a line will be included
-  // in a tokenize() token array.
-  createTokenizer(TokenType.INDENTATION, /(\s|\t)/),
+  createTokenizer(TokenType.WHITESPACE, /[\s\t]/),
 ];
 
 /**
@@ -39,13 +36,36 @@ function getEOFToken (): IToken {
 }
 
 /**
- * Tokenizes an {input} string and returns an array of all non-
- * whitespace tokens, excepting whitespace at the beginning of
- * a new line (indentation).
+ * @todo @description
  */
-export default function tokenize (input: string): IToken[] {
-  const tokens: IToken[] = [];
+function setNextTokens (lastToken: IToken): void {
   const eofToken = getEOFToken();
+  let nextToken = eofToken;
+  let nextTextToken = eofToken;
+  let token = lastToken;
+
+  while (token) {
+    token.nextToken = nextToken;
+    token.nextTextToken = nextTextToken;
+
+    nextToken = token;
+
+    if (TokenUtils.isText(token)) {
+      nextTextToken = token;
+    }
+
+    token = token.previousToken;
+  }
+}
+
+/**
+ * @todo @description
+ */
+export default function tokenize (input: string): IToken {
+  let firstToken: IToken;
+  let lastToken: IToken;
+  let previousToken: IToken;
+  let previousTextToken: IToken;
   let offset: number = 0;
   let line: number = 1;
 
@@ -57,25 +77,22 @@ export default function tokenize (input: string): IToken[] {
       const { type, value } = token;
 
       if (value) {
-        const previousToken = tokens[tokens.length - 1];
-
-        if (previousToken) {
-          token.previousToken = previousToken;
-          previousToken.nextToken = token;
+        if (!firstToken) {
+          firstToken = token;
         }
 
-        token.line = TokenUtils.isNewline(token)
-          ? ++line
-          : line;
+        token.line = TokenUtils.isNewline(token) ? ++line : line;
+        token.previousToken = previousToken;
+        token.previousTextToken = previousTextToken;
+
+        previousToken = token;
+        lastToken = token;
+
+        if (TokenUtils.isText(token)) {
+          previousTextToken = token;
+        }
 
         offset += value.length;
-
-        if (!TokenUtils.isIndentation(token) || TokenUtils.isIndentation(token) && TokenUtils.isStartOfLine(token)) {
-          // We only want to save tokens if they are not indentations
-          // or if they are start-of-line indentations. Token parsing
-          // is considerably faster without the additional whitespace.
-          tokens.push(token);
-        }
 
         break;
       }
@@ -85,13 +102,11 @@ export default function tokenize (input: string): IToken[] {
 
     assert(
       totalFailedTokenizers < tokenizers.length,
-      `Line ${tokens[tokens.length - 1].line}: Unrecognized token '${input[offset]}'`
+      `Line ${lastToken.line}: Unrecognized token '${input[offset]}'`
     );
   }
 
-  tokens[tokens.length - 1].nextToken = eofToken;
+  setNextTokens(lastToken);
 
-  tokens.push(eofToken);
-
-  return tokens;
+  return firstToken;
 }

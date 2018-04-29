@@ -62,8 +62,8 @@ async function processFiles (directory: string, files: string[]): Promise<void> 
     try {
       const language = getLanguageByExtension(extension);
       const fileContents = await getFileContents(`${process.cwd()}/${directory}/${file}`);
-      const tokens = tokenize(fileContents);
-      const syntaxTree: ISyntaxTree<any> = parse(tokens, language);
+      const firstToken = tokenize(fileContents);
+      const syntaxTree: ISyntaxTree<any> = parse(firstToken, language);
     } catch (e) {
       fileErrorMessages.push([ file, e.message ]);
     }

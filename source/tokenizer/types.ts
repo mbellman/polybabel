@@ -6,19 +6,21 @@ export const enum TokenType {
   NUMBER,
   SYMBOL,
   NEWLINE,
-  INDENTATION,
+  WHITESPACE,
   EOF
 }
 
 /**
- * A token object generated in string tokenization.
+ * A token object generated during string tokenization.
  */
 export interface IToken {
   type: TokenType;
   value: string;
   line?: number;
   previousToken?: IToken;
+  previousTextToken?: IToken;
   nextToken?: IToken;
+  nextTextToken?: IToken;
 }
 
 /**

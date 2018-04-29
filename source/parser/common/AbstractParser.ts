@@ -15,7 +15,7 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
   private isStopped: boolean = false;
 
   protected get nextTextToken (): IToken {
-    return TokenUtils.getNextTextToken(this.currentToken);
+    return this.currentToken.nextTextToken;
   }
 
   protected get nextToken (): IToken {
@@ -23,7 +23,7 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
   }
 
   protected get previousTextToken (): IToken {
-    return TokenUtils.getPreviousTextToken(this.currentToken);
+    return this.currentToken.previousTextToken;
   }
 
   protected get previousToken (): IToken {
@@ -295,7 +295,7 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
    * Returns a preview of the current line, centered on the current
    * token and extending to {range} tokens on either side.
    */
-  private getColorizedLinePreview (range: number = 6): string {
+  private getColorizedLinePreview (range: number = 10): string {
     let n = range;
     let localToken = this.currentToken;
     const localTokenValues: string[] = [];

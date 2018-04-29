@@ -19,11 +19,11 @@ const ParserMap: IHashMap<IConstructable<AbstractParser<ISyntaxTree>>> = {
  * Parses a list of {tokens} into a syntax tree using a parser
  * class determined by {language}.
  */
-export default function parse (tokens: IToken[], language: Language): ISyntaxTree {
+export default function parse (firstToken: IToken, language: Language): ISyntaxTree {
   const Parser = ParserMap[language];
 
   if (Parser) {
-    return new Parser().parse(tokens[0]);
+    return new Parser().parse(firstToken);
   }
 
   return null;
