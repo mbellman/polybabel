@@ -30,10 +30,7 @@ export default class JavaVariableDeclarationParser extends AbstractParser<JavaSy
     this.assert(!this.parsed.isVariadic);
 
     for (let i = 0; i < 3; i++) {
-      if (!this.currentTokenMatches('.')) {
-        this.halt();
-      }
-
+      this.assertCurrentTokenMatch('.');
       this.next();
     }
 

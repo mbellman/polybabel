@@ -63,6 +63,18 @@ export default class JavaSwitchParser extends AbstractParser<JavaSyntax.IJavaSwi
     this.parsed.cases.push(caseValue);
   }
 
+  @Match(':')
+  protected onEnterCaseBlock (): void {
+    const hasCorrespondingCase = this.parsed.cases.length === this.parsed.blocks.length + 1;
+
+    this.assert(hasCorrespondingCase);
+    this.next();
+
+    const block = this.parseNextWith(JavaBlockParser);
+
+    this.parsed.blocks.push(block);
+  }
+
   @Match(JavaConstants.Keyword.DEFAULT)
   protected onDefault (): void {
     this.assert(
@@ -76,18 +88,6 @@ export default class JavaSwitchParser extends AbstractParser<JavaSyntax.IJavaSwi
     this.next();
 
     this.parsed.defaultBlock = this.parseNextWith(JavaBlockParser);
-  }
-
-  @Match(':')
-  protected onEnterBlock (): void {
-    const hasCorrespondingCase = this.parsed.cases.length === this.parsed.blocks.length + 1;
-
-    this.assert(hasCorrespondingCase);
-    this.next();
-
-    const block = this.parseNextWith(JavaBlockParser);
-
-    this.parsed.blocks.push(block);
   }
 
   @Match(/./)
