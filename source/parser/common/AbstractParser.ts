@@ -304,7 +304,7 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
     // or the beginning of the current line, or
     // the indentation at the beginning of the
     // current line
-    while (--n >= 0 && !TokenUtils.isStartOfLine(localToken) && !TokenUtils.isIndentation(localToken.previousToken)) {
+    while (--n >= 0 && !TokenUtils.isStartOfLine(localToken)) {
       localToken = localToken.previousToken;
     }
 

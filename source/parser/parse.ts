@@ -5,6 +5,7 @@ import { IHashMap } from 'trampoline-framework';
 import { ISyntaxTree } from './common/syntax-types';
 import { IToken } from '../tokenizer/types';
 import { Language } from '../system/constants';
+import { TokenUtils } from '../tokenizer/token-utils';
 
 /**
  * Maps language constants to their root parser classes.
@@ -20,6 +21,10 @@ const ParserMap: IHashMap<IConstructable<AbstractParser<ISyntaxTree>>> = {
  * class determined by {language}.
  */
 export default function parse (firstToken: IToken, language: Language): ISyntaxTree {
+  if (TokenUtils.isEOF(firstToken)) {
+    return null;
+  }
+
   const Parser = ParserMap[language];
 
   if (Parser) {

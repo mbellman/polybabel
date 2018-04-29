@@ -42,15 +42,12 @@ export default class JavaTypeParser extends AbstractParser<JavaSyntax.IJavaType>
     );
 
     if (isNamespacedType) {
-      // Note: types can be namespaced, and JavaTypeParser can
-      // handle namespace chains here. However, inside blocks,
-      // JavaStatementParser and JavaPropertyChainParser together
-      // handle namespaced-type variable declaration statements,
-      // since property chains and namespaced-type variable
-      // declarations cannot be distinguished without expensive
-      // token lookaheads and/or backtracking. Namespace handling
-      // here works for types on method parameters and class/type
-      // instantiation statements.
+      // Note: this is one of two places where namespaced types
+      // can be parsed. When parsing statements, a namespaced
+      // type will appear to, and be parsed as a property chain
+      // before an actual type is found at the end of the chain.
+      //
+      // See: statement-parsers/JavaPropertyChainParser
       while (!this.isEOF()) {
         if (this.currentTokenMatches(TokenUtils.isWord)) {
           this.parsed.namespaceChain.push(this.currentToken.value);

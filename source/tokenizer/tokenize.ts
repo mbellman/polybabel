@@ -31,6 +31,7 @@ function getEOFToken (): IToken {
   };
 
   token.nextToken = token;
+  token.nextTextToken = token;
 
   return token;
 }
@@ -62,6 +63,10 @@ function setNextTokens (lastToken: IToken): void {
  * @todo @description
  */
 export default function tokenize (input: string): IToken {
+  if (input.length === 0) {
+    return getEOFToken();
+  }
+
   let firstToken: IToken;
   let lastToken: IToken;
   let previousToken: IToken;
