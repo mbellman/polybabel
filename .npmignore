@@ -4,13 +4,17 @@ coverage/
 in/
 out/
 scripts/
+demo/
+demo-dist/
 .nyc_output/
 tsconfig.json
 tslint.json
 package-lock.json
 yarn.lock
 yarn-error.log
+.editorconfig
 .eslintignore
 .eslintrc
 .polybabelrc
 .yarnrc
+webpack.demo.js

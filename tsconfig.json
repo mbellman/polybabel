@@ -12,9 +12,13 @@
 		"noEmitOnError": true,
 		"noImplicitAny": true,
 		"noImplicitThis": true,
-		"outDir": "dist",
+		"outDir": "lib",
 		"target": "es6"
 	},
+	"files": [
+		"source/index.ts",
+		"source/demo.ts"
+	],
 	"include": [
 		"source/index.ts"
 	],

@@ -39,8 +39,31 @@ export default class JavaVariableDeclarationParser extends AbstractParser<JavaSy
 
   @Match(TokenUtils.isWord)
   protected onVariableName (): void {
+    this.assert(this.parsed.name === null);
+
     this.parsed.name = this.currentToken.value;
 
-    this.finish();
+    this.next();
+  }
+
+  @Match('[')
+  private onStartTypeArrayDimension (): void {
+    this.assert(
+      this.parsed.name !== null &&
+      this.nextToken.value === ']'
+    );
+  }
+
+  @Match(']')
+  private onEndTypeArrayDimension (): void {
+    this.assert(this.previousToken.value === '[');
+
+    this.parsed.type.arrayDimensions++;
+  }
+
+  @Match(/./)
+  protected onEnd (): void {
+    this.assert(this.parsed.name !== null);
+    this.stop();
   }
 }

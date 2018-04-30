@@ -70,12 +70,12 @@ export default class JavaTypeParser extends AbstractParser<JavaSyntax.IJavaType>
   }
 
   @Match('[')
-  private onArrayStart (): void {
+  private onStartArrayDimension (): void {
     this.assert(this.nextToken.value === ']');
   }
 
   @Match(']')
-  private onArrayEnd (): void {
+  private onEndArrayDimension (): void {
     this.assert(this.previousToken.value === '[');
 
     this.parsed.arrayDimensions++;

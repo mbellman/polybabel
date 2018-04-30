@@ -321,7 +321,7 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
       localToken = localToken.nextToken;
     }
 
-    return `...${localTokenValues.join(' ')}...`;
+    return `...${localTokenValues.join('')}...`;
   }
 
   /**

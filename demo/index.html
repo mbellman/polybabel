@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <style type="text/css">
+      .stage {
+        border: 2px solid #CCC;
+        height: 500px;
+        margin: 0 auto;
+        max-width: 90%;
+        padding: 20px;
+        position: relative;
+        top: 50px;
+        width: 1200px;
+      }
+
+      .stage .language-selector {
+        width: 100px;
+      }
+
+      .stage .editor-block {
+        display: flex;
+        height: 90%;
+        margin-top: 10px;
+        position: relative;
+        width: 100%;
+      }
+
+      .stage .editor-block .textarea-container {
+        border: 1px solid #aaa;
+        display: inline-block;
+        margin: 2px;
+        width: 50%;
+      }
+
+      .CodeMirror {
+        height: 100% !important;
+      }
+    </style>
+    <title>Polybabel Editor Demo</title>
+  </head>
+  <body>
+    <div class="stage">
+      <!-- Language selector -->
+      <select class="language-selector" id="langage">
+        <option value="java">Java</option>
+      </select>
+
+      <!-- Text editor/preview -->
+      <div class="editor-block">
+        <div class="textarea-container">
+          <textarea class="editor-textarea"></textarea>
+        </div>
+        <div class="textarea-container">
+          <textarea class="preview-textarea"></textarea>
+        </div>
+      </div>
+
+      <!-- Error output -->
+      <div class="error-block"></div>
+    </div>
+    <script type="text/javascript" src="./demo.js"></script>
+  </body>
+</html>

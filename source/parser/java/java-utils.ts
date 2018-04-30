@@ -56,7 +56,7 @@ export namespace JavaUtils {
    * @internal
    */
   function isGenericBlock (token: IToken): boolean {
-    while ((token = token.nextToken) && !TokenUtils.isEOF(token)) {
+    while ((token = token.nextTextToken) && !TokenUtils.isEOF(token)) {
       if (ParserUtils.tokenMatches(token, '>')) {
         return true;
       } else if (ParserUtils.tokenMatches(token, InvalidGenericTokens)) {
@@ -106,12 +106,17 @@ export namespace JavaUtils {
     }
 
     const { INSTANCEOF } = JavaConstants.Operator;
+    const { RETURN, THROW } = JavaConstants.Keyword;
 
     // Flanked tokens are those which have tokens on both
     // sides isolating them as singular syntactic units
     const isFlanked = (
       !TokenUtils.isWord(token.previousTextToken) ||
-      ParserUtils.tokenMatches(token.previousTextToken, INSTANCEOF)
+      ParserUtils.tokenMatches(token.previousTextToken, [
+        INSTANCEOF,
+        RETURN,
+        THROW
+      ])
     ) && (
       ParserUtils.tokenMatches(token.nextTextToken, INSTANCEOF) ||
       !TokenUtils.isWord(token.nextTextToken) &&

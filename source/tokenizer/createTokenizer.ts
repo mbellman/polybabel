@@ -16,10 +16,9 @@ export default function createTokenizer (tokenType: TokenType, pattern: RegExp):
         value += incoming;
         incoming = input[++offset];
 
-        if (tokenType === TokenType.SYMBOL || value === '\r\n') {
-          // Terminate symbol tokens after a single character, and
-          // newline tokens after a single full newline, so they
-          // can be tokenized individually
+        if (tokenType === TokenType.SYMBOL || /(\r\n|\n)/.test(value)) {
+          // Break symbols and newlines after a single match
+          // so they can be tokenized individually
           break;
         }
       }
