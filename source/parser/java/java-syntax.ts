@@ -1,4 +1,5 @@
 import { IAccessible, IBlock, INamed, ISyntaxNode, ISyntaxTree, ITyped, IValued, IWithArguments, IWithParameters } from '../common/syntax-types';
+import { Language } from 'system/constants';
 
 export namespace JavaSyntax {
   export const enum JavaSyntaxNode {
@@ -266,6 +267,8 @@ export namespace JavaSyntax {
   }
 
   export interface IJavaSyntaxTree extends ISyntaxTree<IJavaSyntaxNode> {
+    language: Language.JAVA;
+    node: JavaSyntaxNode.TREE;
     package: IJavaPackage;
   }
 }

@@ -6,6 +6,7 @@ import JavaPackageParser from './JavaPackageParser';
 import { Implements } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
+import { Language } from 'system/constants';
 import { Lookahead, Match } from '../common/parser-decorators';
 import { TokenUtils } from '../../tokenizer/token-utils';
 
@@ -16,6 +17,7 @@ export default class JavaParser extends AbstractParser<JavaSyntax.IJavaSyntaxTre
 
   @Implements protected getDefault (): JavaSyntax.IJavaSyntaxTree {
     return {
+      language: Language.JAVA,
       node: JavaSyntax.JavaSyntaxNode.TREE,
       package: null,
       nodes: []

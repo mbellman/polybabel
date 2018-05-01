@@ -1,4 +1,5 @@
 import * as CodeMirror from 'codemirror';
+import Compiler from './compiler/Compiler';
 import parse from './parser/parse';
 import tokenize from './tokenizer/tokenize';
 import { Automated, Bound, Run } from 'trampoline-framework';
@@ -43,10 +44,10 @@ import 'codemirror/theme/eclipse.css';
   }
 
   @Run() private onInit (): void {
-    this.editor.on('change', this.onType);
+    this.editor.on('change', this.onChangeEditorContents);
   }
 
-  @Bound private onType (): void {
+  @Bound private onChangeEditorContents (): void {
     window.clearTimeout(this.recompilationTimer);
 
     this.recompilationTimer = window.setTimeout(this.compile, Demo.RECOMPILATION_DELAY);
@@ -60,9 +61,17 @@ import 'codemirror/theme/eclipse.css';
     try {
       const firstToken = tokenize(editorContent);
       const syntaxTree = parse(firstToken, Language.JAVA);
-      const syntaxTreeJson = js_beautify(JSON.stringify(syntaxTree));
+      const compiler = new Compiler();
 
-      this.preview.setValue(syntaxTreeJson);
+      compiler.add('demo.java', syntaxTree);
+
+      const compiledFile = compiler.compileFile('demo.java');
+
+      /*
+      const syntaxTreeJson = js_beautify(JSON.stringify(syntaxTree));
+      */
+
+      this.preview.setValue('');
       this.preview.refresh();
     } catch (e) {
       this.errorBlock.innerHTML = `Error: ${e.message}`;

@@ -11,25 +11,6 @@ export type Callback<T = any, U = any> = (arg?: T) => U;
 export type BoundCallback<C, T = any, U = any> = (this: C, arg?: T) => U;
 
 /**
- * A key/value map.
- */
-export interface IHashMap<V> {
-  [key: string]: V;
-}
-
-/**
- * An instantiable class constructor.
- */
-export interface IConstructable<T = any> {
-  new (...args: any[]): T;
-}
-
-/**
- * Any class constructor, including that of an abstract class.
- */
-export type Constructor<T = any> = IConstructable<T> | Function & { prototype: T };
-
-/**
  * A conditional type which enforces that the type B is a base
  * of T.
  */

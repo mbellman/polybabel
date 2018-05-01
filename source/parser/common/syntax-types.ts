@@ -90,4 +90,6 @@ export interface IBlock<N extends ISyntaxNode> {
  * of language-specific syntax node constants. A syntax tree is
  * also itself considered a syntax node.
  */
-export interface ISyntaxTree<N extends ISyntaxNode = ISyntaxNode> extends ISyntaxNode, IBlock<N> { }
+export interface ISyntaxTree<N extends ISyntaxNode = ISyntaxNode> extends ISyntaxNode, IBlock<N> {
+  language: Language;
+}

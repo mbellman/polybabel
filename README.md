@@ -13,7 +13,7 @@ The emphasis on idiomatic programming means the standard libraries and APIs norm
 * Parsing errors ✔
 * Syntax tree generation ✔
 * Indentation handling ✔
-* Compilation - 0%
+* Compilation - 10%?
 * Compilation errors - 0%
 * Interoperability between languages - 0%
 

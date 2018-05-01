@@ -1,16 +1,16 @@
 import chalk from 'chalk';
-import { BaseOf, Callback, Constructor, IConstructable, Without } from '../../system/types';
-import { Bound } from 'trampoline-framework';
+import { BaseOf, Callback, Without } from '../../system/types';
+import { Bound, Constructor, IConstructable } from 'trampoline-framework';
 import { ISyntaxNode } from './syntax-types';
 import { IToken, TokenType } from '../../tokenizer/types';
 import { ParserUtils } from './parser-utils';
 import { TokenMatch, TokenMatcher } from './parser-types';
 import { TokenUtils } from '../../tokenizer/token-utils';
 
-export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode> {
+export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode> {
   protected currentToken: IToken;
   protected indentation: number = 0;
-  protected parsed: P = this.getDefault();
+  protected parsed: S = this.getDefault();
   private isFinished: boolean = false;
   private isStopped: boolean = false;
 
@@ -43,7 +43,7 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
    * syntax tree or syntax node object by streaming through the
    * next tokens in the token sequence.
    */
-  public parse (token: IToken): P {
+  public parse (token: IToken): S {
     this.currentToken = token;
 
     try {
@@ -98,7 +98,7 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
    * *at least* the interface of Partial<P> without 'node',
    * yielding a false positive for many invalid objects.
    */
-  protected emulate <T extends ISyntaxNode & BaseOf<Without<P, 'node'>, Without<T, 'node'>>>(ParserClass: Constructor<AbstractParser<T>>): void {
+  protected emulate <T extends ISyntaxNode & BaseOf<Without<S, 'node'>, Without<T, 'node'>>>(ParserClass: Constructor<AbstractParser<T>>): void {
     const { node, ...parsed } = this.parseNextWith(ParserClass) as any;
 
     Object.assign(this.parsed, parsed);
@@ -115,7 +115,7 @@ export default abstract class AbstractParser<P extends ISyntaxNode = ISyntaxNode
     this.isFinished = true;
   }
 
-  protected abstract getDefault (): P;
+  protected abstract getDefault (): S;
 
   protected halt (tokenName?: string): void {
     const { currentToken } = this;

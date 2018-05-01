@@ -1,4 +1,4 @@
-import { IHashMap } from '../../system/types';
+import { IHashMap } from 'trampoline-framework';
 import { JavaSyntax } from './java-syntax';
 import { Utils } from '../../system/utils';
 
