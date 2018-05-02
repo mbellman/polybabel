@@ -43,7 +43,7 @@ import 'codemirror/theme/eclipse.css';
     this.errorBlock = document.querySelector('.error-block');
   }
 
-  @Run() private onInit (): void {
+  @Run() private initialize (): void {
     this.editor.on('change', this.onChangeEditorContents);
   }
 

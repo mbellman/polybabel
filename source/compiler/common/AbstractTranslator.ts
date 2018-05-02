@@ -1,4 +1,5 @@
 import ScopeManager from '../ScopeManager';
+import TypeDictionary from '../TypeDictionary';
 import { Autowired, IHashMap, Wired } from 'trampoline-framework';
 import { INamed, ISyntaxNode, ISyntaxTree } from '../../parser/common/syntax-types';
 
@@ -12,12 +13,14 @@ export default abstract class AbstractTranslator<T extends ISyntaxTree = ISyntax
 
   protected syntaxTree: T;
   protected syntaxTreeMap: IHashMap<ISyntaxTree>;
+  protected typeDictionary: TypeDictionary;
   private code: string = '';
   private errors: string[] = [];
   private indentationLevel: number = 0;
 
-  public constructor (syntaxTreeMap: IHashMap<ISyntaxTree>) {
+  public constructor (syntaxTreeMap: IHashMap<ISyntaxTree>, typeDictionary: TypeDictionary) {
     this.syntaxTreeMap = syntaxTreeMap;
+    this.typeDictionary = typeDictionary;
   }
 
   public translate (syntaxTree: T): string {
@@ -44,6 +47,8 @@ export default abstract class AbstractTranslator<T extends ISyntaxTree = ISyntax
   protected abstract emitNode (): void;
 
   protected enterBlock (): void {
+    this.scopeManager.enterScope();
+
     this.indentationLevel += AbstractTranslator.INDENTATION_AMOUNT;
   }
 
@@ -51,7 +56,9 @@ export default abstract class AbstractTranslator<T extends ISyntaxTree = ISyntax
     this.errors.push(message);
   }
 
-  protected exitBlock (): void {
+  protected leaveBlock (): void {
+    this.scopeManager.leaveScope();
+
     this.indentationLevel -= AbstractTranslator.INDENTATION_AMOUNT;
   }
 

@@ -1,5 +1,11 @@
+import { IReconciledType } from './common/compiler-types';
 import { ISyntaxNode } from '../parser/common/syntax-types';
 
-export default class TypeDictionary<T extends ISyntaxNode> {
+/**
+ * @todo @description
+ */
+export default class TypeDictionary {
+  public addTypes (file: string, types: IReconciledType[]): void {
 
+  }
 }

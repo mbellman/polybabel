@@ -1,24 +1,44 @@
 import AbstractTranslator from './common/AbstractTranslator';
+import AbstractTypeReconciler from './common/AbstractTypeReconciler';
 import JavaTranslator from './translators/JavaTranslator';
-import { IConstructable, IHashMap } from 'trampoline-framework';
+import JavaTypeReconciler from './type-reconcilers/JavaTypeReconciler';
+import TypeDictionary from './TypeDictionary';
+import { Autowired, IConstructable, IHashMap, Wired } from 'trampoline-framework';
 import { ISyntaxTree } from '../parser/common/syntax-types';
 import { Language } from 'system/constants';
 
+@Wired
 export default class Compiler {
   private static translatorMap: IHashMap<IConstructable<AbstractTranslator>> = {
     [Language.JAVA]: JavaTranslator
+  };
+
+  private static typeReconcilerMap: IHashMap<IConstructable<AbstractTypeReconciler>> = {
+    [Language.JAVA]: JavaTypeReconciler
   };
 
   private compiledFileMap: IHashMap<string> = {};
   private errors: string[] = [];
   private syntaxTreeMap: IHashMap<ISyntaxTree> = {};
 
+  @Autowired()
+  private typeDictionary: TypeDictionary;
+
   public add (file: string, syntaxTree: ISyntaxTree): void {
     this.syntaxTreeMap[file] = syntaxTree;
+    const TypeReconciler = Compiler.typeReconcilerMap[syntaxTree.language];
+
+    if (TypeReconciler) {
+      const reconciledTypes = new TypeReconciler().reconcile(syntaxTree);
+
+      this.typeDictionary.addTypes(file, reconciledTypes);
+    }
   }
 
   public compileAll (): void {
-
+    Object.keys(this.syntaxTreeMap).forEach(file => {
+      this.compileFile(file);
+    });
   }
 
   public compileFile (file: string): void {
@@ -26,7 +46,7 @@ export default class Compiler {
     const Translator = Compiler.translatorMap[syntaxTree.language];
 
     if (Translator) {
-      const translator = new Translator(this.syntaxTreeMap);
+      const translator = new Translator(this.syntaxTreeMap, this.typeDictionary);
       const translatedCode = translator.translate(this.syntaxTreeMap[file]);
 
       this.compiledFileMap[file] = translatedCode;
