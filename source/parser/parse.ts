@@ -13,8 +13,8 @@ import { TokenUtils } from '../tokenizer/token-utils';
  * Both the omission of an explicit return type and the use of
  * a switch statement over a simpler language-to-parser map are
  * deliberate; this allows the returned syntax tree type to be
- * properly inferred from language constant alone via static
- * analysis of the method.
+ * properly inferred from the language constant alone based on
+ * static analysis of the function.
  */
 export default function parse (firstToken: IToken, language: Language) {
   if (TokenUtils.isEOF(firstToken)) {

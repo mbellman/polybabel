@@ -37,7 +37,7 @@ import 'codemirror/theme/eclipse.css';
     });
 
     this.preview = CodeMirror.fromTextArea(previewTextarea, {
-      mode: 'application/ld+json'
+      mode: 'text/javascript'
     });
 
     this.errorBlock = document.querySelector('.error-block');
@@ -64,14 +64,11 @@ import 'codemirror/theme/eclipse.css';
       const compiler = new Compiler();
 
       compiler.add('demo.java', syntaxTree);
+      compiler.compileFile('demo.java');
 
-      const compiledFile = compiler.compileFile('demo.java');
+      const code = compiler.getCompiledFile('demo.java');
 
-      /*
-      const syntaxTreeJson = js_beautify(JSON.stringify(syntaxTree));
-      */
-
-      this.preview.setValue('');
+      this.preview.setValue(code);
       this.preview.refresh();
     } catch (e) {
       this.errorBlock.innerHTML = `Error: ${e.message}`;

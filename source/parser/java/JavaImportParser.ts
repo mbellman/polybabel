@@ -31,7 +31,7 @@ export default class JavaImportParser extends AbstractParser<JavaSyntax.IJavaImp
 
   @Match(';')
   protected onEnd (): void {
-    this.parsed.name = this.previousToken.value;
+    this.parsed.name = this.parsed.path.split('/').pop();
 
     this.finish();
   }

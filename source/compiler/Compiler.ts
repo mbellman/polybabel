@@ -1,4 +1,4 @@
-import AbstractTranslator from './translators/AbstractTranslator';
+import AbstractTranslator from './common/AbstractTranslator';
 import JavaTranslator from './translators/JavaTranslator';
 import { IConstructable, IHashMap } from 'trampoline-framework';
 import { ISyntaxTree } from '../parser/common/syntax-types';
@@ -29,7 +29,7 @@ export default class Compiler {
       const translator = new Translator(this.syntaxTreeMap);
       const translatedCode = translator.translate(this.syntaxTreeMap[file]);
 
-      this.compiledFileMap[file] = '';
+      this.compiledFileMap[file] = translatedCode;
     }
   }
 

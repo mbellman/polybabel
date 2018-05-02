@@ -3,6 +3,7 @@
 		"baseUrl": "./source",
 		"downlevelIteration": true,
 		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
 		"lib": [
 			"dom",
 			"es2015"

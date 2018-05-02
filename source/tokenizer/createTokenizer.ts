@@ -9,10 +9,10 @@ export default function createTokenizer (tokenType: TokenType, pattern: RegExp):
     let incoming: string = input[offset];
     let value: string;
 
-    if (pattern.test(incoming)) {
+    if (incoming && pattern.test(incoming)) {
       value = '';
 
-      while (pattern.test(incoming)) {
+      while (incoming && pattern.test(incoming)) {
         value += incoming;
         incoming = input[++offset];
 
