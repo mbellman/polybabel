@@ -26,6 +26,7 @@ export default abstract class AbstractTranslator<T extends ISyntaxTree = ISyntax
   public translate (syntaxTree: T): string {
     this.syntaxTree = syntaxTree;
 
+    this.scopeManager.enterScope();
     this.onStart();
 
     for (const syntaxNode of syntaxTree.nodes) {

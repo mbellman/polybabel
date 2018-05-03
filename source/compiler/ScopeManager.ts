@@ -15,8 +15,8 @@ export default class ScopeManager {
     return this.scopes[this.scopes.length - 1];
   }
 
-  public addNode (node: ISyntaxNode & INamed): void {
-    this.activeScope[node.name] = node;
+  public addToScope (name: string, value?: any): void {
+    this.activeScope[name] = value;
   }
 
   public enterScope (): void {
@@ -25,7 +25,7 @@ export default class ScopeManager {
 
   public isInScope (name: string): boolean {
     for (let i = this.scopes.length - 1; i >= 0; i--) {
-      if (!!this.scopes[i][name]) {
+      if (name in this.scopes[i]) {
         return true;
       }
     }

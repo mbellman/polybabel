@@ -110,15 +110,19 @@ export namespace JavaSyntax {
    */
   export interface IJavaPackage extends IJavaSyntaxNode {
     node: JavaSyntaxNode.PACKAGE;
-    path: string;
+    paths: string[];
   }
 
   /**
    * A Java import statement.
    */
-  export interface IJavaImport extends IJavaSyntaxNode, INamed {
+  export interface IJavaImport extends IJavaSyntaxNode {
     node: JavaSyntaxNode.IMPORT;
-    path: string;
+    paths: string[];
+    defaultImport: string;
+    nonDefaultImports: string[];
+    alias?: string;
+    isStaticImport?: boolean;
   }
 
   /**

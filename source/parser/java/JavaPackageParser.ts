@@ -9,7 +9,7 @@ export default class JavaPackageParser extends AbstractParser<JavaSyntax.IJavaPa
   @Implements protected getDefault (): JavaSyntax.IJavaPackage {
     return {
       node: JavaSyntax.JavaSyntaxNode.PACKAGE,
-      path: ''
+      paths: []
     };
   }
 
@@ -18,14 +18,14 @@ export default class JavaPackageParser extends AbstractParser<JavaSyntax.IJavaPa
     this.next();
   }
 
-  @Match(TokenUtils.isText)
-  protected onPathValue (): void {
-    this.parsed.path += this.currentToken.value;
+  @Match(TokenUtils.isWord)
+  protected onPackagePath (): void {
+    this.parsed.paths.push(this.currentToken.value);
   }
 
   @Match('.')
   protected onDot (): void {
-    this.parsed.path += '.';
+    this.next();
   }
 
   @Match(';')
