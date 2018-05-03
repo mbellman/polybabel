@@ -56,8 +56,8 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
   private static get StatementMatchers (): StatementMatcher[] {
     return [
       [ JavaUtils.isInstruction, JavaInstructionParser, true ],
-      [ JavaUtils.isReference, JavaReferenceParser, false ],
       [ JavaUtils.isLiteral, JavaLiteralParser, false ],
+      [ JavaUtils.isReference, JavaReferenceParser, false ],
       [ JavaUtils.isInstantiation, JavaInstantiationParser, false ],
       [ JavaUtils.isType, JavaVariableDeclarationParser, false ],
       [ JavaUtils.isIfElse, JavaIfElseParser, true ],

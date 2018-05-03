@@ -1,79 +1,62 @@
-import ScopeManager from '../ScopeManager';
-import TypeDictionary from '../TypeDictionary';
-import { Autowired, IHashMap, Wired } from 'trampoline-framework';
-import { INamed, ISyntaxNode, ISyntaxTree } from '../../parser/common/syntax-types';
+import { Constructor, IConstructable } from 'trampoline-framework';
+import { ISyntaxNode } from '../../parser/common/syntax-types';
 
-@Wired
-export default abstract class AbstractTranslator<T extends ISyntaxTree = ISyntaxTree> {
+export default abstract class AbstractTranslator<N extends ISyntaxNode = ISyntaxNode> {
   private static readonly INDENTATION_AMOUNT = 2;
-  protected currentNode: ISyntaxNode;
-
-  @Autowired()
-  protected scopeManager: ScopeManager;
-
-  protected syntaxTree: T;
-  protected syntaxTreeMap: IHashMap<ISyntaxTree>;
-  protected typeDictionary: TypeDictionary;
+  protected syntaxNode: N;
   private code: string = '';
-  private errors: string[] = [];
-  private indentationLevel: number = 0;
+  private indentation: number = 0;
 
-  public constructor (syntaxTreeMap: IHashMap<ISyntaxTree>, typeDictionary: TypeDictionary) {
-    this.syntaxTreeMap = syntaxTreeMap;
-    this.typeDictionary = typeDictionary;
+  protected constructor (syntaxNode: N) {
+    this.syntaxNode = syntaxNode;
   }
 
-  public translate (syntaxTree: T): string {
-    this.syntaxTree = syntaxTree;
-
-    this.scopeManager.enterScope();
-    this.onStart();
-
-    for (const syntaxNode of syntaxTree.nodes) {
-      this.currentNode = syntaxNode;
-
-      this.emitNode();
-    }
+  public getTranslatedCode (): string {
+    this.translate();
 
     return this.code;
   }
 
-  protected emit (code: string): void {
+  protected emit (code: string): this {
     this.code += code;
+
+    return this;
+  }
+
+  protected emitNodeWith (node: ISyntaxNode, Translator: Constructor<AbstractTranslator>): this {
+    const translator = new (Translator as IConstructable<AbstractTranslator>)(node);
+
+    translator.indentation = this.indentation;
+
+    this.code += translator.getTranslatedCode();
+
+    return this;
+  }
+
+  protected enterBlock (): this {
+    this.indentation++;
+
+    return this.newline();
+  }
+
+  protected exitBlock (): this {
+    this.indentation--;
+
+    return this.newline();
+  }
+
+  protected newline (): this {
+    this.emit('\n');
+
+    for (let i = 0; i < this.indentation * AbstractTranslator.INDENTATION_AMOUNT; i++) {
+      this.emit(' ');
+    }
+
+    return this;
   }
 
   /**
    * @todo @description
    */
-  protected abstract emitNode (): void;
-
-  protected enterBlock (): void {
-    this.scopeManager.enterScope();
-
-    this.indentationLevel += AbstractTranslator.INDENTATION_AMOUNT;
-  }
-
-  protected error (message: string): void {
-    this.errors.push(message);
-  }
-
-  protected leaveBlock (): void {
-    this.scopeManager.leaveScope();
-
-    this.indentationLevel -= AbstractTranslator.INDENTATION_AMOUNT;
-  }
-
-  protected newline (): void {
-    this.emit('\n');
-
-    for (let i = 0; i < this.indentationLevel; i++) {
-      this.emit(' ');
-    }
-  }
-
-  /**
-   * An optionally overridable handler to run when starting
-   * translation, before the node traversal loop begins.
-   */
-  protected onStart (): void { }
+  protected abstract translate (): void;
 }

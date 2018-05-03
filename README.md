@@ -14,18 +14,22 @@ The emphasis on idiomatic programming means the standard libraries and APIs norm
 * Syntax tree generation ✔
 * Indentation handling ✔
 * Compilation - 20%?
+* * Type Reconciliation - 10%?
+* * Validation - 5%?
+* * Translation - 50%?
 * Compilation errors - 0%
 * Interoperability between languages - 0%
 
 ### Java
-1. Parsing
+1. Parsing - 85%?
 * * Package statements ✔
 * * Import statements ✔
 * * Classes ✔
 * * Interfaces ✔
 * * Enums - 0%
 * * Fields ✔
-* * Methods ✔
+* * Methods - 95%
+* * - Generic method definitions - 0%
 * * Varargs ✔
 * * Generics - 70%?
 * * - Generic syntax ✔
@@ -47,8 +51,10 @@ The emphasis on idiomatic programming means the standard libraries and APIs norm
 * * - break/continue/return/throw ✔
 * * Comments - 0%
 * * Annotations - 0%
-2. Compilation
-* * Import statements - 90%
+2. Compilation - 5%?
+* * Imports ✔
+* * Interfaces - 15%?
+* * Statements - 10%?
 
 ### Python
 Pending initial work.

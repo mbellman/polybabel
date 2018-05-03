@@ -1,7 +1,9 @@
 import AbstractTranslator from './common/AbstractTranslator';
 import AbstractTypeReconciler from './common/AbstractTypeReconciler';
-import JavaTranslator from './translators/JavaTranslator';
+import AbstractValidator from './common/AbstractValidator';
+import JavaTranslator from './translators/java/JavaTranslator';
 import JavaTypeReconciler from './type-reconcilers/JavaTypeReconciler';
+import JavaValidator from './validators/JavaValidator';
 import TypeDictionary from './TypeDictionary';
 import { Autowired, IConstructable, IHashMap, Wired } from 'trampoline-framework';
 import { ISyntaxTree } from '../parser/common/syntax-types';
@@ -15,6 +17,10 @@ export default class Compiler {
 
   private static typeReconcilerMap: IHashMap<IConstructable<AbstractTypeReconciler>> = {
     [Language.JAVA]: JavaTypeReconciler
+  };
+
+  private static validatorMap: IHashMap<IConstructable<AbstractValidator>> = {
+    [Language.JAVA]: JavaValidator
   };
 
   private compiledFileMap: IHashMap<string> = {};
@@ -46,8 +52,8 @@ export default class Compiler {
     const Translator = Compiler.translatorMap[syntaxTree.language];
 
     if (Translator) {
-      const translator = new Translator(this.syntaxTreeMap, this.typeDictionary);
-      const translatedCode = translator.translate(this.syntaxTreeMap[file]);
+      const translator = new Translator(syntaxTree);
+      const translatedCode = translator.getTranslatedCode();
 
       this.compiledFileMap[file] = translatedCode;
     }
