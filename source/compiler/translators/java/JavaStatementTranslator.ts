@@ -17,7 +17,7 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
       this.emit(operatorGap)
         .emitNodeWith(JavaOperatorTranslator, operator)
         .emit(operatorGap)
-        .emitSide(rightSide); // TODO: Fix an issue with the right side not being emitted
+        .emitNodeWith(JavaStatementTranslator, rightSide);
     }
   }
 
@@ -65,20 +65,14 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
     this.emit(' ]');
   }
 
-  private emitReference ({ isInstanceField, value }: JavaSyntax.IJavaReference): void {
-    if (isInstanceField) {
+  private emitReference ({ isInstanceFieldReference, value }: JavaSyntax.IJavaReference): void {
+    if (isInstanceFieldReference) {
       this.emit('this.');
     }
 
     this.emit(value);
   }
 
-  /**
-   * While the type signature of a Java property chain syntax node
-   * can contain a Java type in its properties, this won't persist
-   * to the translation stage; namespaced types are retroactively
-   * parsed as variable declarations.
-   */
   private emitPropertyChain ({ properties }: JavaSyntax.IJavaPropertyChain): void {
     for (let i = 0; i < properties.length; i++) {
       const property = properties[i];

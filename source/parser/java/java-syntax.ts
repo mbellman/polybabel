@@ -85,12 +85,12 @@ export namespace JavaSyntax {
   }
 
   /**
-   * @todo @description
+   * A property in a Java property chain.
    */
   export type JavaProperty = string | IJavaStatement | IJavaFunctionCall | IJavaType;
 
   /**
-   * @todo @description
+   * A Java object member.
    */
   export type JavaObjectMember = IJavaObjectField | IJavaObjectMethod | IJavaObject;
 
@@ -124,7 +124,7 @@ export namespace JavaSyntax {
   }
 
   /**
-   * A Java import statement.
+   * A Java import.
    */
   export interface IJavaImport extends IJavaSyntaxNode {
     node: JavaSyntaxNode.IMPORT;
@@ -195,7 +195,7 @@ export namespace JavaSyntax {
 
   /**
    * A method on a Java object definition, either uninitialized
-   * or with a block containing statements.
+   * or with a block of statements.
    */
   export interface IJavaObjectMethod extends IJavaSyntaxNode, IJavaModifiable, ITyped<IJavaType>, INamed, IWithParameters<IJavaVariableDeclaration> {
     node: JavaSyntaxNode.OBJECT_METHOD;
@@ -203,60 +203,105 @@ export namespace JavaSyntax {
     block: IJavaBlock;
   }
 
+  /**
+   * A block containing a sequence of Java statements.
+   */
   export interface IJavaBlock extends IJavaSyntaxNode, IBlock<IJavaStatement> {
     node: JavaSyntaxNode.BLOCK;
   }
 
+  /**
+   * A Java statement, representing any one of many different
+   * statement types. Rather than making a distinction between
+   * statements and expressions, statements simply consist of
+   * a left-side syntax node, with a possible operator and
+   * right-side statement.
+   */
   export interface IJavaStatement extends IJavaSyntaxNode {
     node: JavaSyntaxNode.STATEMENT;
     leftSide: IJavaSyntaxNode;
     operator?: IJavaOperator;
-    rightSide?: IJavaSyntaxNode;
+    rightSide?: IJavaStatement;
   }
 
+  /**
+   * A Java operator.
+   */
   export interface IJavaOperator extends IJavaSyntaxNode {
     node: JavaSyntaxNode.OPERATOR;
     operation: JavaOperator;
   }
 
+  /**
+   * A reference to a Java variable, object member, or object.
+   */
   export interface IJavaReference extends IJavaSyntaxNode, IValued<string> {
     node: JavaSyntaxNode.REFERENCE;
-    isInstanceField?: boolean;
+    // Determined during validation
+    isInstanceFieldReference?: boolean;
   }
 
+  /**
+   * A Java variable declaration statement.
+   */
   export interface IJavaVariableDeclaration extends IJavaSyntaxNode, Pick<IJavaModifiable, 'isFinal'>, ITyped<IJavaType>, INamed {
     node: JavaSyntaxNode.VARIABLE_DECLARATION;
     isVariadic?: boolean;
   }
 
+  /**
+   * A dot or bracket-delimited chain of properties, consisting
+   * of strings, statements (for dynamically computed properties),
+   * or method calls.
+   */
   export interface IJavaPropertyChain extends IJavaSyntaxNode {
     node: JavaSyntaxNode.PROPERTY_CHAIN;
     properties: JavaProperty[];
   }
 
+  /**
+   * A Java function (method) call statement.
+   */
   export interface IJavaFunctionCall extends IJavaSyntaxNode, INamed, IWithArguments<IJavaStatement> {
     node: JavaSyntaxNode.FUNCTION_CALL;
     genericArguments: IJavaType[];
+    // Determined during validation
     isInstanceFunction?: boolean;
   }
 
+  /**
+   * A Java literal statement. Either a string, number, or
+   * keyword literal, or an array literal with a sequence of
+   * a statements.
+   */
   export interface IJavaLiteral extends IJavaSyntaxNode {
     node: JavaSyntaxNode.LITERAL;
     type: JavaLiteralType;
     value: string | IJavaStatement[];
   }
 
+  /**
+   * A Java object instantiation statement.
+   */
   export interface IJavaInstantiation extends IJavaSyntaxNode, IWithArguments<IJavaStatement> {
     node: JavaSyntaxNode.INSTANTIATION;
     constructor: IJavaType;
   }
 
+  /**
+   * A Java if/else statement, consisting of either a single if
+   * block, an if and else block, or an if block, an indefinite
+   * number of else if blocks, and/or an else block.
+   */
   export interface IJavaIfElse extends IJavaSyntaxNode {
     node: JavaSyntaxNode.IF_ELSE;
     conditions: IJavaStatement[];
     blocks: IJavaBlock[];
   }
 
+  /**
+   * A Java for loop statement.
+   */
   export interface IJavaForLoop extends IJavaSyntaxNode {
     node: JavaSyntaxNode.FOR_LOOP;
     statements: IJavaStatement[];
@@ -264,12 +309,18 @@ export namespace JavaSyntax {
     block: IJavaBlock;
   }
 
+  /**
+   * A Java while loop statement.
+   */
   export interface IJavaWhileLoop extends IJavaSyntaxNode {
     node: JavaSyntaxNode.WHILE_LOOP;
     condition: IJavaStatement;
     block: IJavaBlock;
   }
 
+  /**
+   * A Java switch statement.
+   */
   export interface IJavaSwitch extends IJavaSyntaxNode, IValued<IJavaStatement> {
     node: JavaSyntaxNode.SWITCH;
     cases: IJavaStatement[];
@@ -277,11 +328,18 @@ export namespace JavaSyntax {
     defaultBlock: IJavaBlock;
   }
 
+  /**
+   * A Java instruction statement, e.g. return, throw, break,
+   * or continue;
+   */
   export interface IJavaInstruction extends IJavaSyntaxNode, IValued<IJavaStatement> {
     node: JavaSyntaxNode.INSTRUCTION;
     instruction: JavaInstruction;
   }
 
+  /**
+   * A syntax tree representing all of the Java code in a file.
+   */
   export interface IJavaSyntaxTree extends ISyntaxTree<IJavaSyntaxNode> {
     language: Language.JAVA;
     node: JavaSyntaxNode.TREE;

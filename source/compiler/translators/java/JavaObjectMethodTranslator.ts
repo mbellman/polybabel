@@ -16,7 +16,8 @@ export default class JavaObjectMethodTranslator extends AbstractTranslator<JavaS
       () => this.emit(', ')
     );
 
-    this.emit(') {').enterBlock();
+    this.emit(') {')
+      .enterBlock();
 
     this.emitNodeSequence(
       block.nodes,
