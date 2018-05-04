@@ -85,6 +85,16 @@ export namespace JavaSyntax {
   }
 
   /**
+   * @todo @description
+   */
+  export type JavaProperty = string | IJavaStatement | IJavaFunctionCall | IJavaType;
+
+  /**
+   * @todo @description
+   */
+  export type JavaObjectMember = IJavaObjectField | IJavaObjectMethod | IJavaObject;
+
+  /**
    * Any Java syntactic construct.
    */
   export interface IJavaSyntaxNode extends ISyntaxNode<JavaSyntaxNode> { }
@@ -140,7 +150,7 @@ export namespace JavaSyntax {
    * an array of its members.
    */
   export interface IJavaObjectBody extends IJavaSyntaxNode {
-    members: Array<IJavaObjectField | IJavaObjectMethod | IJavaObject>;
+    members: JavaObjectMember[];
   }
 
   /**
@@ -211,6 +221,7 @@ export namespace JavaSyntax {
 
   export interface IJavaReference extends IJavaSyntaxNode, IValued<string> {
     node: JavaSyntaxNode.REFERENCE;
+    isInstanceField?: boolean;
   }
 
   export interface IJavaVariableDeclaration extends IJavaSyntaxNode, Pick<IJavaModifiable, 'isFinal'>, ITyped<IJavaType>, INamed {
@@ -220,12 +231,13 @@ export namespace JavaSyntax {
 
   export interface IJavaPropertyChain extends IJavaSyntaxNode {
     node: JavaSyntaxNode.PROPERTY_CHAIN;
-    properties: Array<string | IJavaStatement | IJavaFunctionCall | IJavaType>;
+    properties: JavaProperty[];
   }
 
   export interface IJavaFunctionCall extends IJavaSyntaxNode, INamed, IWithArguments<IJavaStatement> {
     node: JavaSyntaxNode.FUNCTION_CALL;
     genericArguments: IJavaType[];
+    isInstanceFunction?: boolean;
   }
 
   export interface IJavaLiteral extends IJavaSyntaxNode {

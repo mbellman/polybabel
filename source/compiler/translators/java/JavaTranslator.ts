@@ -15,10 +15,10 @@ export default class JavaTranslator extends AbstractTranslator<JavaSyntax.IJavaS
     nodes.forEach(syntaxNode => {
       switch (syntaxNode.node) {
         case JavaSyntax.JavaSyntaxNode.IMPORT:
-          this.emitNodeWith(syntaxNode, JavaImportTranslator);
+          this.emitNodeWith(JavaImportTranslator, syntaxNode as JavaSyntax.IJavaImport);
           break;
         case JavaSyntax.JavaSyntaxNode.INTERFACE:
-          this.emitNodeWith(syntaxNode, JavaInterfaceTranslator);
+          this.emitNodeWith(JavaInterfaceTranslator, syntaxNode as JavaSyntax.IJavaInterface);
           break;
       }
     });

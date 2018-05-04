@@ -1,5 +1,5 @@
 /**
- * A callback function which takes argument(s) of type T
+ * A callback function which accepts an argument of type T
  * and returns a value of type U.
  */
 export type Callback<T = any, U = any> = (arg?: T) => U;

@@ -53,9 +53,9 @@ export default class Compiler {
 
     if (Translator) {
       const translator = new Translator(syntaxTree);
-      const translatedCode = translator.getTranslatedCode();
+      const translation = translator.getTranslation();
 
-      this.compiledFileMap[file] = translatedCode;
+      this.compiledFileMap[file] = translation;
     }
   }
 

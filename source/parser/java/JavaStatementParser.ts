@@ -83,10 +83,13 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
   }
 
   @Override protected onFirstToken (): void {
-    while (this.currentTokenMatches('(')) {
-      this.parentheses++;
-
+    if (this.currentTokenMatches('(')) {
       this.next();
+
+      this.parentheses++;
+      this.parsed.leftSide = this.parseNextWith(JavaStatementParser);
+
+      return;
     }
 
     for (const [ tokenMatch, Parser, isLeftSideOnly ] of JavaStatementParser.StatementMatchers) {
@@ -198,8 +201,6 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
 
   @Match(JavaUtils.isOperator)
   protected onOperator (): void {
-    this.assert(this.parsed.leftSide !== null);
-
     this.parsed.operator = this.parseNextWith(JavaOperatorParser);
     this.parsed.rightSide = this.parseNextWith(JavaStatementParser);
   }

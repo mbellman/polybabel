@@ -19,10 +19,12 @@ export default class JavaImportTranslator extends AbstractTranslator<JavaSyntax.
     const imports = this.getImports();
     const path = paths.join('/');
 
-    this.emit(`import ${imports} from '${path}';`).newline();
+    this.emit(`import ${imports} from '${path}';`)
+      .newline();
 
     if (this.staticImport) {
-      this.emit(`const { ${this.staticImport} } = ${defaultImport};`).newline();
+      this.emit(`const { ${this.staticImport} } = ${defaultImport};`)
+        .newline();
     }
   }
 

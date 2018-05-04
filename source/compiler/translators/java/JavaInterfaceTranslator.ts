@@ -1,34 +1,33 @@
 import AbstractTranslator from '../../common/AbstractTranslator';
+import JavaObjectMethodTranslator from './JavaObjectMethodTranslator';
 import JavaStatementTranslator from './JavaStatementTranslator';
 import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
-
-type JavaInterfaceMember = JavaSyntax.IJavaObjectField | JavaSyntax.IJavaObjectMethod | JavaSyntax.IJavaObject;
 
 export default class JavaInterfaceTranslator extends AbstractTranslator<JavaSyntax.IJavaInterface> {
   @Implements protected translate (): void {
     const { name, members } = this.syntaxNode;
 
-    this.emit(`var ${name} = {`)
-      .enterBlock();
+    this.emit(`var ${name} = {`).enterBlock();
 
-    members.forEach((member, index) => {
-      this.emitMember(member);
-
-      if (index < members.length - 1) {
-        this.emit(',').newline();
-      }
-    });
+    this.emitNodeSequence(
+      members,
+      member => this.emitMember(member),
+      () => this.emit(',').newline()
+    );
 
     this.exitBlock()
       .emit('}')
       .newline();
   }
 
-  private emitMember (member: JavaInterfaceMember): void {
+  private emitMember (member: JavaSyntax.JavaObjectMember): void {
     switch (member.node) {
       case JavaSyntax.JavaSyntaxNode.OBJECT_FIELD:
         this.emitField(member as JavaSyntax.IJavaObjectField);
+        break;
+      case JavaSyntax.JavaSyntaxNode.OBJECT_METHOD:
+        this.emitMethod(member as JavaSyntax.IJavaObjectMethod);
         break;
     }
   }
@@ -37,7 +36,21 @@ export default class JavaInterfaceTranslator extends AbstractTranslator<JavaSynt
     const { name, value } = field;
 
     if (value) {
-      this.emit(`${name}: `).emitNodeWith(value, JavaStatementTranslator);
+      this.emitKey(name).emitNodeWith(JavaStatementTranslator, value);
     }
+  }
+
+  private emitMethod (method: JavaSyntax.IJavaObjectMethod): void {
+    const { block, name } = method;
+
+    if (block) {
+      this.emitKey(name)
+        .emit('function ')
+        .emitNodeWith(JavaObjectMethodTranslator, method);
+    }
+  }
+
+  private emitKey (key: string): this {
+    return this.emit(`${key}: `);
   }
 }

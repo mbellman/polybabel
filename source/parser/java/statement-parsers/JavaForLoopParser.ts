@@ -76,7 +76,6 @@ export default class JavaForLoopParser extends AbstractParser<JavaSyntax.IJavaFo
     const collection = this.parseNextWith(JavaStatementParser);
 
     this.parsed.statements.push(collection);
-
     this.assertCurrentTokenMatch(')');
     this.next();
   }
