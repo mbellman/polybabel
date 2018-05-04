@@ -1,6 +1,6 @@
-import AbstractTranslator from "../../common/AbstractTranslator";
-import { JavaSyntax } from "parser/java/java-syntax";
-import { Implements } from "trampoline-framework";
+import AbstractTranslator from '../../common/AbstractTranslator';
+import { Implements } from 'trampoline-framework';
+import { JavaSyntax } from '../../../parser/java/java-syntax';
 
 export default class JavaStatementTranslator extends AbstractTranslator<JavaSyntax.IJavaStatement> {
   @Implements protected translate (): void {

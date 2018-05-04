@@ -1,9 +1,7 @@
 import AbstractParser from '../common/AbstractParser';
 import { IHashMap, Implements, Override } from 'trampoline-framework';
-import { IToken } from 'tokenizer/types';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
-import { Match } from '../common/parser-decorators';
 import { ParserUtils } from '../common/parser-utils';
 import { TokenMatch } from '../common/parser-types';
 

@@ -16,14 +16,7 @@
 		"outDir": "lib",
 		"target": "es6"
 	},
-	"files": [
-		"source/index.ts",
-		"source/demo.ts"
-	],
 	"include": [
 		"source/index.ts"
-	],
-	"exclude": [
-		"node_modules"
 	]
 }

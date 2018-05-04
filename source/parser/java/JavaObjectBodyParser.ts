@@ -10,8 +10,6 @@ import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { JavaUtils } from './java-utils';
 import { Match } from '../common/parser-decorators';
-import { TokenUtils } from '../../tokenizer/token-utils';
-import { BaseOf } from 'system/types';
 
 /**
  * @internal

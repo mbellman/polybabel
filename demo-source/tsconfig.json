@@ -1,0 +1,10 @@
+{
+  "extends": "../tsconfig",
+	"compilerOptions": {
+    "baseUrl": "./demo-source",
+    "target": "es5"
+  },
+  "include": [
+    "./demo.ts"
+  ]
+}

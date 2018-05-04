@@ -1,21 +1,11 @@
 import * as CodeMirror from 'codemirror';
-import Compiler from './compiler/Compiler';
-import parse from './parser/parse';
-import tokenize from './tokenizer/tokenize';
+import Compiler from '../source/compiler/Compiler';
+import parse from '../source/parser/parse';
+import tokenize from '../source/tokenizer/tokenize';
 import { Automated, Bound, Run } from 'trampoline-framework';
 import { js_beautify } from 'js-beautify';
-import { Language } from 'system/constants';
-import 'codemirror/lib/codemirror.css';
-import 'codemirror/mode/clike/clike';
-import 'codemirror/mode/javascript/javascript';
-import 'codemirror/theme/eclipse.css';
+import { Language } from '../source/system/constants';
 
-/**
- * @todo
- *
- * Remove CodeMirror from bundle; include
- * globally on the demo page
- */
 @Automated class Demo {
   private static RECOMPILATION_DELAY = 500;
   private demoLanguage: string;

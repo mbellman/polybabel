@@ -2,6 +2,7 @@
 
 import assert from './system/assert';
 import chalk from 'chalk';
+import Compiler from './compiler/Compiler';
 import parse from './parser/parse';
 import tokenize from './tokenizer/tokenize';
 import { getFileContents, resolveFilesDeep } from './system/file';

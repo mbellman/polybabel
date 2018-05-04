@@ -30,7 +30,6 @@ export default class JavaImportParser extends AbstractParser<JavaSyntax.IJavaImp
 
   @Match(TokenUtils.isWord)
   protected onDirectory (): void {
-    console.log(this.currentToken.value);
     this.parsed.paths.push(this.currentToken.value);
   }
 

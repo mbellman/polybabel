@@ -1,7 +1,7 @@
 const path = require('path');
 
 module.exports = {
-  mode: 'development',
+  mode: 'production',
   devServer: {
     contentBase: [
       './demo-dist',
@@ -10,7 +10,7 @@ module.exports = {
     port: 1234
   },
   entry: [
-    path.resolve('./source/demo.ts')
+    path.resolve('./demo-source/demo.ts')
   ],
   module: {
     rules: [
@@ -23,13 +23,6 @@ module.exports = {
             target: 'es5'
           }
         }
-      },
-      {
-        test: /\.css/,
-        use: [
-          { loader: 'style-loader' },
-          { loader: 'css-loader' }
-        ]
       }
     ]
   },
@@ -43,5 +36,8 @@ module.exports = {
   },
   resolve: {
     extensions: [ '.ts', '.js' ]
+  },
+  externals: {
+    'codemirror': 'CodeMirror'
   }
 };

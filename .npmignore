@@ -6,8 +6,11 @@ out/
 scripts/
 demo/
 demo-dist/
+demo-source/
+webpack/
 .nyc_output/
 tsconfig.json
+tsconfig.build.json
 tslint.json
 package-lock.json
 yarn.lock
@@ -17,4 +20,3 @@ yarn-error.log
 .eslintrc
 .polybabelrc
 .yarnrc
-webpack.demo.js

@@ -3,9 +3,10 @@
 	"license": "MIT",
 	"version": "0.0.2",
 	"scripts": {
-		"demo": "webpack-dev-server --config webpack.demo.js --hot --inline",
-		"build-demo": "webpack --config webpack.demo.js",
-		"build": "rm -f -r dist/* && tsc",
+		"demo": "webpack-dev-server --config webpack/webpack.demo.js --hot --inline",
+		"build-demo": "webpack --config webpack/webpack.demo.js",
+		"build-demo-vendor": "webpack --config webpack/webpack.demo.vendor.js",
+		"build": "rm -f -r lib/* && tsc",
 		"checkin": "sh scripts/checkin.sh",
 		"deploy": "sh scripts/deploy.sh",
 		"setup": "yarn install && npm link"

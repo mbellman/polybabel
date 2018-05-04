@@ -7,7 +7,7 @@ import JavaValidator from './validators/JavaValidator';
 import TypeDictionary from './TypeDictionary';
 import { Autowired, IConstructable, IHashMap, Wired } from 'trampoline-framework';
 import { ISyntaxTree } from '../parser/common/syntax-types';
-import { Language } from 'system/constants';
+import { Language } from '../system/constants';
 
 @Wired
 export default class Compiler {

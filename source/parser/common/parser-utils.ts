@@ -1,6 +1,6 @@
 import { IToken, TokenType } from '../../tokenizer/types';
 import { TokenMatch, TokenPredicate } from './parser-types';
-import { TokenUtils } from 'tokenizer/token-utils';
+import { TokenUtils } from '../../tokenizer/token-utils';
 
 export namespace ParserUtils {
   export function tokenMatches (token: IToken, tokenMatch: TokenMatch): boolean {

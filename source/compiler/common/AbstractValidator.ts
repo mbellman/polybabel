@@ -1,7 +1,7 @@
 import ScopeManager from '../ScopeManager';
 import TypeDictionary from '../TypeDictionary';
 import { Autowired, IHashMap, Wired } from 'trampoline-framework';
-import { ISyntaxNode, ISyntaxTree } from 'parser/common/syntax-types';
+import { ISyntaxNode, ISyntaxTree } from '../../parser/common/syntax-types';
 
 @Wired
 export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxNode> {

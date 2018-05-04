@@ -6,7 +6,7 @@ import JavaPackageParser from './JavaPackageParser';
 import { Implements } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
-import { Language } from 'system/constants';
+import { Language } from '../../system/constants';
 import { Lookahead, Match } from '../common/parser-decorators';
 import { TokenUtils } from '../../tokenizer/token-utils';
 
