@@ -1,12 +1,10 @@
 import AbstractParser from '../common/AbstractParser';
-import JavaPropertyChainParser from './statement-parsers/JavaPropertyChainParser';
 import SequenceParser from '../common/SequenceParser';
 import { Implements, Override } from 'trampoline-framework';
 import { JavaSyntax } from './java-syntax';
-import { JavaUtils } from './java-utils';
-import { Match } from '../common/parser-decorators';
-import { TokenUtils } from '../../tokenizer/token-utils';
+import { Match, Allow, Eat } from '../common/parser-decorators';
 import { ParserUtils } from '../common/parser-utils';
+import { TokenUtils } from '../../tokenizer/token-utils';
 
 /**
  * Parses type declarations and stops when a token other
@@ -33,9 +31,8 @@ export default class JavaTypeParser extends AbstractParser<JavaSyntax.IJavaType>
     };
   }
 
-  @Override protected onFirstToken (): void {
-    this.assert(TokenUtils.isWord(this.currentToken));
-
+  @Eat(TokenUtils.isWord)
+  protected onTypeName (): void {
     const isNamespacedType = (
       ParserUtils.tokenMatches(this.nextToken, '.') &&
       TokenUtils.isWord(this.nextToken.nextToken)
@@ -44,7 +41,7 @@ export default class JavaTypeParser extends AbstractParser<JavaSyntax.IJavaType>
     if (isNamespacedType) {
       // Note: this is one of two places where namespaced types
       // can be parsed. When parsing statements, a namespaced
-      // type will appear to, and be parsed as a property chain
+      // type will appear to, and be, parsed as a property chain
       // before an actual type is found at the end of the chain.
       //
       // See: statement-parsers/JavaPropertyChainParser
@@ -69,19 +66,7 @@ export default class JavaTypeParser extends AbstractParser<JavaSyntax.IJavaType>
     this.next();
   }
 
-  @Match('[')
-  private onStartArrayDimension (): void {
-    this.assert(this.nextToken.value === ']');
-  }
-
-  @Match(']')
-  private onEndArrayDimension (): void {
-    this.assert(this.previousToken.value === '[');
-
-    this.parsed.arrayDimensions++;
-  }
-
-  @Match('<')
+  @Allow('<')
   private onGenericBlockStart (): void {
     this.assert(
       this.parsed.arrayDimensions === 0,
@@ -111,7 +96,7 @@ export default class JavaTypeParser extends AbstractParser<JavaSyntax.IJavaType>
     }
   }
 
-  @Match('>')
+  @Allow('>')
   private onGenericBlockEnd (): void {
     const hasGenericTypes = this.parsed.genericTypes.length > 0;
 
@@ -124,6 +109,18 @@ export default class JavaTypeParser extends AbstractParser<JavaSyntax.IJavaType>
       // encounter the erroneous token and halt.
       this.stop();
     }
+  }
+
+  @Match('[')
+  private onStartArrayDimension (): void {
+    this.assert(this.nextToken.value === ']');
+  }
+
+  @Match(']')
+  private onEndArrayDimension (): void {
+    this.assert(this.previousToken.value === '[');
+
+    this.parsed.arrayDimensions++;
   }
 
   @Match(/./)

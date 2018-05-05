@@ -5,11 +5,12 @@ import JavaModifiableParser from './JavaModifiableParser';
 import JavaObjectMethodParser from './JavaObjectMethodParser';
 import JavaStatementParser from './JavaStatementParser';
 import JavaVariableDeclarationParser from './statement-parsers/JavaVariableDeclarationParser';
-import { Implements, Override } from 'trampoline-framework';
+import { Eat, Match } from '../common/parser-decorators';
+import { Implements } from 'trampoline-framework';
+import { INamed, ITyped } from '../common/syntax-types';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { JavaUtils } from './java-utils';
-import { Match } from '../common/parser-decorators';
 
 /**
  * @internal
@@ -32,8 +33,8 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
     };
   }
 
-  @Override protected onFirstToken (): void {
-    this.assertCurrentTokenMatch('{');
+  @Eat('{')
+  protected onEnterObjectBody (): void {
     this.next();
   }
 
@@ -100,6 +101,8 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
 
   @Match(';')
   protected onFieldEnd (): void {
+    this.assertCurrentMemberIsTypedAndNamed();
+
     const { value } = this.currentMember as JavaSyntax.IJavaObjectField;
 
     if (!value) {
@@ -133,7 +136,7 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
   private assertCurrentMemberIsTypedAndNamed (): void {
     this.assert(this.currentMember !== null);
 
-    const { type, name } = this.currentMember as any;
+    const { type, name } = this.currentMember as ITyped & INamed;
 
     this.assert(!!type && !!name);
   }

@@ -2,7 +2,7 @@ import AbstractParser from '../common/AbstractParser';
 import { Implements, Override } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
-import { Match } from '../common/parser-decorators';
+import { Match, Eat } from '../common/parser-decorators';
 import { TokenUtils } from '../../tokenizer/token-utils';
 
 export default class JavaPackageParser extends AbstractParser<JavaSyntax.IJavaPackage> {
@@ -13,11 +13,12 @@ export default class JavaPackageParser extends AbstractParser<JavaSyntax.IJavaPa
     };
   }
 
-  @Override protected onFirstToken (): void {
-    this.assertCurrentTokenMatch(JavaConstants.Keyword.PACKAGE);
+  @Eat(JavaConstants.Keyword.PACKAGE)
+  protected onPackage (): void {
     this.next();
   }
 
+  @Eat(TokenUtils.isWord)
   @Match(TokenUtils.isWord)
   protected onPackagePath (): void {
     this.parsed.paths.push(this.currentToken.value);

@@ -8,15 +8,14 @@ export default class JavaInterfaceTranslator extends AbstractTranslator<JavaSynt
   @Implements protected translate (): void {
     const { name, members } = this.syntaxNode;
 
-    this.emit(`var ${name} = {`).enterBlock();
-
-    this.emitNodeSequence(
-      members,
-      member => this.emitMember(member),
-      () => this.emit(',').newline()
-    );
-
-    this.exitBlock()
+    this.emit(`var ${name} = {`)
+      .enterBlock()
+      .emitNodeSequence(
+        members,
+        member => this.emitMember(member),
+        () => this.emit(',').newline()
+      )
+      .exitBlock()
       .emit('}')
       .newline();
   }
@@ -36,7 +35,8 @@ export default class JavaInterfaceTranslator extends AbstractTranslator<JavaSynt
     const { name, value } = field;
 
     if (value) {
-      this.emitKey(name).emitNodeWith(JavaStatementTranslator, value);
+      this.emitKey(name)
+        .emitNodeWith(JavaStatementTranslator, value);
     }
   }
 

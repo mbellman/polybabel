@@ -2,10 +2,9 @@ import AbstractParser from '../../common/AbstractParser';
 import JavaStatementParser from '../JavaStatementParser';
 import JavaTypeParser from '../JavaTypeParser';
 import SequenceParser from '../../common/SequenceParser';
+import { Allow, Eat } from '../../common/parser-decorators';
 import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../java-syntax';
-import { JavaUtils } from '../java-utils';
-import { Match } from '../../common/parser-decorators';
 import { TokenUtils } from '../../../tokenizer/token-utils';
 
 /**
@@ -49,7 +48,7 @@ export default class JavaFunctionCallParser extends AbstractParser<JavaSyntax.IJ
    * that a < always represents the beginning or part of a
    * function call.
    */
-  @Match('<')
+  @Allow('<')
   protected onGenericArgumentsStart (): void {
     this.next();
 
@@ -66,12 +65,12 @@ export default class JavaFunctionCallParser extends AbstractParser<JavaSyntax.IJ
     this.next();
   }
 
-  @Match(TokenUtils.isWord)
+  @Eat(TokenUtils.isWord)
   protected onFunctionName (): void {
     this.parsed.name = this.currentToken.value;
   }
 
-  @Match('(')
+  @Eat('(')
   protected onArgumentsStart (): void {
     this.next();
 
@@ -86,7 +85,7 @@ export default class JavaFunctionCallParser extends AbstractParser<JavaSyntax.IJ
     this.parsed.arguments = values;
   }
 
-  @Match(')')
+  @Eat(')')
   protected onArgumentsEnd (): void {
     this.finish();
   }

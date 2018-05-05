@@ -10,6 +10,27 @@ import { IToken } from '../../tokenizer/types';
 type BaseTokenMatch = string | RegExp | TokenPredicate;
 
 /**
+ * Constants representing the type of behavior for a token matcher
+ * added to a parser class via decoration.
+ *
+ * EAT - Requires the current token in the parsing stream to
+ *  satisfy its token matcher.
+ *
+ * ALLOW - Allows, but does not require, the current token in
+ *  the parsing stream to satisfy its token matcher.
+ *
+ * MATCH - After EAT and ALLOW token matchers have been exhausted,
+ *  used to handle additional tokens in the parsing stream. If
+ *  a new token doesn't satisfy any MATCH-type token matchers,
+ *  the parser halts.
+ */
+export const enum TokenMatcherType {
+  EAT,
+  ALLOW,
+  MATCH
+}
+
+/**
  * A function which returns a boolean depending on certain token
  * characteristics.
  */
@@ -23,7 +44,19 @@ export type TokenMatch = BaseTokenMatch | Array<BaseTokenMatch>;
 
 /**
  * A 2-tuple containing a token match to match against tokens
- * in a parsing stream, and a callback to fire if a matching
- * token is encountered.
+ * in a parsing stream, and the name of the parser method to
+ * fire if a matching token is encountered.
  */
-export type TokenMatcher = [ TokenMatch, Callback ];
+export type TokenMatcher = [ TokenMatch, string ];
+
+/**
+ * An object containing both a token matcher and a token matcher
+ * type to determine the nature of the matcher.
+ *
+ * See: TokenMatcherType
+ * See: parser-decorators
+ */
+export interface IDecoratedTokenMatcher {
+  tokenMatcher: TokenMatcher;
+  type: TokenMatcherType;
+}

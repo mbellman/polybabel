@@ -2,10 +2,11 @@ import AbstractParser from '../../common/AbstractParser';
 import JavaStatementParser from '../JavaStatementParser';
 import JavaTypeParser from '../JavaTypeParser';
 import SequenceParser from '../../common/SequenceParser';
-import { Implements, Override } from 'trampoline-framework';
+import { Eat, Match } from '../../common/parser-decorators';
+import { Implements } from 'trampoline-framework';
 import { JavaConstants } from '../java-constants';
 import { JavaSyntax } from '../java-syntax';
-import { Match } from '../../common/parser-decorators';
+import { TokenUtils } from '../../../tokenizer/token-utils';
 
 export default class JavaInstantiationParser extends AbstractParser<JavaSyntax.IJavaInstantiation> {
   @Implements protected getDefault (): JavaSyntax.IJavaInstantiation {
@@ -16,10 +17,13 @@ export default class JavaInstantiationParser extends AbstractParser<JavaSyntax.I
     };
   }
 
-  @Override protected onFirstToken (): void {
-    this.assertCurrentTokenMatch(JavaConstants.Keyword.NEW);
+  @Eat(JavaConstants.Keyword.NEW)
+  protected onNew (): void {
     this.next();
+  }
 
+  @Eat(TokenUtils.isWord)
+  protected onConstructor (): void {
     this.parsed.constructor = this.parseNextWith(JavaTypeParser);
   }
 

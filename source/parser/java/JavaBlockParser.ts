@@ -1,9 +1,9 @@
 import AbstractParser from '../common/AbstractParser';
 import JavaStatementParser from './JavaStatementParser';
+import { Allow, Match } from '../common/parser-decorators';
 import { Implements } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
-import { Match } from '../common/parser-decorators';
 
 /**
  * Parses Java code blocks. Finishes upon encountering
@@ -30,7 +30,7 @@ export default class JavaBlockParser extends AbstractParser<JavaSyntax.IJavaBloc
     };
   }
 
-  @Match('{')
+  @Allow('{')
   protected onEnterBlock (): void {
     this.next();
   }

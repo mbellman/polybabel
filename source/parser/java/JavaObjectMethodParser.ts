@@ -6,7 +6,7 @@ import SequenceParser from '../common/SequenceParser';
 import { Implements, Override } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
-import { Match } from '../common/parser-decorators';
+import { Match, Eat, Allow } from '../common/parser-decorators';
 import { TokenUtils } from '../../tokenizer/token-utils';
 
 export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJavaObjectMethod> {
@@ -22,7 +22,7 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
     };
   }
 
-  @Match('(')
+  @Eat('(')
   protected onParametersStart (): void {
     this.assert(TokenUtils.isWord(this.previousTextToken));
     this.next();
@@ -38,14 +38,13 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
     this.parsed.parameters = values;
   }
 
-  @Match(')')
+  @Eat(')')
   protected onParametersEnd (): void {
     this.next();
   }
 
-  @Match(JavaConstants.Keyword.THROWS)
+  @Allow(JavaConstants.Keyword.THROWS)
   protected onThrows (): void {
-    this.assert(this.previousTextToken.value === ')');
     this.next();
 
     const throwsParser = new SequenceParser({
@@ -59,14 +58,14 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
     this.parsed.throws = values;
   }
 
-  @Match('{')
+  @Allow('{')
   protected onBlock (): void {
     this.parsed.block = this.parseNextWith(JavaBlockParser);
 
     this.stop();
   }
 
-  @Match(';')
+  @Allow(';')
   protected onEnd (): void {
     this.assert(this.parsed.block === null);
     this.finish();

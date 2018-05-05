@@ -1,10 +1,12 @@
 import AbstractParser from '../common/AbstractParser';
-import { Implements, Override } from 'trampoline-framework';
+import { Allow, Eat, Match } from '../common/parser-decorators';
+import { Implements } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
-import { Match } from '../common/parser-decorators';
-import { TokenUtils } from '../../tokenizer/token-utils';
 import { ParserUtils } from '../common/parser-utils';
+import { TokenUtils } from '../../tokenizer/token-utils';
+import SequenceParser from '../common/SequenceParser';
+import JavaReferenceParser from './statement-parsers/JavaReferenceParser';
 
 export default class JavaImportParser extends AbstractParser<JavaSyntax.IJavaImport> {
   @Implements protected getDefault (): JavaSyntax.IJavaImport {
@@ -16,12 +18,12 @@ export default class JavaImportParser extends AbstractParser<JavaSyntax.IJavaImp
     };
   }
 
-  @Override protected onFirstToken (): void {
-    this.assertCurrentTokenMatch(JavaConstants.Keyword.IMPORT);
+  @Eat(JavaConstants.Keyword.IMPORT)
+  protected onImport (): void {
     this.next();
   }
 
-  @Match(JavaConstants.Keyword.STATIC)
+  @Allow(JavaConstants.Keyword.STATIC)
   protected onStaticImportDeclaration (): void {
     this.assert(this.parsed.paths.length === 0);
 
@@ -45,22 +47,15 @@ export default class JavaImportParser extends AbstractParser<JavaSyntax.IJavaImp
   protected onStartNonDefaultImports (): void {
     this.next();
 
-    while (this.currentTokenMatches(TokenUtils.isWord)) {
-      this.parsed.nonDefaultImports.push(this.currentToken.value);
-      this.next();
+    const nonDefaultImportsParser = new SequenceParser({
+      ValueParser: JavaReferenceParser,
+      delimiter: ',',
+      terminator: '}'
+    });
 
-      if (this.currentTokenMatches('}')) {
-        this.assert(ParserUtils.tokenMatches(this.nextToken, ';'));
-        this.next();
+    const { values } = this.parseNextWith(nonDefaultImportsParser);
 
-        break;
-      } else if (this.currentTokenMatches(',')) {
-        this.assert(TokenUtils.isWord(this.nextTextToken));
-        this.next();
-      } else {
-        this.halt();
-      }
-    }
+    this.parsed.nonDefaultImports = values.map(({ value }) => value);
   }
 
   @Match('}')
@@ -73,7 +68,10 @@ export default class JavaImportParser extends AbstractParser<JavaSyntax.IJavaImp
 
   @Match('*')
   protected onAliasedImport (): void {
-    this.assert(ParserUtils.tokenMatches(this.nextToken, ';'));
+    this.assert(
+      this.parsed.nonDefaultImports.length === 0 &&
+      ParserUtils.tokenMatches(this.nextToken, ';')
+    );
 
     this.parsed.alias = this.getLastOfPath();
   }

@@ -31,6 +31,11 @@ export default class JavaInstructionParser extends AbstractParser<JavaSyntax.IJa
     this.parseValuedInstruction(JavaSyntax.JavaInstruction.RETURN);
   }
 
+  @Match(JavaConstants.Keyword.THROW)
+  protected onThrow (): void {
+    this.parseValuedInstruction(JavaSyntax.JavaInstruction.THROW);
+  }
+
   @Match(JavaConstants.Keyword.CONTINUE)
   protected onContinue (): void {
     this.parsed.instruction = JavaSyntax.JavaInstruction.CONTINUE;
@@ -45,11 +50,6 @@ export default class JavaInstructionParser extends AbstractParser<JavaSyntax.IJa
 
     this.next();
     this.safelyFinishInstruction();
-  }
-
-  @Match(JavaConstants.Keyword.THROW)
-  protected onThrow (): void {
-    this.parseValuedInstruction(JavaSyntax.JavaInstruction.THROW);
   }
 
   private parseValuedInstruction (instruction: JavaSyntax.JavaInstruction): void {

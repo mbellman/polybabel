@@ -54,15 +54,13 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
   }
 
   private emitArrayLiteral ({ value }: JavaSyntax.IJavaLiteral): void {
-    this.emit('[ ');
-
-    this.emitNodeSequence(
-      value as JavaSyntax.IJavaStatement[],
-      statement => this.emitNodeWith(JavaStatementTranslator, statement),
-      () => this.emit(', ')
-    );
-
-    this.emit(' ]');
+    this.emit('[ ')
+      .emitNodeSequence(
+        value as JavaSyntax.IJavaStatement[],
+        statement => this.emitNodeWith(JavaStatementTranslator, statement),
+        () => this.emit(', ')
+      )
+      .emit(' ]');
   }
 
   private emitReference ({ isInstanceFieldReference, value }: JavaSyntax.IJavaReference): void {

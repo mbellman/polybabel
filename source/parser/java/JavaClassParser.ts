@@ -3,10 +3,10 @@ import JavaModifiableParser from './JavaModifiableParser';
 import JavaObjectBodyParser from './JavaObjectBodyParser';
 import JavaTypeParser from './JavaTypeParser';
 import SequenceParser from '../common/SequenceParser';
+import { Allow, Eat } from '../common/parser-decorators';
 import { Implements, Override } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
-import { Match } from '../common/parser-decorators';
 import { TokenUtils } from '../../tokenizer/token-utils';
 
 export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClass> {
@@ -23,21 +23,20 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
 
   @Override protected onFirstToken (): void {
     this.emulate(JavaModifiableParser);
+  }
 
-    this.assertCurrentTokenMatch(
-      JavaConstants.Keyword.CLASS,
-      `Invalid class modifier ${this.currentToken.value}`
-    );
-
-    this.next();
-    this.assert(TokenUtils.isWord(this.currentToken));
-
-    this.parsed.name = this.currentToken.value;
-
+  @Eat(JavaConstants.Keyword.CLASS)
+  protected onClassKeyword (): void {
     this.next();
   }
 
-  @Match(JavaConstants.Keyword.EXTENDS)
+  @Eat(TokenUtils.isWord)
+  protected onClassName (): void {
+    // TODO: Parse as a type
+    this.parsed.name = this.currentToken.value;
+  }
+
+  @Allow(JavaConstants.Keyword.EXTENDS)
   protected onExtends (): void {
     this.assert(this.parsed.extended.length === 0);
     this.next();
@@ -52,7 +51,7 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
     this.parsed.extended = extended;
   }
 
-  @Match(JavaConstants.Keyword.IMPLEMENTS)
+  @Allow(JavaConstants.Keyword.IMPLEMENTS)
   protected onImplements (): void {
     this.assert(this.parsed.implemented.length === 0);
     this.next();
@@ -60,8 +59,8 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
     this.parsed.implemented = this.getClauseTypeSequence();
   }
 
-  @Match('{')
-  protected onClassBody (): void {
+  @Eat('{')
+  protected onStartClassBody (): void {
     this.emulate(JavaObjectBodyParser);
     this.stop();
   }

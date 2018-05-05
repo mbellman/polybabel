@@ -3,7 +3,6 @@ import { Implements } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { Match } from '../common/parser-decorators';
-import { TokenUtils } from '../../tokenizer/token-utils';
 
 export default class JavaModifiableParser extends AbstractParser<JavaSyntax.IJavaModifiable> {
   @Implements protected getDefault (): JavaSyntax.IJavaModifiable {

@@ -8,27 +8,23 @@ export default class JavaObjectMethodTranslator extends AbstractTranslator<JavaS
   @Implements protected translate (): void {
     const { name, parameters, block } = this.syntaxNode;
 
-    this.emit(`${name} (`);
-
-    this.emitNodeSequence(
-      parameters,
-      parameter => this.emit(`${parameter.name}`),
-      () => this.emit(', ')
-    );
-
-    this.emit(') {')
-      .enterBlock();
-
-    this.emitNodeSequence(
-      block.nodes,
-      node => {
-        this.emitNodeWith(JavaStatementTranslator, node)
-          .emit(JavaTranslatorUtils.isTerminableStatement(node) ? ';' : '');
-      },
-      () => this.newline()
-    );
-
-    this.exitBlock()
+    this.emit(`${name} (`)
+      .emitNodeSequence(
+        parameters,
+        parameter => this.emit(`${parameter.name}`),
+        () => this.emit(', ')
+      )
+      .emit(') {')
+      .enterBlock()
+      .emitNodeSequence(
+        block.nodes,
+        node => {
+          this.emitNodeWith(JavaStatementTranslator, node)
+            .emit(JavaTranslatorUtils.isTerminableStatement(node) ? ';' : '');
+        },
+        () => this.newline()
+      )
+      .exitBlock()
       .emit('}');
   }
 }

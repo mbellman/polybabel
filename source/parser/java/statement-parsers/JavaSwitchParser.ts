@@ -4,7 +4,7 @@ import JavaStatementParser from '../JavaStatementParser';
 import { Implements, Override } from 'trampoline-framework';
 import { JavaConstants } from '../java-constants';
 import { JavaSyntax } from '../java-syntax';
-import { Match } from '../../common/parser-decorators';
+import { Match, Eat } from '../../common/parser-decorators';
 
 /**
  * Parses switch statements and stops after completion.
@@ -31,30 +31,31 @@ export default class JavaSwitchParser extends AbstractParser<JavaSyntax.IJavaSwi
     };
   }
 
-  @Override protected onFirstToken (): void {
+  @Eat(JavaConstants.Keyword.SWITCH)
+  protected onSwitch (): void {
     this.next();
   }
 
-  @Match('(')
-  protected onValueBlock (): void {
-    this.assert(this.parsed.value === null);
+  @Eat('(')
+  protected onStartSwitchValue (): void {
     this.next();
 
     this.parsed.value = this.parseNextWith(JavaStatementParser);
+  }
 
-    this.assertCurrentTokenMatch(')');
+  @Eat(')')
+  protected onEndSwitchValue (): void {
     this.next();
   }
 
-  @Match('{')
-  protected onSwitchBlock (): void {
+  @Eat('{')
+  protected onEnterSwitchBlock (): void {
     this.assert(this.parsed.value !== null);
     this.next();
   }
 
   @Match(JavaConstants.Keyword.CASE)
   protected onCase (): void {
-    this.assert(this.parsed.value !== null);
     this.next();
     this.assertCurrentTokenMatch(/[^:]/);
 
@@ -78,7 +79,6 @@ export default class JavaSwitchParser extends AbstractParser<JavaSyntax.IJavaSwi
   @Match(JavaConstants.Keyword.DEFAULT)
   protected onDefault (): void {
     this.assert(
-      this.parsed.value !== null &&
       this.parsed.defaultBlock === null &&
       this.nextToken.value === ':'
     );

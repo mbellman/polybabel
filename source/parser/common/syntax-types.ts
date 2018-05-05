@@ -33,7 +33,7 @@ export interface INamed<T = string> {
  * T should be an interface of a language-specific 'type' syntax
  * node.
  */
-export interface ITyped<T> {
+export interface ITyped<T extends ISyntaxNode = ISyntaxNode> {
   type: T;
 }
 

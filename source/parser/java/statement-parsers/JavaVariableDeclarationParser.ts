@@ -3,7 +3,7 @@ import JavaTypeParser from '../JavaTypeParser';
 import { Implements, Override } from 'trampoline-framework';
 import { JavaConstants } from '../java-constants';
 import { JavaSyntax } from '../java-syntax';
-import { Match } from '../../common/parser-decorators';
+import { Match, Allow, Eat } from '../../common/parser-decorators';
 import { TokenUtils } from '../../../tokenizer/token-utils';
 
 export default class JavaVariableDeclarationParser extends AbstractParser<JavaSyntax.IJavaVariableDeclaration> {
@@ -15,17 +15,17 @@ export default class JavaVariableDeclarationParser extends AbstractParser<JavaSy
     };
   }
 
-  @Override protected onFirstToken (): void {
-    if (this.currentTokenMatches(JavaConstants.Keyword.FINAL)) {
-      this.parsed.isFinal = true;
+  @Allow(JavaConstants.Keyword.FINAL)
+  protected onFinalModifier (): void {
+    this.parsed.isFinal = true;
+  }
 
-      this.next();
-    }
-
+  @Eat(TokenUtils.isWord)
+  protected onType (): void {
     this.parsed.type = this.parseNextWith(JavaTypeParser);
   }
 
-  @Match('.')
+  @Allow('.')
   protected onVarargs (): void {
     this.assert(!this.parsed.isVariadic);
 
@@ -37,21 +37,14 @@ export default class JavaVariableDeclarationParser extends AbstractParser<JavaSy
     this.parsed.isVariadic = true;
   }
 
-  @Match(TokenUtils.isWord)
+  @Eat(TokenUtils.isWord)
   protected onVariableName (): void {
-    this.assert(this.parsed.name === null);
-
     this.parsed.name = this.currentToken.value;
-
-    this.next();
   }
 
   @Match('[')
   private onStartTypeArrayDimension (): void {
-    this.assert(
-      this.parsed.name !== null &&
-      this.nextToken.value === ']'
-    );
+    this.assert(this.nextToken.value === ']');
   }
 
   @Match(']')
@@ -63,7 +56,6 @@ export default class JavaVariableDeclarationParser extends AbstractParser<JavaSy
 
   @Match(/./)
   protected onEnd (): void {
-    this.assert(this.parsed.name !== null);
     this.stop();
   }
 }

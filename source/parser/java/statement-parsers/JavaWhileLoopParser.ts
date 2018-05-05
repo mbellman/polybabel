@@ -1,10 +1,10 @@
 import AbstractParser from '../../common/AbstractParser';
 import JavaBlockParser from '../JavaBlockParser';
 import JavaStatementParser from '../JavaStatementParser';
-import { Implements, Override } from 'trampoline-framework';
+import { Eat } from '../../common/parser-decorators';
+import { Implements } from 'trampoline-framework';
 import { JavaConstants } from '../java-constants';
 import { JavaSyntax } from '../java-syntax';
-import { Match } from '../../common/parser-decorators';
 
 export default class JavaWhileLoopParser extends AbstractParser<JavaSyntax.IJavaWhileLoop> {
   @Implements protected getDefault (): JavaSyntax.IJavaWhileLoop {
@@ -15,22 +15,24 @@ export default class JavaWhileLoopParser extends AbstractParser<JavaSyntax.IJava
     };
   }
 
-  @Override protected onFirstToken (): void {
-    this.assertCurrentTokenMatch(JavaConstants.Keyword.WHILE);
+  @Eat(JavaConstants.Keyword.WHILE)
+  protected onWhile (): void {
     this.next();
   }
 
-  @Match('(')
+  @Eat('(')
   protected onCondition (): void {
     this.next();
 
     this.parsed.condition = this.parseNextWith(JavaStatementParser);
+  }
 
-    this.assertCurrentTokenMatch(')');
+  @Eat(')')
+  protected onConditionEnd (): void {
     this.next();
   }
 
-  @Match('{')
+  @Eat('{')
   protected onBlock (): void {
     this.parsed.block = this.parseNextWith(JavaBlockParser);
 

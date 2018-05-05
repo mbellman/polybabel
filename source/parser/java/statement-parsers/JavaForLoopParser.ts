@@ -1,12 +1,10 @@
 import AbstractParser from '../../common/AbstractParser';
 import JavaBlockParser from '../JavaBlockParser';
-import JavaPropertyChainParser from './JavaPropertyChainParser';
 import JavaStatementParser from '../JavaStatementParser';
-import SequenceParser from '../../common/SequenceParser';
-import { Implements, Override } from 'trampoline-framework';
+import { Eat, Match } from '../../common/parser-decorators';
+import { Implements } from 'trampoline-framework';
 import { JavaConstants } from '../java-constants';
 import { JavaSyntax } from '../java-syntax';
-import { Match } from '../../common/parser-decorators';
 
 /**
  * Parses for-loops. Stops after parsing and breaking
@@ -40,17 +38,20 @@ export default class JavaForLoopParser extends AbstractParser<JavaSyntax.IJavaFo
     };
   }
 
-  @Override protected onFirstToken (): void {
+  @Eat(JavaConstants.Keyword.FOR)
+  protected onFor (): void {
     this.next();
   }
 
-  @Match('(')
+  @Eat('(')
   protected onEnterLoopStatementBlock (): void {
     this.next();
   }
 
   @Match(/./)
   protected onLoopStatement (): void {
+    this.assert(this.parsed.statements.length < 3);
+
     const statement = this.parseNextWith(JavaStatementParser);
 
     this.parsed.statements.push(statement);
@@ -59,7 +60,6 @@ export default class JavaForLoopParser extends AbstractParser<JavaSyntax.IJavaFo
   @Match(';')
   protected onLoopStatementSeparator (): void {
     this.assert(++this.totalLoopStatementSeparators < 3);
-    this.next();
   }
 
   @Match(':')
@@ -76,17 +76,24 @@ export default class JavaForLoopParser extends AbstractParser<JavaSyntax.IJavaFo
     const collection = this.parseNextWith(JavaStatementParser);
 
     this.parsed.statements.push(collection);
-    this.assertCurrentTokenMatch(')');
-    this.next();
   }
 
   @Match(')')
   protected onLoopStatementEnd (): void {
+    this.assertLoopStatementIsDefined();
     this.next();
   }
 
   @Match('{')
   protected onBlock (): void {
+    this.assert(this.previousTextToken.value === ')');
+
+    this.parsed.block = this.parseNextWith(JavaBlockParser);
+
+    this.stop();
+  }
+
+  private assertLoopStatementIsDefined (): void {
     this.assert(
       // Either the loop should have been defined in
       // initialization-terminization-increment form...
@@ -95,9 +102,5 @@ export default class JavaForLoopParser extends AbstractParser<JavaSyntax.IJavaFo
       // enhanced for-loop
       this.parsed.statements.length === 2
     );
-
-    this.parsed.block = this.parseNextWith(JavaBlockParser);
-
-    this.stop();
   }
 }

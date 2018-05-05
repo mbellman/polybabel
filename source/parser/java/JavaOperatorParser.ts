@@ -153,10 +153,10 @@ export default class JavaOperatorParser extends AbstractParser<JavaSyntax.IJavaO
     const possibleOperatorMatchers = JavaOperatorParser.OperatorMatcherMap[this.currentToken.value] || [];
 
     for (const [ tokenMatches, operator ] of possibleOperatorMatchers) {
-      for (let i = 0; i < tokenMatches.length; i++) {
-        // Step through each token match of this operator matcher
-        let localToken = this.currentToken.nextToken;
+      let localToken = this.nextToken;
 
+      // Step through each token match of this operator matcher
+      for (let i = 0; i < tokenMatches.length; i++) {
         if (ParserUtils.tokenMatches(localToken, tokenMatches[i])) {
           if (i === tokenMatches.length - 1) {
             // Matched each token to the end of the
