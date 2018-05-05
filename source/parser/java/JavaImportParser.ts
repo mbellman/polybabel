@@ -25,11 +25,10 @@ export default class JavaImportParser extends AbstractParser<JavaSyntax.IJavaImp
 
   @Allow(JavaConstants.Keyword.STATIC)
   protected onStaticImportDeclaration (): void {
-    this.assert(this.parsed.paths.length === 0);
-
     this.parsed.isStaticImport = true;
   }
 
+  @Eat(TokenUtils.isWord)
   @Match(TokenUtils.isWord)
   protected onDirectory (): void {
     this.parsed.paths.push(this.currentToken.value);
@@ -69,6 +68,7 @@ export default class JavaImportParser extends AbstractParser<JavaSyntax.IJavaImp
   @Match('*')
   protected onAliasedImport (): void {
     this.assert(
+      !this.parsed.isStaticImport &&
       this.parsed.nonDefaultImports.length === 0 &&
       ParserUtils.tokenMatches(this.nextToken, ';')
     );
