@@ -62,4 +62,8 @@ export default class Compiler {
   public getCompiledFile (file: string): string {
     return this.compiledFileMap[file];
   }
+
+  public getErrors (): string[] {
+    return this.errors;
+  }
 }

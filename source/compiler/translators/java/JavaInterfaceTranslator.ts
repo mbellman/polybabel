@@ -3,15 +3,17 @@ import JavaObjectMethodTranslator from './JavaObjectMethodTranslator';
 import JavaStatementTranslator from './JavaStatementTranslator';
 import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
+import { JavaTranslatorUtils } from './java-translator-utils';
 
 export default class JavaInterfaceTranslator extends AbstractTranslator<JavaSyntax.IJavaInterface> {
   @Implements protected translate (): void {
     const { name, members } = this.syntaxNode;
+    const nonEmptyMembers = JavaTranslatorUtils.getNonEmptyObjectMembers(members);
 
     this.emit(`var ${name} = {`)
       .enterBlock()
       .emitNodeSequence(
-        members,
+        nonEmptyMembers,
         member => this.emitMember(member),
         () => this.emit(',').newline()
       )
@@ -34,20 +36,16 @@ export default class JavaInterfaceTranslator extends AbstractTranslator<JavaSynt
   private emitField (field: JavaSyntax.IJavaObjectField): void {
     const { name, value } = field;
 
-    if (value) {
-      this.emitKey(name)
-        .emitNodeWith(JavaStatementTranslator, value);
-    }
+    this.emitKey(name)
+      .emitNodeWith(JavaStatementTranslator, value);
   }
 
   private emitMethod (method: JavaSyntax.IJavaObjectMethod): void {
     const { block, name } = method;
 
-    if (block) {
-      this.emitKey(name)
-        .emit('function ')
-        .emitNodeWith(JavaObjectMethodTranslator, method);
-    }
+    this.emitKey(name)
+      .emit('function ')
+      .emitNodeWith(JavaObjectMethodTranslator, method);
   }
 
   private emitKey (key: string): this {

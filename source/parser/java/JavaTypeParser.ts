@@ -68,12 +68,6 @@ export default class JavaTypeParser extends AbstractParser<JavaSyntax.IJavaType>
 
   @Allow('<')
   private onGenericBlockStart (): void {
-    this.assert(
-      this.parsed.arrayDimensions === 0,
-      `[] type '${this.parsed.namespaceChain.slice(-1).pop()}' cannot be generic`
-    );
-
-    this.assert(this.parsed.genericTypes.length === 0);
     this.next();
 
     if (this.currentTokenMatches('>')) {

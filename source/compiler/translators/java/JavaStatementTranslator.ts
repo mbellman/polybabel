@@ -8,7 +8,7 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
     const { leftSide, operator, rightSide } = this.syntaxNode;
 
     if (leftSide) {
-      this.emitSide(leftSide);
+      this.emitLeftSide(leftSide);
     }
 
     if (operator) {
@@ -21,21 +21,34 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
     }
   }
 
-  private emitSide (side: JavaSyntax.IJavaSyntaxNode): void {
-    switch (side.node) {
+  private emitLeftSide (leftSide: JavaSyntax.IJavaSyntaxNode): void {
+    switch (leftSide.node) {
+      case JavaSyntax.JavaSyntaxNode.VARIABLE_DECLARATION:
+        this.emitVariableDeclaration(leftSide as JavaSyntax.IJavaVariableDeclaration);
+        break;
       case JavaSyntax.JavaSyntaxNode.LITERAL:
-        this.emitLiteral(side as JavaSyntax.IJavaLiteral);
+        this.emitLiteral(leftSide as JavaSyntax.IJavaLiteral);
+        break;
+      case JavaSyntax.JavaSyntaxNode.INSTRUCTION:
+        this.emitInstruction(leftSide as JavaSyntax.IJavaInstruction);
         break;
       case JavaSyntax.JavaSyntaxNode.REFERENCE:
-        this.emitReference(side as JavaSyntax.IJavaReference);
+        this.emitReference(leftSide as JavaSyntax.IJavaReference);
+        break;
+      case JavaSyntax.JavaSyntaxNode.INSTANTIATION:
+        this.emitInstantiation(leftSide as JavaSyntax.IJavaInstantiation);
         break;
       case JavaSyntax.JavaSyntaxNode.PROPERTY_CHAIN:
-        this.emitPropertyChain(side as JavaSyntax.IJavaPropertyChain);
+        this.emitPropertyChain(leftSide as JavaSyntax.IJavaPropertyChain);
         break;
       case JavaSyntax.JavaSyntaxNode.FUNCTION_CALL:
-        this.emitFunctionCall(side as JavaSyntax.IJavaFunctionCall);
+        this.emitFunctionCall(leftSide as JavaSyntax.IJavaFunctionCall);
         break;
     }
+  }
+
+  private emitVariableDeclaration ({ name }: JavaSyntax.IJavaVariableDeclaration): void {
+    this.emit(`var ${name}`);
   }
 
   private emitLiteral (literal: JavaSyntax.IJavaLiteral): void {
@@ -48,19 +61,39 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
         this.emit(value as string);
         break;
       case JavaSyntax.JavaLiteralType.ARRAY:
-        this.emitArrayLiteral(literal);
+        this.emit('[ ')
+          .emitNodeSequence(
+            value as JavaSyntax.IJavaStatement[],
+            statement => this.emitNodeWith(JavaStatementTranslator, statement),
+            () => this.emit(', ')
+          )
+          .emit(' ]');
+
         break;
     }
   }
 
-  private emitArrayLiteral ({ value }: JavaSyntax.IJavaLiteral): void {
-    this.emit('[ ')
-      .emitNodeSequence(
-        value as JavaSyntax.IJavaStatement[],
-        statement => this.emitNodeWith(JavaStatementTranslator, statement),
-        () => this.emit(', ')
-      )
-      .emit(' ]');
+  private emitInstruction (instruction: JavaSyntax.IJavaInstruction): void {
+    switch (instruction.type) {
+      case JavaSyntax.JavaInstructionType.RETURN:
+      case JavaSyntax.JavaInstructionType.THROW:
+        const isReturn = instruction.type === JavaSyntax.JavaInstructionType.RETURN;
+
+        this.emit(isReturn ? 'return' : 'throw');
+
+        if (instruction.value) {
+          this.emit(' ')
+            .emitNodeWith(JavaStatementTranslator, instruction.value);
+        }
+
+        break;
+      case JavaSyntax.JavaInstructionType.CONTINUE:
+        this.emit('continue');
+        break;
+      case JavaSyntax.JavaInstructionType.BREAK:
+        this.emit('break');
+        break;
+    }
   }
 
   private emitReference ({ isInstanceFieldReference, value }: JavaSyntax.IJavaReference): void {
@@ -69,6 +102,19 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
     }
 
     this.emit(value);
+  }
+
+  private emitInstantiation ({ constructor, arguments: args }: JavaSyntax.IJavaInstantiation): void {
+    const constructorName = constructor.namespaceChain.join('.');
+
+    this.emit(`new ${constructorName}`)
+      .emit('(')
+      .emitNodeSequence(
+        args,
+        statement => this.emitNodeWith(JavaStatementTranslator, statement),
+        () => this.emit(', ')
+      )
+      .emit(')');
   }
 
   private emitPropertyChain ({ properties }: JavaSyntax.IJavaPropertyChain): void {
@@ -117,6 +163,11 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
       .emit(')');
   }
 
+  /**
+   * Determines whether a property in a Java property chain
+   * can be delimited by a single . in the emit, as opposed
+   * to those which require [...] bracket delimiters.
+   */
   private isDotDelimitedProperty (property: JavaSyntax.JavaProperty): boolean {
     return (
       typeof property === 'string' ||

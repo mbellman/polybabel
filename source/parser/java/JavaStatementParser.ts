@@ -43,9 +43,16 @@ type StatementMatcher = [ TokenMatch, Constructor<AbstractParser>, boolean ];
 export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJavaStatement> {
   /**
    * A list of statement matchers to use to test the token
-   * at the beginning of each new statement. If a predicate
-   * returns true, its corresponding parser class is used
-   * to parse the statement's left side.
+   * at the beginning of each new statement. If an incoming
+   * token satisfies the statement matcher's token match,
+   * its corresponding parser class is used to parse the
+   * statement's left side.
+   *
+   * The order of the list matters, since later matchers in
+   * the list might incorrectly yield false positives over
+   * earlier matchers if their placements were switched.
+   * E.g., an instruction might be incorrectly parsed as
+   * a reference if the reference matcher came first.
    *
    * See: onStatement()
    *
@@ -58,9 +65,9 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
       [ JavaUtils.isInstruction, JavaInstructionParser, true ],
       [ JavaUtils.isLiteral, JavaLiteralParser, false ],
       [ JavaUtils.isReference, JavaReferenceParser, false ],
-      [ JavaUtils.isInstantiation, JavaInstantiationParser, false ],
+      [ JavaConstants.Keyword.NEW, JavaInstantiationParser, false ],
       [ JavaUtils.isType, JavaVariableDeclarationParser, false ],
-      [ JavaUtils.isIfElse, JavaIfElseParser, true ],
+      [ JavaConstants.Keyword.IF, JavaIfElseParser, true ],
       [ JavaConstants.Keyword.FOR, JavaForLoopParser, true ],
       [ JavaConstants.Keyword.WHILE, JavaWhileLoopParser, true ],
       [ JavaConstants.Keyword.SWITCH, JavaSwitchParser, true ]

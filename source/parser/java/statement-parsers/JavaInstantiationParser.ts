@@ -8,6 +8,13 @@ import { JavaConstants } from '../java-constants';
 import { JavaSyntax } from '../java-syntax';
 import { TokenUtils } from '../../../tokenizer/token-utils';
 
+/**
+ * Parses instantiation statements.
+ *
+ * @example
+ *
+ *  new String('Hello')
+ */
 export default class JavaInstantiationParser extends AbstractParser<JavaSyntax.IJavaInstantiation> {
   @Implements protected getDefault (): JavaSyntax.IJavaInstantiation {
     return {

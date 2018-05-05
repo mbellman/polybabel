@@ -19,6 +19,10 @@
         width: 100px;
       }
 
+      .stage .options {
+        float: right;
+      }
+
       .stage .editor-block {
         display: flex;
         height: 90%;
@@ -34,6 +38,15 @@
         width: 50%;
       }
 
+      .stage .output-block {
+        background-color: #EEE;
+        border: 1px solid #AAA;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 13px;
+        margin-top: 5px;
+        padding: 5px;
+      }
+
       .CodeMirror {
         height: 100% !important;
       }
@@ -47,6 +60,10 @@
         <option value="java">Java</option>
       </select>
 
+      <div class="options">
+        <input type="checkbox" class="option" name="syntaxTree" /> Syntax Tree
+      </div>
+
       <!-- Text editor/preview -->
       <div class="editor-block">
         <div class="textarea-container">
@@ -57,8 +74,8 @@
         </div>
       </div>
 
-      <!-- Error output -->
-      <div class="error-block"></div>
+      <!-- Compiler output -->
+      <div class="output-block"></div>
     </div>
     <script type="text/javascript" src="./demo.js"></script>
   </body>

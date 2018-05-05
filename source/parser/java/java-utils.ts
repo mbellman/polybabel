@@ -120,7 +120,7 @@ export namespace JavaUtils {
     ) && (
       ParserUtils.tokenMatches(token.nextTextToken, INSTANCEOF) ||
       !TokenUtils.isWord(token.nextTextToken) &&
-      ParserUtils.tokenMatches(token.nextTextToken, /[^.(]/)
+      ParserUtils.tokenMatches(token.nextTextToken, /[^.([]/)
     );
 
     if (!isFlanked) {
@@ -240,30 +240,6 @@ export namespace JavaUtils {
         JavaConstants.Keyword.NULL,
       ])
     );
-  }
-
-  /**
-   * Determines whether a token corresponds to the beginning
-   * of an instantiation.
-   *
-   * @example
-   *
-   *  new
-   */
-  export function isInstantiation (token: IToken): boolean {
-    return ParserUtils.tokenMatches(token, JavaConstants.Keyword.NEW);
-  }
-
-  /**
-   * Determines whether a token corresponds to the beginning
-   * of an if-else conditional statement.
-   *
-   * @example
-   *
-   *  if
-   */
-  export function isIfElse (token: IToken): boolean {
-    return ParserUtils.tokenMatches(token, JavaConstants.Keyword.IF);
   }
 
   /**

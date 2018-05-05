@@ -77,7 +77,7 @@ export namespace JavaSyntax {
     INSTANCEOF
   }
 
-  export enum JavaInstruction {
+  export enum JavaInstructionType {
     RETURN,
     BREAK,
     CONTINUE,
@@ -334,7 +334,7 @@ export namespace JavaSyntax {
    */
   export interface IJavaInstruction extends IJavaSyntaxNode, IValued<IJavaStatement> {
     node: JavaSyntaxNode.INSTRUCTION;
-    instruction: JavaInstruction;
+    type: JavaInstructionType;
   }
 
   /**

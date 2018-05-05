@@ -21,24 +21,24 @@ export default class JavaInstructionParser extends AbstractParser<JavaSyntax.IJa
   @Implements protected getDefault (): JavaSyntax.IJavaInstruction {
     return {
       node: JavaSyntax.JavaSyntaxNode.INSTRUCTION,
-      instruction: null,
+      type: null,
       value: null
     };
   }
 
   @Match(JavaConstants.Keyword.RETURN)
   protected onReturn (): void {
-    this.parseValuedInstruction(JavaSyntax.JavaInstruction.RETURN);
+    this.parseValuedInstruction(JavaSyntax.JavaInstructionType.RETURN);
   }
 
   @Match(JavaConstants.Keyword.THROW)
   protected onThrow (): void {
-    this.parseValuedInstruction(JavaSyntax.JavaInstruction.THROW);
+    this.parseValuedInstruction(JavaSyntax.JavaInstructionType.THROW);
   }
 
   @Match(JavaConstants.Keyword.CONTINUE)
   protected onContinue (): void {
-    this.parsed.instruction = JavaSyntax.JavaInstruction.CONTINUE;
+    this.parsed.type = JavaSyntax.JavaInstructionType.CONTINUE;
 
     this.next();
     this.safelyFinishInstruction();
@@ -46,17 +46,24 @@ export default class JavaInstructionParser extends AbstractParser<JavaSyntax.IJa
 
   @Match(JavaConstants.Keyword.BREAK)
   protected onBreak (): void {
-    this.parsed.instruction = JavaSyntax.JavaInstruction.BREAK;
+    this.parsed.type = JavaSyntax.JavaInstructionType.BREAK;
 
     this.next();
     this.safelyFinishInstruction();
   }
 
-  private parseValuedInstruction (instruction: JavaSyntax.JavaInstruction): void {
+  /**
+   * Parses an instruction which potentially includes a statement
+   * value, such as a RETURN or THROW.
+   */
+  private parseValuedInstruction (instructionType: JavaSyntax.JavaInstructionType): void {
     this.next();
 
-    this.parsed.instruction = instruction;
-    this.parsed.value = this.parseNextWith(JavaStatementParser);
+    this.parsed.type = instructionType;
+
+    if (!this.currentTokenMatches(';')) {
+      this.parsed.value = this.parseNextWith(JavaStatementParser);
+    }
 
     this.safelyFinishInstruction();
   }
