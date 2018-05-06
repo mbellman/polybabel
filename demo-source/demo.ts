@@ -95,9 +95,8 @@ import { Language } from '../source/system/constants';
 
   @Bound private onChangeOption (e: UIEvent): void {
     const checkbox = e.currentTarget as HTMLInputElement;
-    const isChecked = checkbox.checked;
 
-    this.options[checkbox.name] = isChecked;
+    this.options[checkbox.name] = checkbox.checked;
 
     this.compile();
   }

@@ -3,44 +3,44 @@ import { Language } from '../../system/constants';
 
 export namespace JavaSyntax {
   export const enum JavaSyntaxNode {
-    TREE,
-    PACKAGE,
-    IMPORT,
-    CLASS,
-    INTERFACE,
-    ENUM,
-    OBJECT_FIELD,
-    OBJECT_METHOD,
-    TYPE,
-    PARAMETER,
-    BLOCK,
-    STATEMENT,
-    OPERATOR,
-    REFERENCE,
-    VARIABLE_DECLARATION,
-    PROPERTY_CHAIN,
-    FUNCTION_CALL,
-    LITERAL,
-    INSTANTIATION,
-    IF_ELSE,
-    FOR_LOOP,
-    WHILE_LOOP,
-    SWITCH,
-    INSTRUCTION
+    TREE = 'TREE',
+    PACKAGE = 'PACKAGE',
+    IMPORT = 'IMPORT',
+    CLASS = 'CLASS',
+    INTERFACE = 'INTERFACE',
+    ENUM = 'ENUM',
+    OBJECT_FIELD = 'OBJECT FIELD',
+    OBJECT_METHOD = 'OBJECT METHOD',
+    TYPE = 'TYPE',
+    PARAMETER = 'PARAMETER',
+    BLOCK = 'BLOCK',
+    STATEMENT = 'STATEMENT',
+    OPERATOR = 'OPERATOR',
+    REFERENCE = 'REFERENCE',
+    VARIABLE_DECLARATION = 'VARIABLE DECLARATION',
+    PROPERTY_CHAIN = 'PROPERTY CHAIN',
+    FUNCTION_CALL = 'FUNCTION CALL',
+    LITERAL = 'LITERAL',
+    INSTANTIATION = 'INSTANTIATION',
+    IF_ELSE = 'IF ELSE',
+    FOR_LOOP = 'FOR LOOP',
+    WHILE_LOOP = 'WHILE LOOP',
+    SWITCH = 'SWITCH',
+    INSTRUCTION = 'INSTRUCTION'
   }
 
   export const enum JavaAccessModifier {
-    PUBLIC,
-    PROTECTED,
-    PRIVATE,
-    PACKAGE
+    PUBLIC = 'PUBLIC',
+    PROTECTED = 'PROTECTED',
+    PRIVATE = 'PRIVATE',
+    PACKAGE = 'PACKAGE'
   }
 
   export const enum JavaLiteralType {
-    KEYWORD,
-    STRING,
-    NUMBER,
-    ARRAY
+    KEYWORD = 'KEYWORD',
+    STRING = 'STRING',
+    NUMBER = 'NUMBER',
+    ARRAY = 'ARRAY'
   }
 
   export enum JavaOperator {
@@ -78,10 +78,10 @@ export namespace JavaSyntax {
   }
 
   export enum JavaInstructionType {
-    RETURN,
-    BREAK,
-    CONTINUE,
-    THROW
+    RETURN = 'RETURN',
+    BREAK = 'BREAK',
+    CONTINUE = 'CONTINUE',
+    THROW = 'THROW'
   }
 
   /**
