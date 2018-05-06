@@ -1,8 +1,9 @@
 import AbstractTranslator from '../../common/AbstractTranslator';
+import JavaBlockTranslator from './JavaBlockTranslator';
 import JavaOperatorTranslator from './JavaOperatorTranslator';
 import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
-import JavaBlockTranslator from './JavaBlockTranslator';
+import { JavaTranslatorUtils } from './java-translator-utils';
 
 export default class JavaStatementTranslator extends AbstractTranslator<JavaSyntax.IJavaStatement> {
   @Implements protected translate (): void {
@@ -17,7 +18,9 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
     }
 
     if (operator) {
-      const operatorGap = leftSide ? ' ' : '';
+      const operatorGap = JavaTranslatorUtils.isTwoSidedStatement(this.syntaxNode)
+        ? ' '
+        : '';
 
       this.emit(operatorGap)
         .emitNodeWith(JavaOperatorTranslator, operator)
@@ -222,9 +225,8 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
         .emitNodes(
           statements,
           statement => {
-            // Regular for loops may have empty array slots
-            // in their {statements} array, so we need to
-            // ensure that the statement is defined first
+            // Regular for loops may have null statements
+            // where ones were omitted
             if (statement) {
               this.emitNodeWith(JavaStatementTranslator, statement);
             }

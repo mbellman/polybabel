@@ -23,24 +23,46 @@ export namespace JavaTranslatorUtils {
   }
 
   /**
+   * Determines whether a Java statement is two-sided,
+   * e.g. that of an operation. A one-sided statement
+   * might have a null right side, or it might have a
+   * right side which was and terminated immediately,
+   * resulting in its own null left side.
+   */
+  export function isTwoSidedStatement ({ leftSide, rightSide }: JavaSyntax.IJavaStatement): boolean {
+    return !!leftSide && !!rightSide && !!rightSide.leftSide;
+  }
+
+  /**
    * Determines whether a Java statement syntax node should
    * be terminated with a semicolon when emitted in a block.
    */
-  export function isTerminableStatement ({ leftSide, rightSide, isParenthetical }: JavaSyntax.IJavaStatement): boolean {
-    const isOperation = !!leftSide && !!rightSide;
+  export function isTerminableStatement (statement: JavaSyntax.IJavaStatement): boolean {
+    const { leftSide, rightSide } = statement;
 
-    // Statements wrapped in parentheses will have
-    // been parsed as ones with a single left-side
-    // parenthetical statement
-    const isParentheticalStatement = (
+    if (isTwoSidedStatement(statement)) {
+      // Optimize for two-sided statements
+      return true;
+    }
+
+    // A top-level statement will actually never be
+    // parenthetical itself, but its left side may
+    // be, and in the event that it doesn't have a
+    // right side we can check its left side instead
+    const isParenthetical = (
       leftSide &&
       (leftSide as JavaSyntax.IJavaStatement).isParenthetical
     );
+
+    if (isParenthetical) {
+      // Optimize for parenthetical statements
+      return true;
+    }
 
     const isTerminable = leftSide
       ? TerminableStatementNodes.some(node => node === leftSide.node)
       : isTerminableStatement(rightSide);
 
-    return isOperation || isTerminable || isParentheticalStatement;
+    return isTerminable;
   }
 }

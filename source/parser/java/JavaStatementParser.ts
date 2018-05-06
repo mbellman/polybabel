@@ -195,9 +195,6 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
     }
   }
 
-  /**
-   * @todo Fix issues with double negation (!!)
-   */
   @Match(JavaUtils.isOperator)
   protected onOperator (): void {
     if (!this.parsed.leftSide) {
@@ -206,6 +203,13 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
 
     this.parsed.operator = this.parseNextWith(JavaOperatorParser);
     this.parsed.rightSide = this.parseNextWith(JavaStatementParser);
+
+    this.assert(
+      !!this.parsed.leftSide ||
+      !!this.parsed.rightSide &&
+      !!this.parsed.rightSide.leftSide,
+      'Invalid isolated operator'
+    );
   }
 
   @Match(')')

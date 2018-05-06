@@ -58,16 +58,19 @@ export default class JavaForLoopParser extends AbstractParser<JavaSyntax.IJavaFo
 
     const statement = this.parseNextWith(JavaStatementParser);
 
-    const statementIndex = this.parsed.isEnhanced
-      ? 1
-      : this.totalLoopStatementSeparators;
-
-    this.parsed.statements[statementIndex] = statement;
+    this.parsed.statements.push(statement);
   }
 
   @Match(';')
   protected onLoopStatementSeparator (): void {
-    this.assert(++this.totalLoopStatementSeparators < 3);
+    this.assert(
+      !this.parsed.isEnhanced &&
+      ++this.totalLoopStatementSeparators < 3
+    );
+
+    if (this.totalLoopStatementSeparators > this.parsed.statements.length) {
+      this.parsed.statements.push(null);
+    }
   }
 
   @Match(':')
@@ -84,20 +87,6 @@ export default class JavaForLoopParser extends AbstractParser<JavaSyntax.IJavaFo
 
   @Match(')')
   protected onLoopStatementEnd (): void {
-    this.assertLoopStatementsAreDefined();
-    this.next();
-  }
-
-  @Match('{')
-  protected onBlock (): void {
-    this.assert(this.previousTextToken.value === ')');
-
-    this.parsed.block = this.parseNextWith(JavaBlockParser);
-
-    this.stop();
-  }
-
-  private assertLoopStatementsAreDefined (): void {
     this.assert(
       // Either the loop should have been defined in
       // initialization-terminization-increment form...
@@ -106,5 +95,27 @@ export default class JavaForLoopParser extends AbstractParser<JavaSyntax.IJavaFo
       // enhanced for-loop
       this.parsed.statements.length === 2
     );
+
+    if (!this.parsed.isEnhanced && this.parsed.statements.length < 3) {
+      this.parsed.statements.push(null);
+    }
+
+    this.next();
+  }
+
+  @Match('{')
+  protected onOpenBrace (): void {
+    const isLoopBlockStart = this.previousTextToken.value === ')';
+
+    if (isLoopBlockStart) {
+      this.parsed.block = this.parseNextWith(JavaBlockParser);
+
+      this.stop();
+    } else {
+      // An array literal may be used as one of the
+      // loop's statements, in which case it would
+      // have been matched here
+      this.onLoopStatement();
+    }
   }
 }

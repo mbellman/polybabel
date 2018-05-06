@@ -62,7 +62,7 @@ export default class JavaOperatorParser extends AbstractParser<JavaSyntax.IJavaO
    * to help determine what operator a specific operator
    * token sequence corresponds to.
    */
-  private static OperatorMatcherMap: IHashMap<OperatorMatcher[]> = {
+  private static readonly OperatorMatcherMap: IHashMap<OperatorMatcher[]> = {
     [EQUAL]: [
       [ [ EQUAL ], JavaSyntax.JavaOperator.EQUAL_TO ],
       [ [ /./ ], JavaSyntax.JavaOperator.ASSIGN ]
@@ -126,6 +126,15 @@ export default class JavaOperatorParser extends AbstractParser<JavaSyntax.IJavaO
     ]
   };
 
+  /**
+   * Determines whether a parsed operator corresponds to an
+   * operator matching only the initial operator of a given
+   * matcher, e.g. the initial operator followed by any token
+   * not explicitly matched for. Set after parsing the operator
+   * token stream in getJavaOperator().
+   */
+  private isDefaultOperator: boolean = false;
+
   @Implements protected getDefault (): JavaSyntax.IJavaOperator {
     return {
       node: JavaSyntax.JavaSyntaxNode.OPERATOR,
@@ -142,10 +151,10 @@ export default class JavaOperatorParser extends AbstractParser<JavaSyntax.IJavaO
 
     this.parsed.operation = operator;
 
-    if (this.currentTokenMatches(JavaConstants.Operators)) {
-      this.finish();
-    } else {
+    if (this.isDefaultOperator) {
       this.stop();
+    } else {
+      this.finish();
     }
   }
 
@@ -157,11 +166,15 @@ export default class JavaOperatorParser extends AbstractParser<JavaSyntax.IJavaO
 
       // Step through each token match of this operator matcher
       for (let i = 0; i < tokenMatches.length; i++) {
-        if (ParserUtils.tokenMatches(localToken, tokenMatches[i])) {
-          if (i === tokenMatches.length - 1) {
+        const tokenMatch = tokenMatches[i];
+        const isLastTokenMatch = i === tokenMatches.length - 1;
+
+        if (ParserUtils.tokenMatches(localToken, tokenMatch)) {
+          if (isLastTokenMatch) {
             // Matched each token to the end of the
             // operator matcher! This is our operator.
             this.currentToken = localToken;
+            this.isDefaultOperator = tokenMatch.toString() === '/./';
 
             return operator;
           }
