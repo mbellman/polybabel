@@ -50,11 +50,19 @@ export default class JavaForLoopParser extends AbstractParser<JavaSyntax.IJavaFo
 
   @Match(/./)
   protected onLoopStatement (): void {
-    this.assert(this.parsed.statements.length < 3);
+    this.assert(
+      this.parsed.isEnhanced
+        ? this.parsed.statements.length === 1
+        : this.parsed.statements.length < 3
+    );
 
     const statement = this.parseNextWith(JavaStatementParser);
 
-    this.parsed.statements.push(statement);
+    const statementIndex = this.parsed.isEnhanced
+      ? 1
+      : this.totalLoopStatementSeparators;
+
+    this.parsed.statements[statementIndex] = statement;
   }
 
   @Match(';')
@@ -72,15 +80,11 @@ export default class JavaForLoopParser extends AbstractParser<JavaSyntax.IJavaFo
     this.parsed.isEnhanced = true;
 
     this.next();
-
-    const collection = this.parseNextWith(JavaStatementParser);
-
-    this.parsed.statements.push(collection);
   }
 
   @Match(')')
   protected onLoopStatementEnd (): void {
-    this.assertLoopStatementIsDefined();
+    this.assertLoopStatementsAreDefined();
     this.next();
   }
 
@@ -93,7 +97,7 @@ export default class JavaForLoopParser extends AbstractParser<JavaSyntax.IJavaFo
     this.stop();
   }
 
-  private assertLoopStatementIsDefined (): void {
+  private assertLoopStatementsAreDefined (): void {
     this.assert(
       // Either the loop should have been defined in
       // initialization-terminization-increment form...

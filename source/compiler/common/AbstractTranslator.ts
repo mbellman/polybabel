@@ -24,11 +24,20 @@ export default abstract class AbstractTranslator<N extends ISyntaxNode = ISyntax
     return this;
   }
 
-  protected emitNodeSequence <T extends ISyntaxNode>(nodes: T[], onNode: Callback<T>, onSeparator?: () => void): this {
+  protected emitNodes <T extends ISyntaxNode>(nodes: T[], onNode: (node: T, index: number) => any, onSeparator?: () => void): this {
     nodes.forEach((node, index) => {
-      onNode(node);
+      const didEmitCode = onNode(node, index);
 
-      if (onSeparator && index < nodes.length - 1) {
+      const shouldAddSeparator = (
+        // Explicitly check that onNode() did not return
+        // a boolean literal false, which indicates that
+        // onSeparator() should be skipped on this cycle
+        didEmitCode !== false &&
+        onSeparator &&
+        index < nodes.length - 1
+      );
+
+      if (shouldAddSeparator) {
         onSeparator();
       }
     });

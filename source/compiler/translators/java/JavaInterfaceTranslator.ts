@@ -8,13 +8,18 @@ import { JavaTranslatorUtils } from './java-translator-utils';
 export default class JavaInterfaceTranslator extends AbstractTranslator<JavaSyntax.IJavaInterface> {
   @Implements protected translate (): void {
     const { name, members } = this.syntaxNode;
-    const nonEmptyMembers = JavaTranslatorUtils.getNonEmptyObjectMembers(members);
 
     this.emit(`var ${name} = {`)
       .enterBlock()
-      .emitNodeSequence(
-        nonEmptyMembers,
-        member => this.emitMember(member),
+      .emitNodes(
+        members,
+        member => {
+          if (JavaTranslatorUtils.isEmptyObjectMember(member)) {
+            return false;
+          }
+
+          this.emitMember(member);
+        },
         () => this.emit(',').newline()
       )
       .exitBlock()

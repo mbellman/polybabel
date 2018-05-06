@@ -11,30 +11,36 @@ export namespace JavaTranslatorUtils {
   ];
 
   /**
-   * Filters only Java object members which have actual
+   * Determines whether a Java object member has actual
    * content to emit.
    */
-  export function getNonEmptyObjectMembers (members: JavaSyntax.JavaObjectMember[]): JavaSyntax.JavaObjectMember[] {
-    return members.filter(member => {
-      return (
-        !!(member as JavaSyntax.IJavaObjectField).value ||
-        !!(member as JavaSyntax.IJavaObjectMethod).block ||
-        !!(member as JavaSyntax.IJavaObject).members
-      );
-    });
+  export function isEmptyObjectMember (member: JavaSyntax.JavaObjectMember): boolean {
+    return (
+      !(member as JavaSyntax.IJavaObjectField).value &&
+      !(member as JavaSyntax.IJavaObjectMethod).block &&
+      !(member as JavaSyntax.IJavaObject).members
+    );
   }
 
   /**
    * Determines whether a Java statement syntax node should
    * be terminated with a semicolon when emitted in a block.
    */
-  export function isTerminableStatement ({ leftSide, rightSide }: JavaSyntax.IJavaStatement): boolean {
-    return (
-      // Any statements with both left and right sides, i.e.
-      // those with operations, should be terminated
-      (!!leftSide && !!rightSide) ||
-      // 'Terminable statements' should, naturally, be terminated
-      TerminableStatementNodes.some(node => node === leftSide.node)
+  export function isTerminableStatement ({ leftSide, rightSide, isParenthetical }: JavaSyntax.IJavaStatement): boolean {
+    const isOperation = !!leftSide && !!rightSide;
+
+    // Statements wrapped in parentheses will have
+    // been parsed as ones with a single left-side
+    // parenthetical statement
+    const isParentheticalStatement = (
+      leftSide &&
+      (leftSide as JavaSyntax.IJavaStatement).isParenthetical
     );
+
+    const isTerminable = leftSide
+      ? TerminableStatementNodes.some(node => node === leftSide.node)
+      : isTerminableStatement(rightSide);
+
+    return isOperation || isTerminable || isParentheticalStatement;
   }
 }

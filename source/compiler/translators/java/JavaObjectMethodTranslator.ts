@@ -1,4 +1,5 @@
 import AbstractTranslator from '../../common/AbstractTranslator';
+import JavaBlockTranslator from './JavaBlockTranslator';
 import JavaStatementTranslator from './JavaStatementTranslator';
 import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
@@ -9,21 +10,14 @@ export default class JavaObjectMethodTranslator extends AbstractTranslator<JavaS
     const { name, parameters, block } = this.syntaxNode;
 
     this.emit(`${name} (`)
-      .emitNodeSequence(
+      .emitNodes(
         parameters,
         parameter => this.emit(`${parameter.name}`),
         () => this.emit(', ')
       )
       .emit(') {')
       .enterBlock()
-      .emitNodeSequence(
-        block.nodes,
-        node => {
-          this.emitNodeWith(JavaStatementTranslator, node)
-            .emit(JavaTranslatorUtils.isTerminableStatement(node) ? ';' : '');
-        },
-        () => this.newline()
-      )
+      .emitNodeWith(JavaBlockTranslator, block)
       .exitBlock()
       .emit('}');
   }

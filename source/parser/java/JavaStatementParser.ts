@@ -74,14 +74,6 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
     ];
   }
 
-  /**
-   * Tracks the number of parentheses wrappers around the
-   * statement. Increments when an opening parenthesis is
-   * encountered, and decrements when a closing parenthesis
-   * is encountered.
-   */
-  private parentheses: number = 0;
-
   @Implements protected getDefault (): JavaSyntax.IJavaStatement {
     return {
       node: JavaSyntax.JavaSyntaxNode.STATEMENT,
@@ -91,10 +83,7 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
 
   @Override protected onFirstToken (): void {
     if (this.currentTokenMatches('(')) {
-      this.next();
-
-      this.parentheses++;
-      this.parsed.leftSide = this.parseNextWith(JavaStatementParser);
+      this.parseParentheticalStatement();
 
       return;
     }
@@ -206,22 +195,26 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
     }
   }
 
+  /**
+   * @todo Fix issues with double negation (!!)
+   */
   @Match(JavaUtils.isOperator)
   protected onOperator (): void {
+    if (!this.parsed.leftSide) {
+      this.assertCurrentTokenMatch(/[!+-]/);
+    }
+
     this.parsed.operator = this.parseNextWith(JavaOperatorParser);
     this.parsed.rightSide = this.parseNextWith(JavaStatementParser);
   }
 
   @Match(')')
   protected onCloseParenthesis (): void {
-    if (this.parentheses > 0 && --this.parentheses === 0) {
-      // If the statement was wrapped in parentheses, we
-      // finish as soon as the final parentheses is closed
-      this.finish();
+    if (this.parsed.isParenthetical) {
+      this.next();
     } else {
-      // If the statement was not wrapped in parentheses,
-      // stop here and let the parent parser determine
-      // what to do with the ) token
+      // Let the parent parser decide what to do
+      // with the parenthesis
       this.stop();
     }
   }
@@ -232,7 +225,25 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
   @Match(']')
   @Match('}')
   protected onEnd (): void {
-    this.assert(this.parentheses === 0);
     this.stop();
+  }
+
+  /**
+   * Steps into a statement beginning with ( and parses
+   * its left side as a parenthetical statement, stepping
+   * out again without finishing in case the left side
+   * is the first part of an operation.
+   */
+  private parseParentheticalStatement (): void {
+    this.next(); // '('
+
+    const statement = this.parseNextWith(JavaStatementParser);
+
+    this.assertCurrentTokenMatch(')');
+    this.next();
+
+    statement.isParenthetical = true;
+
+    this.parsed.leftSide = statement;
   }
 }

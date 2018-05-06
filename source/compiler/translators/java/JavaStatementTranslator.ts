@@ -2,10 +2,15 @@ import AbstractTranslator from '../../common/AbstractTranslator';
 import JavaOperatorTranslator from './JavaOperatorTranslator';
 import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
+import JavaBlockTranslator from './JavaBlockTranslator';
 
 export default class JavaStatementTranslator extends AbstractTranslator<JavaSyntax.IJavaStatement> {
   @Implements protected translate (): void {
-    const { leftSide, operator, rightSide } = this.syntaxNode;
+    const { isParenthetical, leftSide, operator, rightSide } = this.syntaxNode;
+
+    if (isParenthetical) {
+      this.emit('(');
+    }
 
     if (leftSide) {
       this.emitLeftSide(leftSide);
@@ -18,6 +23,10 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
         .emitNodeWith(JavaOperatorTranslator, operator)
         .emit(operatorGap)
         .emitNodeWith(JavaStatementTranslator, rightSide);
+    }
+
+    if (isParenthetical) {
+      this.emit(')');
     }
   }
 
@@ -44,6 +53,18 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
       case JavaSyntax.JavaSyntaxNode.FUNCTION_CALL:
         this.emitFunctionCall(leftSide as JavaSyntax.IJavaFunctionCall);
         break;
+      case JavaSyntax.JavaSyntaxNode.IF_ELSE:
+        this.emitIfElse(leftSide as JavaSyntax.IJavaIfElse);
+        break;
+      case JavaSyntax.JavaSyntaxNode.FOR_LOOP:
+        this.emitForLoop(leftSide as JavaSyntax.IJavaForLoop);
+        break;
+      case JavaSyntax.JavaSyntaxNode.WHILE_LOOP:
+        this.emitWhileLoop(leftSide as JavaSyntax.IJavaWhileLoop);
+        break;
+      case JavaSyntax.JavaSyntaxNode.STATEMENT:
+        this.emitNodeWith(JavaStatementTranslator, leftSide as JavaSyntax.IJavaStatement);
+        break;
     }
   }
 
@@ -62,7 +83,7 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
         break;
       case JavaSyntax.JavaLiteralType.ARRAY:
         this.emit('[ ')
-          .emitNodeSequence(
+          .emitNodes(
             value as JavaSyntax.IJavaStatement[],
             statement => this.emitNodeWith(JavaStatementTranslator, statement),
             () => this.emit(', ')
@@ -73,17 +94,17 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
     }
   }
 
-  private emitInstruction (instruction: JavaSyntax.IJavaInstruction): void {
-    switch (instruction.type) {
+  private emitInstruction ({ type, value }: JavaSyntax.IJavaInstruction): void {
+    switch (type) {
       case JavaSyntax.JavaInstructionType.RETURN:
       case JavaSyntax.JavaInstructionType.THROW:
-        const isReturn = instruction.type === JavaSyntax.JavaInstructionType.RETURN;
+        const isReturn = type === JavaSyntax.JavaInstructionType.RETURN;
 
         this.emit(isReturn ? 'return' : 'throw');
 
-        if (instruction.value) {
+        if (value) {
           this.emit(' ')
-            .emitNodeWith(JavaStatementTranslator, instruction.value);
+            .emitNodeWith(JavaStatementTranslator, value);
         }
 
         break;
@@ -109,7 +130,7 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
 
     this.emit(`new ${constructorName}`)
       .emit('(')
-      .emitNodeSequence(
+      .emitNodes(
         args,
         statement => this.emitNodeWith(JavaStatementTranslator, statement),
         () => this.emit(', ')
@@ -155,12 +176,77 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
     }
 
     this.emit(`${name}(`)
-      .emitNodeSequence(
+      .emitNodes(
         args,
         argument => this.emitNodeWith(JavaStatementTranslator, argument),
         () => this.emit(', ')
       )
       .emit(')');
+  }
+
+  private emitIfElse ({ conditions, blocks }: JavaSyntax.IJavaIfElse): void {
+    this.emitNodes(
+      blocks,
+      (block, index) => {
+        const isLastBlock = index === blocks.length - 1;
+
+        if (isLastBlock && blocks.length > 1) {
+          this.emit(' else {');
+        } else {
+          this.emit(index === 0 ? 'if (' : ' else if (')
+            .emitNodeWith(JavaStatementTranslator, conditions[index])
+            .emit(') {');
+        }
+
+        this.enterBlock()
+          .emitNodeWith(JavaBlockTranslator, block)
+          .exitBlock()
+          .emit('}');
+      }
+    );
+  }
+
+  private emitForLoop ({ statements, isEnhanced, block }: JavaSyntax.IJavaForLoop): void {
+    if (isEnhanced) {
+      const collection = statements[1];
+      const { name: iteratorValueName } = statements[0].leftSide as JavaSyntax.IJavaVariableDeclaration;
+
+      this.emitNodeWith(JavaStatementTranslator, collection)
+        .emit(`.forEach(${iteratorValueName} => {`)
+        .enterBlock()
+        .emitNodeWith(JavaBlockTranslator, block)
+        .exitBlock()
+        .emit('});');
+    } else {
+      this.emit('for (')
+        .emitNodes(
+          statements,
+          statement => {
+            // Regular for loops may have empty array slots
+            // in their {statements} array, so we need to
+            // ensure that the statement is defined first
+            if (statement) {
+              this.emitNodeWith(JavaStatementTranslator, statement);
+            }
+          },
+          () => this.emit('; ')
+        )
+        .emit(') {')
+        .enterBlock()
+        .emitNodeWith(JavaBlockTranslator, block)
+        .exitBlock()
+        .emit('}');
+    }
+  }
+
+  private emitWhileLoop ({ condition, block }: JavaSyntax.IJavaWhileLoop): void {
+    this.emit('while (')
+      .emitNodeWith(JavaStatementTranslator, condition)
+      .emit(') {')
+      .enterBlock()
+      .emitNodeWith(JavaBlockTranslator, block)
+      .exitBlock()
+      .emit('}');
   }
 
   /**

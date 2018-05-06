@@ -222,6 +222,7 @@ export namespace JavaSyntax {
     leftSide: IJavaSyntaxNode;
     operator?: IJavaOperator;
     rightSide?: IJavaStatement;
+    isParenthetical?: boolean;
   }
 
   /**

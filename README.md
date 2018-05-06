@@ -16,7 +16,7 @@ Polybabel's emphasis on idiomatic programming means the standard libraries and A
 * Compilation - 25%?
 * * Type Reconciliation - 10%?
 * * Validation - 5%?
-* * Translation - 80%?
+* * Translation - 90%?
 * Compilation errors - 0%
 * Interoperability between languages - 0%
 
@@ -51,11 +51,11 @@ Polybabel's emphasis on idiomatic programming means the standard libraries and A
 * * - break/continue/return/throw ✔
 * * Comments - 0%
 * * Annotations - 0%
-2. Compilation - 15%?
+2. Compilation - 20%?
 * * Imports ✔
 * * Interfaces - 35%?
 * * Methods - 50%?
-* * Statements - 40%?
+* * Statements - 60%?
 
 ### Python
 Pending initial work.
