@@ -77,6 +77,14 @@ export default abstract class AbstractTranslator<N extends ISyntaxNode = ISyntax
     return this;
   }
 
+  protected newlineIf (condition: boolean): this {
+    if (condition) {
+      this.newline();
+    }
+
+    return this;
+  }
+
   /**
    * @todo @description
    */

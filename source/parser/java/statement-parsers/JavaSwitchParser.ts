@@ -50,7 +50,6 @@ export default class JavaSwitchParser extends AbstractParser<JavaSyntax.IJavaSwi
 
   @Eat('{')
   protected onEnterSwitchBlock (): void {
-    this.assert(this.parsed.value !== null);
     this.next();
   }
 
@@ -90,8 +89,24 @@ export default class JavaSwitchParser extends AbstractParser<JavaSyntax.IJavaSwi
     this.parsed.defaultBlock = this.parseNextWith(JavaBlockParser);
   }
 
+  /**
+   * A } token will only be encountered by a JavaSwitchParser
+   * instance itself if no cases are defined. Since case and
+   * default blocks are parsed as such, and JavaBlockParser
+   * finishes and steps out of a block when encountering a }
+   * token, switch statements with any number of cases will
+   * automatically finish with the last case/default block.
+   * With this match we handle edges cases for switches with
+   * no case/default blocks.
+   */
+  @Match('}')
+  protected onEndEmptySwitch (): void {
+    this.finish();
+  }
+
   @Match(/./)
   protected onAfterExitSwitch (): void {
+    this.assert(this.currentToken.value !== '}');
     this.stop();
   }
 }

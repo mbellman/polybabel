@@ -113,8 +113,8 @@ export default class JavaForLoopParser extends AbstractParser<JavaSyntax.IJavaFo
       this.stop();
     } else {
       // An array literal may be used as one of the
-      // loop's statements, in which case it would
-      // have been matched here
+      // loop's statements, in which case we need
+      // to parse it as such
       this.onLoopStatement();
     }
   }

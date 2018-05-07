@@ -37,7 +37,7 @@ import { Language } from '../source/system/constants';
 
     this.preview = CodeMirror.fromTextArea(previewTextarea, {
       mode: 'text/javascript',
-      readOnly: true
+      readOnly: 'nocursor'
     });
 
     this.editor.on('change', this.onChangeEditorContents);

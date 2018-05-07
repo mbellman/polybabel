@@ -65,6 +65,9 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
       case JavaSyntax.JavaSyntaxNode.WHILE_LOOP:
         this.emitWhileLoop(leftSide as JavaSyntax.IJavaWhileLoop);
         break;
+      case JavaSyntax.JavaSyntaxNode.SWITCH:
+        this.emitSwitch(leftSide as JavaSyntax.IJavaSwitch);
+        break;
       case JavaSyntax.JavaSyntaxNode.STATEMENT:
         this.emitNodeWith(JavaStatementTranslator, leftSide as JavaSyntax.IJavaStatement);
         break;
@@ -248,6 +251,34 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
       .enterBlock()
       .emitNodeWith(JavaBlockTranslator, block)
       .exitBlock()
+      .emit('}');
+  }
+
+  private emitSwitch ({ value, cases, blocks, defaultBlock }: JavaSyntax.IJavaSwitch): void {
+    this.emit('switch (')
+      .emitNodeWith(JavaStatementTranslator, value)
+      .emit(') {')
+      .enterBlock()
+      .emitNodes(
+        cases,
+        (caseStatement, index) => {
+          this.emit('case ')
+            .emitNodeWith(JavaStatementTranslator, caseStatement)
+            .emit(':')
+            .enterBlock()
+            .emitNodeWith(JavaBlockTranslator, blocks[index])
+            .exitBlock();
+        }
+      );
+
+    if (defaultBlock) {
+      this.emit('default:')
+        .enterBlock()
+        .emitNodeWith(JavaBlockTranslator, defaultBlock)
+        .exitBlock();
+    }
+
+    this.exitBlock()
       .emit('}');
   }
 

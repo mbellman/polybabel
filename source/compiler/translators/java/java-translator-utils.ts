@@ -1,6 +1,9 @@
 import { JavaSyntax } from '../../../parser/java/java-syntax';
 
 export namespace JavaTranslatorUtils {
+  /**
+   * @internal
+   */
   const TerminableStatementNodes: JavaSyntax.JavaSyntaxNode[] = [
     JavaSyntax.JavaSyntaxNode.VARIABLE_DECLARATION,
     JavaSyntax.JavaSyntaxNode.LITERAL,
@@ -9,6 +12,18 @@ export namespace JavaTranslatorUtils {
     JavaSyntax.JavaSyntaxNode.FUNCTION_CALL,
     JavaSyntax.JavaSyntaxNode.PROPERTY_CHAIN,
   ];
+
+  /**
+   * Determines whether a Java syntax node corresponds to
+   * a class, interface, or enum.
+   */
+  export function isObject ({ node }: JavaSyntax.IJavaSyntaxNode): boolean {
+    return (
+      node === JavaSyntax.JavaSyntaxNode.CLASS ||
+      node === JavaSyntax.JavaSyntaxNode.INTERFACE ||
+      node === JavaSyntax.JavaSyntaxNode.ENUM
+    );
+  }
 
   /**
    * Determines whether a Java object member has actual
@@ -26,8 +41,8 @@ export namespace JavaTranslatorUtils {
    * Determines whether a Java statement is two-sided,
    * e.g. that of an operation. A one-sided statement
    * might have a null right side, or it might have a
-   * right side which was and terminated immediately,
-   * resulting in its own null left side.
+   * right side which was parsed and then terminated
+   * immediately, resulting in its own null left side.
    */
   export function isTwoSidedStatement ({ leftSide, rightSide }: JavaSyntax.IJavaStatement): boolean {
     return !!leftSide && !!rightSide && !!rightSide.leftSide;
@@ -59,10 +74,8 @@ export namespace JavaTranslatorUtils {
       return true;
     }
 
-    const isTerminable = leftSide
+    return leftSide
       ? TerminableStatementNodes.some(node => node === leftSide.node)
       : isTerminableStatement(rightSide);
-
-    return isTerminable;
   }
 }

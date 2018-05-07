@@ -130,7 +130,7 @@ export default class JavaOperatorParser extends AbstractParser<JavaSyntax.IJavaO
    * Determines whether a parsed operator corresponds to an
    * operator matching only the initial operator of a given
    * matcher, e.g. the initial operator followed by any token
-   * not explicitly matched for. Set after parsing the operator
+   * not explicitly matched. Set after parsing the operator
    * token stream in getJavaOperator().
    */
   private isDefaultOperator: boolean = false;

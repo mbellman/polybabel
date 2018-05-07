@@ -3,6 +3,7 @@ import JavaImportTranslator from './JavaImportTranslator';
 import JavaInterfaceTranslator from './JavaInterfaceTranslator';
 import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
+import JavaClassTranslator from './JavaClassTranslator';
 
 export default class JavaTranslator extends AbstractTranslator<JavaSyntax.IJavaSyntaxTree> {
   public constructor (syntaxTree: JavaSyntax.IJavaSyntaxTree) {
@@ -17,10 +18,15 @@ export default class JavaTranslator extends AbstractTranslator<JavaSyntax.IJavaS
         case JavaSyntax.JavaSyntaxNode.IMPORT:
           this.emitNodeWith(JavaImportTranslator, syntaxNode as JavaSyntax.IJavaImport);
           break;
+        case JavaSyntax.JavaSyntaxNode.CLASS:
+          this.emitNodeWith(JavaClassTranslator, syntaxNode as JavaSyntax.IJavaClass);
+          break;
         case JavaSyntax.JavaSyntaxNode.INTERFACE:
           this.emitNodeWith(JavaInterfaceTranslator, syntaxNode as JavaSyntax.IJavaInterface);
           break;
       }
+
+      this.newline();
     });
   }
 }

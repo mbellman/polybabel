@@ -182,7 +182,7 @@ export namespace JavaSyntax {
    */
   export interface IJavaEnum extends IJavaSyntaxNode, IJavaObject {
     node: JavaSyntaxNode.ENUM;
-    values: IJavaSyntaxNode[];
+    constants: IJavaSyntaxNode[];
   }
 
   /**

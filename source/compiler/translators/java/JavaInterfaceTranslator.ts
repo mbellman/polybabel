@@ -23,8 +23,7 @@ export default class JavaInterfaceTranslator extends AbstractTranslator<JavaSynt
         () => this.emit(',').newline()
       )
       .exitBlock()
-      .emit('}')
-      .newline();
+      .emit('}');
   }
 
   private emitMember (member: JavaSyntax.JavaObjectMember): void {
