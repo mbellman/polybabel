@@ -1,6 +1,6 @@
 import AbstractParser from './AbstractParser';
-import { Implements, Override, Constructor } from 'trampoline-framework';
-import { ISyntaxNode, ISequence } from './syntax-types';
+import { Constructor, Final, Implements, Override } from 'trampoline-framework';
+import { ISequence, ISyntaxNode } from './syntax-types';
 import { TokenMatch } from './parser-types';
 
 /**

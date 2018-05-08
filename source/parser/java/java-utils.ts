@@ -120,7 +120,7 @@ export namespace JavaUtils {
     ) && (
       ParserUtils.tokenMatches(token.nextTextToken, INSTANCEOF) ||
       !TokenUtils.isWord(token.nextTextToken) &&
-      ParserUtils.tokenMatches(token.nextTextToken, /[^.([]/)
+      ParserUtils.tokenMatches(token.nextTextToken, /[^.([{]/)
     );
 
     if (!isFlanked) {

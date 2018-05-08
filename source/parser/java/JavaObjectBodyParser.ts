@@ -13,18 +13,13 @@ import { JavaSyntax } from './java-syntax';
 import { JavaUtils } from './java-utils';
 
 /**
- * @internal
- */
-type JavaObjectMember = JavaSyntax.IJavaObject | JavaSyntax.IJavaObjectField | JavaSyntax.IJavaObjectMethod;
-
-/**
  * @todo @description
  */
 export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJavaObjectBody> {
   /**
    * @todo @description
    */
-  private currentMember: Partial<JavaObjectMember> = null;
+  private currentMember: Partial<JavaSyntax.JavaObjectMember> = null;
 
   @Implements protected getDefault (): JavaSyntax.IJavaObjectBody {
     return {
@@ -100,7 +95,7 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
   }
 
   @Match(';')
-  protected onFieldEnd (): void {
+  protected onFieldOrAbstractMethodEnd (): void {
     this.assertCurrentMemberIsTypedAndNamed();
 
     const { value } = this.currentMember as JavaSyntax.IJavaObjectField;
@@ -128,7 +123,7 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
   }
 
   private addCurrentMember (): void {
-    this.parsed.members.push(this.currentMember as JavaObjectMember);
+    this.parsed.members.push(this.currentMember as JavaSyntax.JavaObjectMember);
 
     this.currentMember = null;
   }
@@ -141,7 +136,7 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
     this.assert(!!type && !!name);
   }
 
-  private updateCurrentMember (partialMember: Partial<JavaObjectMember>): void {
+  private updateCurrentMember (partialMember: Partial<JavaSyntax.JavaObjectMember>): void {
     this.currentMember = Object.assign({}, this.currentMember, partialMember);
   }
 }

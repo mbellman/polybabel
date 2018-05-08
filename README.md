@@ -34,7 +34,7 @@ Polybabel's emphasis on idiomatic programming means the standard libraries and A
 * * - Generic syntax ✔
 * * - Extensible generic types - 0%
 * * - Method generics ✔
-* * Statements - 85%?
+* * Statements - 90%?
 * * - Variables ✔
 * * - Property chains ✔
 * * - Method calls ✔
@@ -46,16 +46,16 @@ Polybabel's emphasis on idiomatic programming means the standard libraries and A
 * * - Loops ✔
 * * - Switches ✔
 * * - Anonymous functions (lambda expressions) - 0%
-* * - try/catch/finally - 0%
+* * - try/catch/finally ✔
 * * - break/continue/return/throw ✔
 * * Comments - 0%
 * * Annotations - 0%
-2. Translation - 25%?
+2. Translation - 50%?
 * * Imports ✔
-* * Interfaces - 50%?
-* * Classes - 75%?
+* * Interfaces ✔
+* * Classes ✔
 * * Methods ✔
-* * Statements - 85%?
+* * Statements - 90%?
 
 ### Python
 Pending initial work.

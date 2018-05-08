@@ -68,7 +68,13 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
       case JavaSyntax.JavaSyntaxNode.SWITCH:
         this.emitSwitch(leftSide as JavaSyntax.IJavaSwitch);
         break;
+      case JavaSyntax.JavaSyntaxNode.TRY_CATCH:
+        this.emitTryCatch(leftSide as JavaSyntax.IJavaTryCatch);
+        break;
       case JavaSyntax.JavaSyntaxNode.STATEMENT:
+        // The left side may itself be a statement, e.g.
+        // in the case of parenthetical statements, which
+        // parse as the left side of a top-level statement
         this.emitNodeWith(JavaStatementTranslator, leftSide as JavaSyntax.IJavaStatement);
         break;
     }
@@ -280,6 +286,74 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
 
     this.exitBlock()
       .emit('}');
+  }
+
+  private emitTryCatch ({ tryBlock, exceptionSets, exceptionReferences, catchBlocks, finallyBlock }: JavaSyntax.IJavaTryCatch): void {
+    // Use this as the default variable name provided to the
+    // catch (...) statement in case subsequent case blocks,
+    // translated as conditionals within the main case block,
+    // use different variable names
+    const firstExceptionName = exceptionReferences[0].value;
+
+    this.emit('try {')
+      .enterBlock()
+      .emitNodeWith(JavaBlockTranslator, tryBlock)
+      .exitBlock()
+      .emit(`} catch (${firstExceptionName}) {`)
+      .enterBlock()
+      // If any exception references are named differently than
+      // the first and main one, we need to reassign them as
+      // alias variables
+      .emitNodes(
+        exceptionReferences,
+        exceptionReference => {
+          const exceptionName = exceptionReference.value;
+          const hasUniqueExceptionName = exceptionName !== firstExceptionName;
+
+          if (hasUniqueExceptionName) {
+            this.emit(`var ${exceptionName} = ${firstExceptionName};`)
+              .newline();
+          }
+        }
+      )
+      // Emit each separate catch block as a series of if-else
+      // blocks, using 'instanceof' checks on the error instance
+      // to map exception types to conditional blocks. JavaScript
+      // lacks a spec-standard way of handling multiple catch
+      // blocks with different error/exception types in each.
+      .emitNodes(
+        catchBlocks,
+        (catchBlock, index) => {
+          const exceptions = exceptionSets[index];
+          const exceptionName = exceptionReferences[index].value;
+
+          this.emit(index === 0 ? 'if (' : ' else if (')
+            .emitNodes(
+              exceptions,
+              exception => {
+                const exceptionTypeName = exception.namespaceChain.join('.');
+
+                this.emit(`${exceptionName} instanceof ${exceptionTypeName}`);
+              },
+              () => this.emit(' || ')
+            )
+            .emit(') {')
+            .enterBlock()
+            .emitNodeWith(JavaBlockTranslator, catchBlock)
+            .exitBlock()
+            .emit('}');
+        }
+      )
+      .exitBlock()
+      .emit('}');
+
+    if (finallyBlock) {
+      this.emit(' finally {')
+        .enterBlock()
+        .emitNodeWith(JavaBlockTranslator, finallyBlock)
+        .exitBlock()
+        .emit('}');
+    }
   }
 
   /**

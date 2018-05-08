@@ -9,6 +9,7 @@ import JavaOperatorParser from './JavaOperatorParser';
 import JavaPropertyChainParser from './statement-parsers/JavaPropertyChainParser';
 import JavaReferenceParser from './statement-parsers/JavaReferenceParser';
 import JavaSwitchParser from './statement-parsers/JavaSwitchParser';
+import JavaTryCatchParser from './statement-parsers/JavaTryCatchParser';
 import JavaVariableDeclarationParser from './statement-parsers/JavaVariableDeclarationParser';
 import JavaWhileLoopParser from './statement-parsers/JavaWhileLoopParser';
 import { Constructor, Implements, Override } from 'trampoline-framework';
@@ -70,7 +71,8 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
       [ JavaConstants.Keyword.IF, JavaIfElseParser, true ],
       [ JavaConstants.Keyword.FOR, JavaForLoopParser, true ],
       [ JavaConstants.Keyword.WHILE, JavaWhileLoopParser, true ],
-      [ JavaConstants.Keyword.SWITCH, JavaSwitchParser, true ]
+      [ JavaConstants.Keyword.SWITCH, JavaSwitchParser, true ],
+      [ JavaConstants.Keyword.TRY, JavaTryCatchParser, true ]
     ];
   }
 

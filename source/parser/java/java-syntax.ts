@@ -26,6 +26,7 @@ export namespace JavaSyntax {
     FOR_LOOP = 'FOR LOOP',
     WHILE_LOOP = 'WHILE LOOP',
     SWITCH = 'SWITCH',
+    TRY_CATCH = 'TRY_CATCH',
     INSTRUCTION = 'INSTRUCTION'
   }
 
@@ -327,6 +328,18 @@ export namespace JavaSyntax {
     cases: IJavaStatement[];
     blocks: IJavaBlock[];
     defaultBlock: IJavaBlock;
+  }
+
+  /**
+   * A Java try/catch/(finally?) statement.
+   */
+  export interface IJavaTryCatch extends IJavaSyntaxNode {
+    node: JavaSyntaxNode.TRY_CATCH;
+    tryBlock: IJavaBlock;
+    exceptionSets: IJavaType[][];
+    exceptionReferences: IJavaReference[];
+    catchBlocks: IJavaBlock[];
+    finallyBlock?: IJavaBlock;
   }
 
   /**

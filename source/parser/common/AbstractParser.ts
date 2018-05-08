@@ -82,6 +82,29 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
   }
 
   /**
+   * If the current token satisfies a provided token match,
+   * proceeds to the next text token in the stream and returns
+   * the initial token value. Halts otherwise.
+   */
+  protected eat (tokenMatch: TokenMatch): string {
+    const token = this.currentToken;
+
+    this.assertCurrentTokenMatch(tokenMatch);
+    this.next();
+
+    return token.value;
+  }
+
+  /**
+   * Skips to the next text token and eats it with a provided
+   * token match, abiding by the rules of eat().
+   */
+  protected eatNext (tokenMatch: TokenMatch): void {
+    this.next();
+    this.eat(tokenMatch);
+  }
+
+  /**
    * Parses over the incoming token stream with a parser class
    * and merges the parsed result onto this instance's parsed
    * syntax node object. Provided parser classes must parse a

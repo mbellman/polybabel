@@ -64,14 +64,14 @@ export default class JavaLiteralParser extends AbstractParser<JavaSyntax.IJavaLi
       // Advance one token at a time to preserve whitespace
       this.currentToken = this.nextToken;
 
-      if (TokenUtils.isNewline(this.nextToken)) {
-        this.throw('String literals must be single-line only');
-      }
-
       if (this.currentTokenMatches(terminatorQuote) && !isBackslashed) {
         this.parsed.value += this.currentToken.value;
 
         break;
+      }
+
+      if (TokenUtils.isNewline(this.nextToken)) {
+        this.throw('String literals must be single-line only');
       }
 
       isBackslashed = this.currentTokenMatches('\\') && !isBackslashed;
