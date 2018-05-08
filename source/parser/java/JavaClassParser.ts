@@ -45,7 +45,7 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
 
     this.assert(
       extended.length === 1,
-      `Derived class '${this.parsed.name}' can only extend one base class`
+      `Derived class '${this.parsed.name}' cannot extend ${extended.length} base classes`
     );
 
     this.parsed.extended = extended;

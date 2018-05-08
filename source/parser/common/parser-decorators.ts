@@ -90,3 +90,11 @@ export const Allow = createTokenMatcherDecorator('starterMatchers', TokenMatcher
  * of no matches - causes the parser to halt.
  */
 export const Match = createTokenMatcherDecorator('streamMatchers', TokenMatcherType.MATCH, true);
+
+/**
+ * Marks a decorated parser class as restricted to parsing one
+ * line at a time, halting if any newline tokens are passed.
+ */
+export function SingleLineParser (target: any): void {
+  target.isSingleLineParser = true;
+}

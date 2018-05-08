@@ -146,19 +146,13 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
     return this.emit(`this.${name} = `);
   }
 
-  private emitObjectsWith <O extends JavaSyntax.IJavaObject>(Translator: Constructor<AbstractTranslator<O>>, objects: O[], isInstanceSide: boolean): this {
+  private emitInstanceMethods (): this {
+    const { methods } = this.memberMap.instanceMembers;
+
     return this.emitNodes(
-      objects,
-      object => {
-        const { name } = object;
-
-        if (isInstanceSide) {
-          this.emitInstanceMemberKey(name);
-        } else {
-          this.emitStaticMemberKey(name);
-        }
-
-        this.emitNestedObjectWith(Translator, object);
+      methods,
+      method => {
+        this.emitNodeWith(JavaObjectMethodTranslator, method);
       },
       () => this.newline()
     );
@@ -177,22 +171,11 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
 
     if (hasInstanceMethods) {
       this.newlineIf(hasNonMethodInstanceMembers)
-        .emitMethods();
+        .emitInstanceMethods();
     }
 
     return this.exitBlock()
       .emit('}');
-  }
-
-  private emitMethods (): this {
-    const { methods } = this.memberMap.instanceMembers;
-
-    return this.emitNodes(
-      methods,
-      method => {
-        this.emitNodeWith(JavaObjectMethodTranslator, method);
-      }
-    );
   }
 
   private emitNestedObjectWith <O extends JavaSyntax.IJavaObject>(Translator: Constructor<AbstractTranslator<O>>, object: O): this {
@@ -202,6 +185,24 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
       .emitNodeWith(Translator, object)
       .exitBlock()
       .emit('})();');
+  }
+
+  private emitObjectsWith <O extends JavaSyntax.IJavaObject>(Translator: Constructor<AbstractTranslator<O>>, objects: O[], isInstanceSide: boolean): this {
+    return this.emitNodes(
+      objects,
+      object => {
+        const { name } = object;
+
+        if (isInstanceSide) {
+          this.emitInstanceMemberKey(name);
+        } else {
+          this.emitStaticMemberKey(name);
+        }
+
+        this.emitNestedObjectWith(Translator, object);
+      },
+      () => this.newline()
+    );
   }
 
   private emitStaticMemberKey (name: string): this {

@@ -9,7 +9,9 @@ export default class JavaImportTranslator extends AbstractTranslator<JavaSyntax.
     const { isStaticImport, alias, paths, defaultImport } = this.syntaxNode;
 
     if (isStaticImport || alias) {
-      const lastPath = paths.pop();
+      const lastPath = paths.length > 1
+        ? paths.pop()
+        : paths[0];
 
       if (isStaticImport) {
         this.staticImport = lastPath;

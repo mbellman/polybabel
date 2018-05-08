@@ -1,14 +1,29 @@
 import AbstractParser from '../common/AbstractParser';
-import { Allow, Eat, Match } from '../common/parser-decorators';
+import JavaReferenceParser from './statement-parsers/JavaReferenceParser';
+import SequenceParser from '../common/SequenceParser';
+import { Allow, Eat, Match, SingleLineParser } from '../common/parser-decorators';
 import { Implements } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { ParserUtils } from '../common/parser-utils';
 import { TokenUtils } from '../../tokenizer/token-utils';
-import SequenceParser from '../common/SequenceParser';
-import JavaReferenceParser from './statement-parsers/JavaReferenceParser';
 
+/**
+ * Parses Java import statements, finishing upon encountering
+ * a ; token. This parser also supports a special syntactical
+ * import variant, not normally valid in Java, which enables
+ * non-default imports after translation to JavaScript.
+ *
+ * @example
+ *
+ *  import java.util.System;
+ *  import java.util.*;
+ *  import react.{ Component, render };
+ */
+@SingleLineParser
 export default class JavaImportParser extends AbstractParser<JavaSyntax.IJavaImport> {
+  private currentPathPart: string = '';
+
   @Implements protected getDefault (): JavaSyntax.IJavaImport {
     return {
       node: JavaSyntax.JavaSyntaxNode.IMPORT,
@@ -25,13 +40,21 @@ export default class JavaImportParser extends AbstractParser<JavaSyntax.IJavaImp
 
   @Allow(JavaConstants.Keyword.STATIC)
   protected onStaticImportDeclaration (): void {
-    this.parsed.isStaticImport = true;
+    if (TokenUtils.isWhitespace(this.nextToken)) {
+      this.parsed.isStaticImport = true;
+    } else {
+      // Disallow starting folders named 'static'
+      // to avoid any confusion
+      this.halt();
+    }
   }
 
   @Eat(TokenUtils.isWord)
-  @Match(TokenUtils.isWord)
-  protected onDirectory (): void {
-    this.parsed.paths.push(this.currentToken.value);
+  @Match(/./)
+  protected onPathPart (): void {
+    this.assert(this.parsed.nonDefaultImports.length === 0);
+
+    this.currentPathPart += this.currentToken.value;
   }
 
   @Match('.')
@@ -40,10 +63,17 @@ export default class JavaImportParser extends AbstractParser<JavaSyntax.IJavaImp
       !ParserUtils.tokenMatches(this.previousToken, '.') &&
       !ParserUtils.tokenMatches(this.nextToken, '.')
     );
+
+    this.saveCurrentPathPart();
   }
 
   @Match('{')
   protected onStartNonDefaultImports (): void {
+    this.assert(
+      !this.parsed.isStaticImport,
+      'Non-default imports cannot be static'
+    );
+
     this.next();
 
     const nonDefaultImportsParser = new SequenceParser({
@@ -59,10 +89,7 @@ export default class JavaImportParser extends AbstractParser<JavaSyntax.IJavaImp
 
   @Match('}')
   protected onEndNonDefaultImports (): void {
-    this.assert(
-      this.parsed.nonDefaultImports.length > 0 &&
-      ParserUtils.tokenMatches(this.nextToken, ';')
-    );
+    this.assert(this.parsed.nonDefaultImports.length > 0);
   }
 
   @Match('*')
@@ -78,6 +105,8 @@ export default class JavaImportParser extends AbstractParser<JavaSyntax.IJavaImp
 
   @Match(';')
   protected onEnd (): void {
+    this.saveCurrentPathPart();
+
     if (this.parsed.nonDefaultImports.length === 0) {
       const { paths } = this.parsed;
 
@@ -91,5 +120,13 @@ export default class JavaImportParser extends AbstractParser<JavaSyntax.IJavaImp
 
   private getLastOfPath (): string {
     return this.parsed.paths[this.parsed.paths.length - 1];
+  }
+
+  private saveCurrentPathPart (): void {
+    if (this.currentPathPart.length > 0) {
+      this.parsed.paths.push(this.currentPathPart);
+    }
+
+    this.currentPathPart = '';
   }
 }

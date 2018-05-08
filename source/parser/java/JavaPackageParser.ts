@@ -1,10 +1,11 @@
 import AbstractParser from '../common/AbstractParser';
-import { Implements, Override } from 'trampoline-framework';
+import { Eat, Match, SingleLineParser } from '../common/parser-decorators';
+import { Implements } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
-import { Match, Eat } from '../common/parser-decorators';
 import { TokenUtils } from '../../tokenizer/token-utils';
 
+@SingleLineParser
 export default class JavaPackageParser extends AbstractParser<JavaSyntax.IJavaPackage> {
   @Implements protected getDefault (): JavaSyntax.IJavaPackage {
     return {
