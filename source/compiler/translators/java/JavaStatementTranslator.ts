@@ -1,5 +1,8 @@
 import AbstractTranslator from '../../common/AbstractTranslator';
 import JavaBlockTranslator from './JavaBlockTranslator';
+import JavaClassTranslator from './JavaClassTranslator';
+import JavaInstantiationTranslator from './JavaInstantiationTranslator';
+import JavaLiteralTranslator from './JavaLiteralTranslator';
 import JavaOperatorTranslator from './JavaOperatorTranslator';
 import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
@@ -33,13 +36,16 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
     }
   }
 
+  /**
+   * @todo Extract all translation functions into AbstractTranslator subclasses
+   */
   private emitLeftSide (leftSide: JavaSyntax.IJavaSyntaxNode): void {
     switch (leftSide.node) {
       case JavaSyntax.JavaSyntaxNode.VARIABLE_DECLARATION:
         this.emitVariableDeclaration(leftSide as JavaSyntax.IJavaVariableDeclaration);
         break;
       case JavaSyntax.JavaSyntaxNode.LITERAL:
-        this.emitLiteral(leftSide as JavaSyntax.IJavaLiteral);
+        this.emitNodeWith(JavaLiteralTranslator, leftSide as JavaSyntax.IJavaLiteral);
         break;
       case JavaSyntax.JavaSyntaxNode.INSTRUCTION:
         this.emitInstruction(leftSide as JavaSyntax.IJavaInstruction);
@@ -48,7 +54,7 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
         this.emitReference(leftSide as JavaSyntax.IJavaReference);
         break;
       case JavaSyntax.JavaSyntaxNode.INSTANTIATION:
-        this.emitInstantiation(leftSide as JavaSyntax.IJavaInstantiation);
+        this.emitNodeWith(JavaInstantiationTranslator, leftSide as JavaSyntax.IJavaInstantiation);
         break;
       case JavaSyntax.JavaSyntaxNode.PROPERTY_CHAIN:
         this.emitPropertyChain(leftSide as JavaSyntax.IJavaPropertyChain);
@@ -77,33 +83,14 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
         // parse as the left side of a top-level statement
         this.emitNodeWith(JavaStatementTranslator, leftSide as JavaSyntax.IJavaStatement);
         break;
+      case JavaSyntax.JavaSyntaxNode.CLASS:
+        this.emitNodeWith(JavaClassTranslator, leftSide as JavaSyntax.IJavaClass);
+        break;
     }
   }
 
   private emitVariableDeclaration ({ name }: JavaSyntax.IJavaVariableDeclaration): void {
     this.emit(`var ${name}`);
-  }
-
-  private emitLiteral (literal: JavaSyntax.IJavaLiteral): void {
-    const { type, value } = literal;
-
-    switch (type) {
-      case JavaSyntax.JavaLiteralType.STRING:
-      case JavaSyntax.JavaLiteralType.NUMBER:
-      case JavaSyntax.JavaLiteralType.KEYWORD:
-        this.emit(value as string);
-        break;
-      case JavaSyntax.JavaLiteralType.ARRAY:
-        this.emit('[ ')
-          .emitNodes(
-            value as JavaSyntax.IJavaStatement[],
-            statement => this.emitNodeWith(JavaStatementTranslator, statement),
-            () => this.emit(', ')
-          )
-          .emit(' ]');
-
-        break;
-    }
   }
 
   private emitInstruction ({ type, value }: JavaSyntax.IJavaInstruction): void {
@@ -135,19 +122,6 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
     }
 
     this.emit(value);
-  }
-
-  private emitInstantiation ({ constructor, arguments: args }: JavaSyntax.IJavaInstantiation): void {
-    const constructorName = constructor.namespaceChain.join('.');
-
-    this.emit(`new ${constructorName}`)
-      .emit('(')
-      .emitNodes(
-        args,
-        statement => this.emitNodeWith(JavaStatementTranslator, statement),
-        () => this.emit(', ')
-      )
-      .emit(')');
   }
 
   private emitPropertyChain ({ properties }: JavaSyntax.IJavaPropertyChain): void {

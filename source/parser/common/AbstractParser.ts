@@ -99,9 +99,10 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
    * Skips to the next text token and eats it with a provided
    * token match, abiding by the rules of eat().
    */
-  protected eatNext (tokenMatch: TokenMatch): void {
+  protected eatNext (tokenMatch: TokenMatch): string {
     this.next();
-    this.eat(tokenMatch);
+
+    return this.eat(tokenMatch);
   }
 
   /**
@@ -335,7 +336,7 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
 
     return messageIsAlreadyNormalized
       ? message
-      : `${chalk.blueBright(message)} (${this.constructor.name}) -> ${this.getColorizedLinePreview()}`;
+      : `${chalk.blueBright(message)} -> ${this.getColorizedLinePreview()}`;
   }
 
   private handleSingleLineParsers (): void {

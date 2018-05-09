@@ -8,6 +8,7 @@ export namespace JavaTranslatorUtils {
     JavaSyntax.JavaSyntaxNode.VARIABLE_DECLARATION,
     JavaSyntax.JavaSyntaxNode.LITERAL,
     JavaSyntax.JavaSyntaxNode.INSTRUCTION,
+    JavaSyntax.JavaSyntaxNode.INSTANTIATION,
     JavaSyntax.JavaSyntaxNode.REFERENCE,
     JavaSyntax.JavaSyntaxNode.FUNCTION_CALL,
     JavaSyntax.JavaSyntaxNode.PROPERTY_CHAIN,

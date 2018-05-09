@@ -1,4 +1,5 @@
 import AbstractParser from '../common/AbstractParser';
+import JavaClassParser from './JavaClassParser';
 import JavaForLoopParser from './statement-parsers/JavaForLoopParser';
 import JavaFunctionCallParser from './statement-parsers/JavaFunctionCallParser';
 import JavaIfElseParser from './statement-parsers/JavaIfElseParser';
@@ -67,6 +68,7 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
       [ JavaUtils.isLiteral, JavaLiteralParser, false ],
       [ JavaUtils.isReference, JavaReferenceParser, false ],
       [ JavaConstants.Keyword.NEW, JavaInstantiationParser, false ],
+      [ JavaConstants.Keyword.CLASS, JavaClassParser, true ],
       [ JavaUtils.isType, JavaVariableDeclarationParser, false ],
       [ JavaConstants.Keyword.IF, JavaIfElseParser, true ],
       [ JavaConstants.Keyword.FOR, JavaForLoopParser, true ],

@@ -288,6 +288,9 @@ export namespace JavaSyntax {
   export interface IJavaInstantiation extends IJavaSyntaxNode, IWithArguments<IJavaStatement> {
     node: JavaSyntaxNode.INSTANTIATION;
     constructor: IJavaType;
+    arrayAllocationCount?: string;
+    arrayLiteral?: IJavaLiteral;
+    anonymousObjectBody?: IJavaObjectBody;
   }
 
   /**

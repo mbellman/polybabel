@@ -106,12 +106,28 @@ export default class JavaTypeParser extends AbstractParser<JavaSyntax.IJavaType>
   }
 
   @Match('[')
-  private onStartArrayDimension (): void {
-    this.assert(this.nextToken.value === ']');
+  private onOpenBracket (): void {
+    const isArrayType = this.nextToken.value === ']';
+    const isArrayAllocation = TokenUtils.isNumber(this.nextToken);
+
+    if (isArrayType) {
+      this.next();
+    } else if (isArrayAllocation) {
+      // This type may have been parsed in the context of an
+      // array allocation instantiation statement, in which
+      // case we stop here and let JavaInstantiationParser
+      // handle the rest. If a number is errantly typed after
+      // an open bracket in any other context, the parent parser
+      // will halt, as no other Java parsers which parse types
+      // have a contingency for types of this form.
+      this.stop();
+    } else {
+      this.halt();
+    }
   }
 
   @Match(']')
-  private onEndArrayDimension (): void {
+  private onCloseBracket (): void {
     this.assert(this.previousToken.value === '[');
 
     this.parsed.arrayDimensions++;
