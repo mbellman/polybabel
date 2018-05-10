@@ -7,7 +7,7 @@ import { JavaConstants } from '../java-constants';
 import { JavaSyntax } from '../java-syntax';
 
 /**
- * Parses for-loops. Stops after parsing and breaking
+ * Parses for-loops. Stops after parsing and stepping
  * out of the main loop block.
  *
  * @example
@@ -23,10 +23,9 @@ import { JavaSyntax } from '../java-syntax';
 export default class JavaForLoopParser extends AbstractParser<JavaSyntax.IJavaForLoop> {
   /**
    * Tracks the total number of ; loop statement
-   * separators encountered. Since statements can
-   * be omitted between separators, we can't assert
-   * a maximum limit on separator tokens based on
-   * total statements alone.
+   * separators encountered, and also helps determine
+   * whether null statements need to be supplied in
+   * place of deliberately omitted statements.
    */
   private totalLoopStatementSeparators: number = 0;
 
@@ -44,7 +43,7 @@ export default class JavaForLoopParser extends AbstractParser<JavaSyntax.IJavaFo
   }
 
   @Eat('(')
-  protected onEnterLoopStatementBlock (): void {
+  protected onStartLoopStatementBlock (): void {
     this.next();
   }
 
@@ -69,6 +68,8 @@ export default class JavaForLoopParser extends AbstractParser<JavaSyntax.IJavaFo
     );
 
     if (this.totalLoopStatementSeparators > this.parsed.statements.length) {
+      // No statement supplied before this separator,
+      // so supply a null value in its place
       this.parsed.statements.push(null);
     }
   }
@@ -76,6 +77,7 @@ export default class JavaForLoopParser extends AbstractParser<JavaSyntax.IJavaFo
   @Match(':')
   protected onEnhancedLoopSeparator (): void {
     this.assert(
+      !this.parsed.isEnhanced &&
       this.parsed.statements.length === 1 &&
       this.totalLoopStatementSeparators === 0
     );
@@ -86,17 +88,23 @@ export default class JavaForLoopParser extends AbstractParser<JavaSyntax.IJavaFo
   }
 
   @Match(')')
-  protected onLoopStatementEnd (): void {
+  protected onEndLoopStatementBlock (): void {
+    const totalStatements = this.parsed.statements.length;
+
     this.assert(
       // Either the loop should have been defined in
-      // initialization-terminization-increment form...
-      this.totalLoopStatementSeparators === 2 ||
+      // initialization-termination-increment form...
+      totalStatements === 3 ||
       // ...or it should have been defined as an
-      // enhanced for-loop
-      this.parsed.statements.length === 2
+      // enhanced for-loop; alternatively, it may
+      // be a normal loop with an omitted third
+      // statement
+      totalStatements === 2
     );
 
-    if (!this.parsed.isEnhanced && this.parsed.statements.length < 3) {
+    if (!this.parsed.isEnhanced && totalStatements < 3) {
+      // If a normal loop omits its third statement,
+      // supply a null value in its place
       this.parsed.statements.push(null);
     }
 

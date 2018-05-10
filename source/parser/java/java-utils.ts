@@ -14,10 +14,20 @@ export namespace JavaUtils {
    * @internal
    */
   const InvalidGenericTokens: TokenMatch = [
-    /[^?>,\w]/,
-    TokenUtils.isNumber,
-    TokenUtils.isEOF
+    /[^?<>,.\w]/,
+    TokenUtils.isNumber
   ];
+
+  /**
+   * An array of token matches disqualifying a token from being
+   * contained within a lambda expression parameters block.
+   * Incidentally, these are the same as the set of invalid
+   * generic tokens, since lambda expression parameters must
+   * be typed or untyped references - which are restricted to
+   * the same class of tokens. For semantic clarity, we provide
+   * an alias for use in isLambdaExpression().
+   */
+  const InvalidLambdaExpressionParameterTokens = InvalidGenericTokens;
 
   /**
    * Determines whether a token corresponds to the beginning of a
@@ -65,6 +75,23 @@ export namespace JavaUtils {
     }
 
     return false;
+  }
+
+  /**
+   * Determines whether a token corresponds to the beginning of a
+   * lambda expression arrow.
+   *
+   * @example
+   *
+   *  ->
+   *
+   * @internal
+   */
+  function isLambdaExpressionArrow ({ value, nextToken }: IToken): boolean {
+    return (
+      value === '-' &&
+      nextToken.value === '>'
+    );
   }
 
   export function isAccessModifierKeyword (word: string): boolean {
@@ -263,5 +290,70 @@ export namespace JavaUtils {
       JavaConstants.Keyword.CONTINUE,
       JavaConstants.Keyword.BREAK
     ]);
+  }
+
+  /**
+   * Determines whether a token corresponds to the beginning of
+   * a lambda expression. Uses two lookaheads for a single-parameter
+   * lambda expression without parentheses, and a potentially large
+   * number of lookaheads for multi-parameter lambda expressions,
+   * since lambda expression parameter blocks and parenthetical
+   * statements are impossible to distinguish without them.
+   *
+   * Like the case of distinguishing generic blocks from less-than
+   * comparisons, lambda expressions with an excessively long
+   * parameter blocks preceding the expression statement or block
+   * should be rare, as should be regular parenthetical statements
+   * with an excessively long stream of tokens valid in a lambda
+   * expression parameters block before a disqualifying token is
+   * reached.
+   *
+   * @example
+   *
+   *  arg -> ...
+   *  (arg) -> ...
+   *  (arg, ...) -> ...
+   *  (Type arg) -> ...
+   *  (Type a1, ...) -> ...
+   */
+  export function isLambdaExpression (token: IToken): boolean {
+    const isWordOrOpenParenthesis = (
+      TokenUtils.isWord(token) ||
+      token.value === '('
+    );
+
+    if (!isWordOrOpenParenthesis) {
+      // Not possible for this to be the start of a
+      // lambda expression
+      return false;
+    }
+
+    const isSingleParameterLambdaExpression = (
+      TokenUtils.isWord(token) &&
+      token.nextTextToken.value === '-' &&
+      token.nextTextToken.nextToken.value === '>'
+    );
+
+    if (isSingleParameterLambdaExpression) {
+      // Optimize for single-parameter lambda expressions
+      return true;
+    }
+
+    if (token.value !== '(') {
+      // If this isn't a single-parameter lambda expression,
+      // and it doesn't otherwise start with (, it can't be
+      // a lambda expression at all
+      return false;
+    }
+
+    while ((token = token.nextTextToken) && !TokenUtils.isEOF(token)) {
+      if (token.value === ')') {
+        return isLambdaExpressionArrow(token.nextTextToken);
+      } else if (ParserUtils.tokenMatches(token, InvalidLambdaExpressionParameterTokens)) {
+        return false;
+      }
+    }
+
+    return false;
   }
 }

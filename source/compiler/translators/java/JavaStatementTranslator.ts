@@ -2,6 +2,7 @@ import AbstractTranslator from '../../common/AbstractTranslator';
 import JavaBlockTranslator from './JavaBlockTranslator';
 import JavaClassTranslator from './JavaClassTranslator';
 import JavaInstantiationTranslator from './JavaInstantiationTranslator';
+import JavaLambdaExpressionTranslator from './JavaLambdaExpressionTranslator';
 import JavaLiteralTranslator from './JavaLiteralTranslator';
 import JavaOperatorTranslator from './JavaOperatorTranslator';
 import { Implements } from 'trampoline-framework';
@@ -77,14 +78,17 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
       case JavaSyntax.JavaSyntaxNode.TRY_CATCH:
         this.emitTryCatch(leftSide as JavaSyntax.IJavaTryCatch);
         break;
+      case JavaSyntax.JavaSyntaxNode.CLASS:
+        this.emitNodeWith(JavaClassTranslator, leftSide as JavaSyntax.IJavaClass);
+        break;
+      case JavaSyntax.JavaSyntaxNode.LAMBDA_EXPRESSION:
+        this.emitNodeWith(JavaLambdaExpressionTranslator, leftSide as JavaSyntax.IJavaLambdaExpression);
+        break;
       case JavaSyntax.JavaSyntaxNode.STATEMENT:
         // The left side may itself be a statement, e.g.
         // in the case of parenthetical statements, which
         // parse as the left side of a top-level statement
         this.emitNodeWith(JavaStatementTranslator, leftSide as JavaSyntax.IJavaStatement);
-        break;
-      case JavaSyntax.JavaSyntaxNode.CLASS:
-        this.emitNodeWith(JavaClassTranslator, leftSide as JavaSyntax.IJavaClass);
         break;
     }
   }
@@ -198,7 +202,7 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
       const { name: iteratorValueName } = statements[0].leftSide as JavaSyntax.IJavaVariableDeclaration;
 
       this.emitNodeWith(JavaStatementTranslator, collection)
-        .emit(`.forEach(${iteratorValueName} => {`)
+        .emit(`.forEach(function (${iteratorValueName}) {`)
         .enterBlock()
         .emitNodeWith(JavaBlockTranslator, block)
         .exitBlock()

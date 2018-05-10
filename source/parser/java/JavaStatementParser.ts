@@ -5,6 +5,7 @@ import JavaFunctionCallParser from './statement-parsers/JavaFunctionCallParser';
 import JavaIfElseParser from './statement-parsers/JavaIfElseParser';
 import JavaInstantiationParser from './statement-parsers/JavaInstantiationParser';
 import JavaInstructionParser from './statement-parsers/JavaInstructionParser';
+import JavaLambdaExpressionParser from './statement-parsers/JavaLambdaExpressionParser';
 import JavaLiteralParser from './statement-parsers/JavaLiteralParser';
 import JavaOperatorParser from './JavaOperatorParser';
 import JavaPropertyChainParser from './statement-parsers/JavaPropertyChainParser';
@@ -17,7 +18,7 @@ import { Constructor, Implements, Override } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { JavaUtils } from './java-utils';
-import { Match } from '../common/parser-decorators';
+import { Match, Allow } from '../common/parser-decorators';
 import { ParserUtils } from '../common/parser-utils';
 import { TokenMatch } from '../common/parser-types';
 import { TokenUtils } from '../../tokenizer/token-utils';
@@ -37,10 +38,7 @@ type StatementMatcher = [ TokenMatch, Constructor<AbstractParser>, boolean ];
  * Parses block-level statements. Stops when the following
  * tokens are encountered:
  *
- * ; : , ] }
- *
- * Also stops when a ) token is encountered if the closing
- * parentheses counter decrements to 0.
+ * ; : , ] } )
  */
 export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJavaStatement> {
   /**
@@ -66,6 +64,7 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
     return [
       [ JavaUtils.isInstruction, JavaInstructionParser, true ],
       [ JavaUtils.isLiteral, JavaLiteralParser, false ],
+      [ JavaUtils.isLambdaExpression, JavaLambdaExpressionParser, false ],
       [ JavaUtils.isReference, JavaReferenceParser, false ],
       [ JavaConstants.Keyword.NEW, JavaInstantiationParser, false ],
       [ JavaConstants.Keyword.CLASS, JavaClassParser, true ],
@@ -87,7 +86,7 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
 
   @Override protected onFirstToken (): void {
     if (this.currentTokenMatches('(')) {
-      this.parseParentheticalStatement();
+      this.handleOpenParenthesis();
 
       return;
     }
@@ -201,9 +200,18 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
 
   @Match(JavaUtils.isOperator)
   protected onOperator (): void {
-    if (!this.parsed.leftSide) {
-      this.assertCurrentTokenMatch(/[!+-]/);
-    }
+    const { leftSide } = this.parsed;
+
+    this.assert(
+      leftSide
+        // If we've already parsed a left side, ensure
+        // that it isn't a lambda expression, since they
+        // aren't operable
+        ? leftSide.node !== JavaSyntax.JavaSyntaxNode.LAMBDA_EXPRESSION
+        // If we haven't parsed a left side yet, ensure
+        // that this operator can only be !, ++, or --
+        : /[!+-]/.test(this.currentToken.value)
+    );
 
     this.parsed.operator = this.parseNextWith(JavaOperatorParser);
     this.parsed.rightSide = this.parseNextWith(JavaStatementParser);
@@ -216,42 +224,36 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
     );
   }
 
-  @Match(')')
-  protected onCloseParenthesis (): void {
-    if (this.parsed.isParenthetical) {
-      this.next();
-    } else {
-      // Let the parent parser decide what to do
-      // with the parenthesis
-      this.stop();
-    }
-  }
-
   @Match(';')
   @Match(':')
   @Match(',')
   @Match(']')
   @Match('}')
+  @Match(')')
   protected onEnd (): void {
     this.stop();
   }
 
   /**
-   * Steps into a statement beginning with ( and parses
-   * its left side as a parenthetical statement, stepping
-   * out again without finishing in case the left side
-   * is the first part of an operation.
+   * Statements starting with an opening parenthesis may
+   * be parsed as lambda expressions or parenthetical
+   * statements, so we handle them here.
    */
-  private parseParentheticalStatement (): void {
-    this.next(); // '('
+  private handleOpenParenthesis (): void {
+    const isLambdaExpressionParameterBlock = this.currentTokenMatches(JavaUtils.isLambdaExpression);
 
-    const statement = this.parseNextWith(JavaStatementParser);
+    if (isLambdaExpressionParameterBlock) {
+      this.parsed.leftSide = this.parseNextWith(JavaLambdaExpressionParser);
+    } else {
+      this.next();
 
-    this.assertCurrentTokenMatch(')');
-    this.next();
+      const statement = this.parseNextWith(JavaStatementParser);
 
-    statement.isParenthetical = true;
+      this.eat(')');
 
-    this.parsed.leftSide = statement;
+      statement.isParenthetical = true;
+
+      this.parsed.leftSide = statement;
+    }
   }
 }

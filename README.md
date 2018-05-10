@@ -20,7 +20,7 @@ Polybabel's emphasis on idiomatic programming means the standard libraries and A
 * Interoperability between languages - 0%
 
 ### Java
-1. Parsing - 85%?
+1. Parsing - 90%?
 * * Package statements ✔
 * * Import statements ✔
 * * Classes ✔
@@ -34,7 +34,7 @@ Polybabel's emphasis on idiomatic programming means the standard libraries and A
 * * - Generic syntax ✔
 * * - Extensible generic types - 0%
 * * - Method generics ✔
-* * Statements - 95%?
+* * Statements ✔
 * * - Variables ✔
 * * - Property chains ✔
 * * - Method calls ✔
@@ -44,17 +44,18 @@ Polybabel's emphasis on idiomatic programming means the standard libraries and A
 * * - If/else blocks ✔
 * * - Loops ✔
 * * - Switches ✔
-* * - Anonymous functions (lambda expressions) - 0%
+* * - Anonymous functions (lambda expressions) ✔
 * * - try/catch/finally ✔
 * * - break/continue/return/throw ✔
 * * Comments - 0%
 * * Annotations - 0%
 2. Translation - 50%?
 * * Imports ✔
-* * Interfaces ✔
 * * Classes ✔
+* * Interfaces ✔
+* * Enums - 0%
 * * Methods ✔
-* * Statements - 95%?
+* * Statements ✔
 
 ### Python
 Pending initial work.

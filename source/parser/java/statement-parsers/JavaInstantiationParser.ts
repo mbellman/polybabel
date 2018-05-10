@@ -11,19 +11,28 @@ import { JavaSyntax } from '../java-syntax';
 import { TokenUtils } from '../../../tokenizer/token-utils';
 
 /**
- * Parses instantiation statements.
+ * Parses instantiation statements, finishing when encountering
+ * a ) token if the next token is not an opening { brace, and
+ * stopping after parsing an anonymous object or array allocation
+ * statement and finishing parsing the block or array literal.
  *
  * @example
  *
  *  new String('Hello')
+ *  new String[5]
+ *  new Number[2]{ 1, 2 }
+ *
+ *  new String() {
+ *    ...
+ *  }
  */
 export default class JavaInstantiationParser extends AbstractParser<JavaSyntax.IJavaInstantiation> {
   /**
    * Determines whether the instance being created is that of an
-   * object, such as a class or interface, or something else such
-   * as an array literal. Set to true upon encountering a ( token.
-   * This cannot be derived merely based on the number of arguments,
-   * since objects may be instantiated without any.
+   * object, such as a class or interface, as opposed to an array
+   * literal. Set to true upon encountering a ( token. This cannot
+   * be derived merely based on the number of arguments, since
+   * objects may be instantiated without any.
    */
   private isObjectInstantiation: boolean;
 
@@ -77,7 +86,7 @@ export default class JavaInstantiationParser extends AbstractParser<JavaSyntax.I
   }
 
   @Allow(')')
-  protected onEnd (): void {
+  protected onEndArguments (): void {
     const isAnonymousObject = this.nextTextToken.value === '{';
 
     if (!isAnonymousObject) {

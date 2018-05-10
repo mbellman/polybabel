@@ -39,26 +39,7 @@ export default class JavaTypeParser extends AbstractParser<JavaSyntax.IJavaType>
     );
 
     if (isNamespacedType) {
-      // Note: this is one of two places where namespaced types
-      // can be parsed. When parsing statements, a namespaced
-      // type will appear to, and be, parsed as a property chain
-      // before an actual type is found at the end of the chain.
-      //
-      // See: statement-parsers/JavaPropertyChainParser
-      while (!this.isEOF()) {
-        if (this.currentTokenMatches(TokenUtils.isWord)) {
-          this.parsed.namespaceChain.push(this.currentToken.value);
-
-          if (!ParserUtils.tokenMatches(this.nextToken, '.')) {
-            // End of namespace chain
-            break;
-          }
-        } else if (this.currentTokenMatches('.')) {
-          this.assert(TokenUtils.isWord(this.nextToken));
-        }
-
-        this.next();
-      }
+      this.parseNamespacedType();
     } else {
       this.parsed.namespaceChain.push(this.currentToken.value);
     }
@@ -136,5 +117,30 @@ export default class JavaTypeParser extends AbstractParser<JavaSyntax.IJavaType>
   @Match(/./)
   private onEnd (): void {
     this.stop();
+  }
+
+  /**
+   * Note: this is one of two places where namespaced types
+   * can be parsed. When parsing statements, a namespaced
+   * type will appear to, and be, parsed as a property chain
+   * before an actual type is found at the end of the chain.
+   *
+   * See: statement-parsers/JavaPropertyChainParser
+   */
+  private parseNamespacedType (): void {
+    while (!this.isEOF()) {
+      if (this.currentTokenMatches(TokenUtils.isWord)) {
+        this.parsed.namespaceChain.push(this.currentToken.value);
+
+        if (!ParserUtils.tokenMatches(this.nextToken, '.')) {
+          // End of namespace chain
+          break;
+        }
+      } else if (this.currentTokenMatches('.')) {
+        this.assert(TokenUtils.isWord(this.nextToken));
+      }
+
+      this.next();
+    }
   }
 }

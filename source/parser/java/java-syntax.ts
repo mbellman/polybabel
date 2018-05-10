@@ -27,7 +27,8 @@ export namespace JavaSyntax {
     WHILE_LOOP = 'WHILE LOOP',
     SWITCH = 'SWITCH',
     TRY_CATCH = 'TRY_CATCH',
-    INSTRUCTION = 'INSTRUCTION'
+    INSTRUCTION = 'INSTRUCTION',
+    LAMBDA_EXPRESSION = 'LAMBDA_EXPRESSION'
   }
 
   export const enum JavaAccessModifier {
@@ -334,7 +335,8 @@ export namespace JavaSyntax {
   }
 
   /**
-   * A Java try/catch/(finally?) statement.
+   * A Java try/catch statement, potentially with a 'finally'
+   * block.
    */
   export interface IJavaTryCatch extends IJavaSyntaxNode {
     node: JavaSyntaxNode.TRY_CATCH;
@@ -352,6 +354,15 @@ export namespace JavaSyntax {
   export interface IJavaInstruction extends IJavaSyntaxNode, IValued<IJavaStatement> {
     node: JavaSyntaxNode.INSTRUCTION;
     type: JavaInstructionType;
+  }
+
+  /**
+   * A Java lambda expression.
+   */
+  export interface IJavaLambdaExpression extends IJavaSyntaxNode, IWithParameters<IJavaVariableDeclaration | IJavaReference> {
+    node: JavaSyntaxNode.LAMBDA_EXPRESSION;
+    statement?: IJavaStatement;
+    block?: IJavaBlock;
   }
 
   /**
