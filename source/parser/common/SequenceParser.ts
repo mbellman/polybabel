@@ -17,6 +17,10 @@ interface ISequenceParserConfiguration<V extends ISyntaxNode> {
   terminator: TokenMatch;
 }
 
+/**
+ * Parses a sequence of values using a provided parser
+ * subclass, and a specified delimiter/terminator.
+ */
 export default class SequenceParser<V extends ISyntaxNode> extends AbstractParser<SyntaxNodeSequence<V>> {
   private configuration: ISequenceParserConfiguration<V>;
 

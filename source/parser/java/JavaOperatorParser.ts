@@ -65,64 +65,64 @@ export default class JavaOperatorParser extends AbstractParser<JavaSyntax.IJavaO
   private static readonly OperatorMatcherMap: IHashMap<OperatorMatcher[]> = {
     [EQUAL]: [
       [ [ EQUAL ], JavaSyntax.JavaOperator.EQUAL_TO ],
-      [ [ /./ ], JavaSyntax.JavaOperator.ASSIGN ]
+      [ [ /.*/ ], JavaSyntax.JavaOperator.ASSIGN ]
     ],
     [PLUS]: [
       [ [ PLUS ], JavaSyntax.JavaOperator.INCREMENT ],
       [ [ EQUAL ], JavaSyntax.JavaOperator.ADD_ASSIGN ],
-      [ [ /./ ], JavaSyntax.JavaOperator.ADD ]
+      [ [ /.*/ ], JavaSyntax.JavaOperator.ADD ]
     ],
     [MINUS]: [
       [ [ MINUS ], JavaSyntax.JavaOperator.DECREMENT ],
       [ [ EQUAL ], JavaSyntax.JavaOperator.SUBTRACT_ASSIGN ],
-      [ [ /./ ], JavaSyntax.JavaOperator.SUBTRACT ]
+      [ [ /.*/ ], JavaSyntax.JavaOperator.SUBTRACT ]
     ],
     [STAR]: [
       [ [ EQUAL ], JavaSyntax.JavaOperator.MULTIPLY_ASSIGN ],
-      [ [ /./ ], JavaSyntax.JavaOperator.MULTIPLY ]
+      [ [ /.*/ ], JavaSyntax.JavaOperator.MULTIPLY ]
     ],
     [SLASH]: [
       [ [ EQUAL ], JavaSyntax.JavaOperator.DIVIDE_ASSIGN ],
-      [ [ /./ ], JavaSyntax.JavaOperator.DIVIDE ]
+      [ [ /.*/ ], JavaSyntax.JavaOperator.DIVIDE ]
     ],
     [EXCLAMATION]: [
       [ [ EQUAL ], JavaSyntax.JavaOperator.NOT_EQUAL_TO ],
-      [ [ /./ ], JavaSyntax.JavaOperator.NEGATE ]
+      [ [ /.*/ ], JavaSyntax.JavaOperator.NEGATE ]
     ],
     [QUESTION]: [
       [ [ COLON ], JavaSyntax.JavaOperator.ELVIS ]
     ],
     [PERCENT]: [
       [ [ EQUAL ], JavaSyntax.JavaOperator.REMAINDER_ASSIGN ],
-      [ [ /./ ], JavaSyntax.JavaOperator.REMAINDER ]
+      [ [ /.*/ ], JavaSyntax.JavaOperator.REMAINDER ]
     ],
     [LESS_THAN]: [
       [ [ LESS_THAN ], JavaSyntax.JavaOperator.SIGNED_LEFT_SHIFT ],
       [ [ EQUAL ], JavaSyntax.JavaOperator.LESS_THAN_OR_EQUAL_TO ],
-      [ [ /./ ], JavaSyntax.JavaOperator.LESS_THAN ]
+      [ [ /.*/ ], JavaSyntax.JavaOperator.LESS_THAN ]
     ],
     [GREATER_THAN]: [
       [ [ EQUAL ], JavaSyntax.JavaOperator.GREATER_THAN_OR_EQUAL_TO ],
       [ [ GREATER_THAN, GREATER_THAN ], JavaSyntax.JavaOperator.UNSIGNED_RIGHT_SHIFT ],
       [ [ GREATER_THAN ], JavaSyntax.JavaOperator.SIGNED_RIGHT_SHIFT ],
-      [ [ /./ ], JavaSyntax.JavaOperator.GREATER_THAN ]
+      [ [ /.*/ ], JavaSyntax.JavaOperator.GREATER_THAN ]
     ],
     [PIPE]: [
       [ [ PIPE], JavaSyntax.JavaOperator.CONDITIONAL_OR ],
-      [ [ /./ ], JavaSyntax.JavaOperator.BITWISE_INCLUSIVE_OR ]
+      [ [ /.*/ ], JavaSyntax.JavaOperator.BITWISE_INCLUSIVE_OR ]
     ],
     [AND]: [
       [ [ AND ], JavaSyntax.JavaOperator.CONDITIONAL_AND ],
-      [ [ /./ ], JavaSyntax.JavaOperator.BITWISE_AND ]
+      [ [ /.*/ ], JavaSyntax.JavaOperator.BITWISE_AND ]
     ],
     [CARET]: [
-      [ [ /./ ], JavaSyntax.JavaOperator.BITWISE_EXCLUSIVE_OR ]
+      [ [ /.*/ ], JavaSyntax.JavaOperator.BITWISE_EXCLUSIVE_OR ]
     ],
     [TILDE]: [
-      [ [ /./ ], JavaSyntax.JavaOperator.BITWISE_COMPLEMENT ]
+      [ [ /.*/ ], JavaSyntax.JavaOperator.BITWISE_COMPLEMENT ]
     ],
     [INSTANCEOF]: [
-      [ [ /./ ], JavaSyntax.JavaOperator.INSTANCEOF ]
+      [ [ /.*/ ], JavaSyntax.JavaOperator.INSTANCEOF ]
     ]
   };
 
@@ -174,7 +174,7 @@ export default class JavaOperatorParser extends AbstractParser<JavaSyntax.IJavaO
             // Matched each token to the end of the
             // operator matcher! This is our operator.
             this.currentToken = localToken;
-            this.isDefaultOperator = tokenMatch.toString() === '/./';
+            this.isDefaultOperator = tokenMatch.toString() === '/.*/';
 
             return operator;
           }

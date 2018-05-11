@@ -33,6 +33,7 @@ export default class JavaTryCatchParser extends AbstractParser<JavaSyntax.IJavaT
   @Match(JavaConstants.Keyword.CATCH)
   protected onCatch (): void {
     this.eatNext('(');
+    this.allow(JavaConstants.Keyword.FINAL);
 
     const exceptionSequenceParser = new SequenceParser({
       ValueParser: JavaTypeParser,

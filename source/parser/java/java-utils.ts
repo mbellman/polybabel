@@ -317,19 +317,17 @@ export namespace JavaUtils {
    *  (Type a1, ...) -> ...
    */
   export function isLambdaExpression (token: IToken): boolean {
-    const isWordOrOpenParenthesis = (
-      TokenUtils.isWord(token) ||
-      token.value === '('
-    );
+    const isWord = TokenUtils.isWord;
+    const isOpenParenthesis = token.value === '(';
 
-    if (!isWordOrOpenParenthesis) {
+    if (!isWord && !isOpenParenthesis) {
       // Not possible for this to be the start of a
       // lambda expression
       return false;
     }
 
     const isSingleParameterLambdaExpression = (
-      TokenUtils.isWord(token) &&
+      isWord &&
       token.nextTextToken.value === '-' &&
       token.nextTextToken.nextToken.value === '>'
     );
@@ -339,10 +337,10 @@ export namespace JavaUtils {
       return true;
     }
 
-    if (token.value !== '(') {
+    if (!isOpenParenthesis) {
       // If this isn't a single-parameter lambda expression,
       // and it doesn't otherwise start with (, it can't be
-      // a lambda expression at all
+      // a lambda expression
       return false;
     }
 
@@ -355,5 +353,22 @@ export namespace JavaUtils {
     }
 
     return false;
+  }
+
+  /**
+   * Determines whether a token corresponds to the beginning of
+   * a comment line or block.
+   *
+   * @example
+   *
+   *  // ...
+   *  /* ...
+   */
+  export function isComment ({ value, nextToken }: IToken): boolean {
+    return (
+      value === '/' &&
+      nextToken.value === '/' ||
+      nextToken.value === '*'
+    );
   }
 }

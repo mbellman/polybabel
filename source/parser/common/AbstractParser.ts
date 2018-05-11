@@ -63,6 +63,12 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
     return this.parsed;
   }
 
+  protected allow (tokenMatch: TokenMatch): void {
+    if (this.currentTokenMatches(tokenMatch)) {
+      this.next();
+    }
+  }
+
   protected assert (condition: boolean, errorMessage?: string): void {
     if (!condition) {
       if (errorMessage) {

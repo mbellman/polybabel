@@ -40,21 +40,19 @@ export default class JavaInstructionParser extends AbstractParser<JavaSyntax.IJa
   protected onContinue (): void {
     this.parsed.type = JavaSyntax.JavaInstructionType.CONTINUE;
 
-    this.next();
-    this.safelyFinishInstruction();
+    this.finish();
   }
 
   @Match(JavaConstants.Keyword.BREAK)
   protected onBreak (): void {
     this.parsed.type = JavaSyntax.JavaInstructionType.BREAK;
 
-    this.next();
-    this.safelyFinishInstruction();
+    this.finish();
   }
 
   /**
    * Parses an instruction which potentially includes a statement
-   * value, such as a RETURN or THROW.
+   * value, such as a 'return' or 'throw'.
    */
   private parseValuedInstruction (instructionType: JavaSyntax.JavaInstructionType): void {
     this.next();
@@ -65,11 +63,6 @@ export default class JavaInstructionParser extends AbstractParser<JavaSyntax.IJa
       this.parsed.value = this.parseNextWith(JavaStatementParser);
     }
 
-    this.safelyFinishInstruction();
-  }
-
-  private safelyFinishInstruction (): void {
-    this.assertCurrentTokenMatch(';');
-    this.finish();
+    this.stop();
   }
 }

@@ -28,7 +28,8 @@ export namespace JavaSyntax {
     SWITCH = 'SWITCH',
     TRY_CATCH = 'TRY_CATCH',
     INSTRUCTION = 'INSTRUCTION',
-    LAMBDA_EXPRESSION = 'LAMBDA_EXPRESSION'
+    LAMBDA_EXPRESSION = 'LAMBDA_EXPRESSION',
+    ANNOTATION = 'ANNOTATION'
   }
 
   export const enum JavaAccessModifier {
@@ -89,7 +90,7 @@ export namespace JavaSyntax {
   /**
    * A property in a Java property chain.
    */
-  export type JavaProperty = string | IJavaStatement | IJavaFunctionCall | IJavaType;
+  export type JavaProperty = string | IJavaStatement | IJavaFunctionCall | IJavaInstantiation | IJavaType;
 
   /**
    * A Java object member.
@@ -163,6 +164,7 @@ export namespace JavaSyntax {
   export interface IJavaObject extends IJavaModifiable, INamed, IJavaObjectBody {
     extended?: IJavaType[];
     implemented?: IJavaType[];
+    annotations?: IJavaAnnotation[];
   }
 
   /**
@@ -193,6 +195,7 @@ export namespace JavaSyntax {
    */
   export interface IJavaObjectField extends IJavaSyntaxNode, IJavaModifiable, ITyped<IJavaType>, INamed, IValued<IJavaStatement> {
     node: JavaSyntaxNode.OBJECT_FIELD;
+    annotations?: IJavaAnnotation[];
   }
 
   /**
@@ -203,6 +206,7 @@ export namespace JavaSyntax {
     node: JavaSyntaxNode.OBJECT_METHOD;
     throws: IJavaType[];
     block: IJavaBlock;
+    annotations?: IJavaAnnotation[];
   }
 
   /**
@@ -363,6 +367,13 @@ export namespace JavaSyntax {
     node: JavaSyntaxNode.LAMBDA_EXPRESSION;
     statement?: IJavaStatement;
     block?: IJavaBlock;
+  }
+
+  /**
+   * A Java annotation, signified by a @ character.
+   */
+  export interface IJavaAnnotation extends IJavaSyntaxNode, INamed, IWithArguments<IJavaStatement> {
+    node: JavaSyntaxNode.ANNOTATION;
   }
 
   /**

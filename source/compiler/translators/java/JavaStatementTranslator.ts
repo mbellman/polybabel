@@ -140,6 +140,9 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
           case JavaSyntax.JavaSyntaxNode.FUNCTION_CALL:
             this.emitFunctionCall(property);
             break;
+          case JavaSyntax.JavaSyntaxNode.INSTANTIATION:
+            this.emitNodeWith(JavaInstantiationTranslator, property);
+            break;
           case JavaSyntax.JavaSyntaxNode.STATEMENT:
             this.emitNodeWith(JavaStatementTranslator, property);
             break;
@@ -151,9 +154,17 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
       }
 
       if (nextProperty) {
-        const propertyDelimiter = this.isDotDelimitedProperty(nextProperty)
-          ? '.'
-          : '[';
+        const isFunctionChain = (
+          (nextProperty as JavaSyntax.IJavaSyntaxNode).node === JavaSyntax.JavaSyntaxNode.FUNCTION_CALL &&
+          (nextProperty as JavaSyntax.IJavaFunctionCall).name === null
+        );
+
+        const propertyDelimiter =
+          isFunctionChain
+            ? '' :
+          this.isDotDelimitedProperty(nextProperty)
+            ? '.' :
+          '[';
 
         this.emit(propertyDelimiter);
       }
@@ -165,7 +176,7 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
       this.emit('this.');
     }
 
-    this.emit(`${name}(`)
+    this.emit(`${name ? name : ''}(`)
       .emitNodes(
         args,
         argument => this.emitNodeWith(JavaStatementTranslator, argument),
@@ -342,7 +353,8 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
   private isDotDelimitedProperty (property: JavaSyntax.JavaProperty): boolean {
     return (
       typeof property === 'string' ||
-      property.node === JavaSyntax.JavaSyntaxNode.FUNCTION_CALL
+      property.node === JavaSyntax.JavaSyntaxNode.FUNCTION_CALL ||
+      property.node === JavaSyntax.JavaSyntaxNode.INSTANTIATION
     );
   }
 }

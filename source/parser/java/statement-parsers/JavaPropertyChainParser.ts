@@ -29,6 +29,15 @@ import { TokenUtils } from '../../../tokenizer/token-utils';
  *  method(...).value
  */
 export default class JavaPropertyChainParser extends AbstractParser<JavaSyntax.IJavaPropertyChain> {
+  /**
+   * Determines whether a [ token has been passed and the
+   * current property is within brackets. This flag is
+   * necessary to ensure that property chains parsed within
+   * brackets of a parent property chain don't mistakenly
+   * identify the terminating ] as their own.
+   */
+  private isInBracketProperty: boolean = false;
+
   @Implements protected getDefault (): JavaSyntax.IJavaPropertyChain {
     return {
       node: JavaSyntax.JavaSyntaxNode.PROPERTY_CHAIN,
@@ -38,7 +47,8 @@ export default class JavaPropertyChainParser extends AbstractParser<JavaSyntax.I
 
   @Match(token => (
     TokenUtils.isWord(token) &&
-    !JavaUtils.isType(token)
+    !JavaUtils.isType(token) &&
+    !JavaUtils.isFunctionCall(token)
   ))
   protected onWordProperty (): void {
     this.parsed.properties.push(this.currentToken.value);
@@ -68,11 +78,18 @@ export default class JavaPropertyChainParser extends AbstractParser<JavaSyntax.I
   protected onDelimiter (): void {
     this.assert(TokenUtils.isText(this.nextToken));
     this.next();
+
+    if (this.currentTokenMatches('<')) {
+      // Parse the incoming property as a generic-type method call
+      this.onFunctionCallProperty();
+    }
   }
 
   @Match('[')
   protected onBracketProperty (): void {
     this.next();
+
+    this.isInBracketProperty = true;
 
     const property = this.parseNextWith(JavaStatementParser);
 
@@ -83,14 +100,18 @@ export default class JavaPropertyChainParser extends AbstractParser<JavaSyntax.I
   protected onEndBracketProperty (): void {
     const isLastProperty = !ParserUtils.tokenMatches(this.nextToken, /[.<[]/);
 
-    if (isLastProperty) {
+    if (!this.isInBracketProperty) {
+      // This property chain may be a child inside a parent
+      // property chain's brackets; stop here and let the
+      // parent parser handle the ] token
+      this.stop();
+    } else if (isLastProperty) {
       this.finish();
     } else {
       this.next();
     }
   }
 
-  @Match('<')
   @Match(JavaUtils.isFunctionCall)
   protected onFunctionCallProperty (): void {
     const functionCall = this.parseNextWith(JavaFunctionCallParser);

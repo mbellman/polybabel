@@ -1,5 +1,7 @@
 import AbstractParser from '../common/AbstractParser';
+import JavaAnnotationParser from './JavaAnnotationParser';
 import JavaClassParser from './JavaClassParser';
+import JavaCommentParser from './JavaCommentParser';
 import JavaInterfaceParser from './JavaInterfaceParser';
 import JavaModifiableParser from './JavaModifiableParser';
 import JavaObjectMethodParser from './JavaObjectMethodParser';
@@ -16,6 +18,8 @@ import { JavaUtils } from './java-utils';
  * @todo @description
  */
 export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJavaObjectBody> {
+  private currentAnnotations: JavaSyntax.IJavaAnnotation[] = [];
+
   /**
    * @todo @description
    */
@@ -31,6 +35,20 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
   @Eat('{')
   protected onEnterObjectBody (): void {
     this.next();
+  }
+
+  @Match(JavaUtils.isComment)
+  protected onComment (): void {
+    this.parseNextWith(JavaCommentParser);
+  }
+
+  @Match('@')
+  protected onAnnotation (): void {
+    this.assert(!this.isTypedAndNamed());
+
+    const annotation = this.parseNextWith(JavaAnnotationParser);
+
+    this.currentAnnotations.push(annotation);
   }
 
   @Match([
@@ -83,7 +101,7 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
    */
   @Match('=')
   protected onFieldAssignment (): void {
-    this.assertCurrentMemberIsTypedAndNamed();
+    this.assert(this.isTypedAndNamed());
     this.next();
 
     const node = JavaSyntax.JavaSyntaxNode.OBJECT_FIELD;
@@ -96,7 +114,7 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
 
   @Match(';')
   protected onFieldOrAbstractMethodEnd (): void {
-    this.assertCurrentMemberIsTypedAndNamed();
+    this.assert(this.isTypedAndNamed());
 
     const { value } = this.currentMember as JavaSyntax.IJavaObjectField;
 
@@ -109,7 +127,7 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
 
   @Match('(')
   protected onMethodDefinition (): void {
-    this.assertCurrentMemberIsTypedAndNamed();
+    this.assert(this.isTypedAndNamed());
 
     const { node, parameters, throws, block } = this.parseNextWith(JavaObjectMethodParser);
 
@@ -123,17 +141,24 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
   }
 
   private addCurrentMember (): void {
+    if (this.currentAnnotations.length > 0) {
+      this.currentMember.annotations = this.currentAnnotations;
+      this.currentAnnotations = [];
+    }
+
     this.parsed.members.push(this.currentMember as JavaSyntax.JavaObjectMember);
 
     this.currentMember = null;
   }
 
-  private assertCurrentMemberIsTypedAndNamed (): void {
-    this.assert(this.currentMember !== null);
+  private isTypedAndNamed (): boolean {
+    if (this.currentMember === null) {
+      return false;
+    }
 
     const { type, name } = this.currentMember as ITyped & INamed;
 
-    this.assert(!!type && !!name);
+    return !!type && !!name;
   }
 
   private updateCurrentMember (partialMember: Partial<JavaSyntax.JavaObjectMember>): void {

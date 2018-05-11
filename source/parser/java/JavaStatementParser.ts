@@ -1,5 +1,7 @@
 import AbstractParser from '../common/AbstractParser';
+import JavaAnnotationParser from './JavaAnnotationParser';
 import JavaClassParser from './JavaClassParser';
+import JavaCommentParser from './JavaCommentParser';
 import JavaForLoopParser from './statement-parsers/JavaForLoopParser';
 import JavaFunctionCallParser from './statement-parsers/JavaFunctionCallParser';
 import JavaIfElseParser from './statement-parsers/JavaIfElseParser';
@@ -14,11 +16,11 @@ import JavaSwitchParser from './statement-parsers/JavaSwitchParser';
 import JavaTryCatchParser from './statement-parsers/JavaTryCatchParser';
 import JavaVariableDeclarationParser from './statement-parsers/JavaVariableDeclarationParser';
 import JavaWhileLoopParser from './statement-parsers/JavaWhileLoopParser';
+import { Allow, Match } from '../common/parser-decorators';
 import { Constructor, Implements, Override } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { JavaUtils } from './java-utils';
-import { Match, Allow } from '../common/parser-decorators';
 import { ParserUtils } from '../common/parser-utils';
 import { TokenMatch } from '../common/parser-types';
 import { TokenUtils } from '../../tokenizer/token-utils';
@@ -27,7 +29,7 @@ import { TokenUtils } from '../../tokenizer/token-utils';
  * A 3-tuple which contains a token match, a parser class
  * to be used to parse an incoming statement if the first
  * token of the statement satisfies the match, and a boolean
- * indicating whether the statement is left-side only and
+ * indicating whether the statement is self-terminating and
  * should stop immediately after being parsed.
  *
  * @internal
@@ -62,10 +64,11 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
    */
   private static get StatementMatchers (): StatementMatcher[] {
     return [
-      [ JavaUtils.isInstruction, JavaInstructionParser, true ],
+      [ JavaUtils.isInstruction, JavaInstructionParser, false ],
       [ JavaUtils.isLiteral, JavaLiteralParser, false ],
       [ JavaUtils.isLambdaExpression, JavaLambdaExpressionParser, false ],
       [ JavaUtils.isReference, JavaReferenceParser, false ],
+      [ JavaUtils.isFunctionCall, JavaFunctionCallParser, false ],
       [ JavaConstants.Keyword.NEW, JavaInstantiationParser, false ],
       [ JavaConstants.Keyword.CLASS, JavaClassParser, true ],
       [ JavaUtils.isType, JavaVariableDeclarationParser, false ],
@@ -73,7 +76,9 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
       [ JavaConstants.Keyword.FOR, JavaForLoopParser, true ],
       [ JavaConstants.Keyword.WHILE, JavaWhileLoopParser, true ],
       [ JavaConstants.Keyword.SWITCH, JavaSwitchParser, true ],
-      [ JavaConstants.Keyword.TRY, JavaTryCatchParser, true ]
+      [ JavaConstants.Keyword.TRY, JavaTryCatchParser, true ],
+      [ JavaUtils.isComment, JavaCommentParser, true ],
+      [ '@', JavaAnnotationParser, true ]
     ];
   }
 
@@ -85,17 +90,11 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
   }
 
   @Override protected onFirstToken (): void {
-    if (this.currentTokenMatches('(')) {
-      this.handleOpenParenthesis();
-
-      return;
-    }
-
-    for (const [ tokenMatch, Parser, isLeftSideOnly ] of JavaStatementParser.StatementMatchers) {
+    for (const [ tokenMatch, Parser, isSelfTerminating ] of JavaStatementParser.StatementMatchers) {
       if (this.currentTokenMatches(tokenMatch)) {
         this.parsed.leftSide = this.parseNextWith(Parser);
 
-        if (isLeftSideOnly) {
+        if (isSelfTerminating) {
           this.stop();
         }
 
@@ -104,30 +103,36 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
     }
   }
 
-  /**
-   * Function call statements must be handled with a fallback
-   * for property chaining, since predetermining the statement
-   * to be a property chain would be impossible without expensive
-   * token lookaheads.
-   */
-  @Match(JavaUtils.isFunctionCall)
-  protected onFunctionCall (): void {
+  @Match('(')
+  protected onParentheticalStatement (): void {
     this.assert(this.parsed.leftSide === null);
+    this.next();
 
-    const functionCall = this.parseNextWith(JavaFunctionCallParser);
-    const isPropertyChain = this.currentTokenMatches('.');
+    const statement = this.parseNextWith(JavaStatementParser);
 
-    if (isPropertyChain) {
-      const propertyChain = this.parseNextWith(JavaPropertyChainParser);
+    this.eat(')');
 
-      // Retroactively set the function call statement
-      // as the first of the property chain
-      propertyChain.properties.unshift(functionCall);
+    statement.isParenthetical = true;
 
-      this.parsed.leftSide = propertyChain;
-    } else {
-      this.parsed.leftSide = functionCall;
-    }
+    this.parsed.leftSide = statement;
+  }
+
+  /**
+   * Handles a . token as an 'operator' defining a continuing
+   * property chain on an already-parsed left-side statement.
+   * Only certain statement types allow appending property
+   * chains; see canAppendPropertyChain().
+   */
+  @Match('.')
+  @Match('[')
+  protected onContinuingPropertyChain (): void {
+    this.assert(this.canAppendPropertyChain());
+
+    const propertyChain = this.parseNextWith(JavaPropertyChainParser);
+
+    propertyChain.properties.unshift(this.parsed.leftSide as JavaSyntax.JavaProperty);
+
+    this.parsed.leftSide = propertyChain;
   }
 
   /**
@@ -216,12 +221,7 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
     this.parsed.operator = this.parseNextWith(JavaOperatorParser);
     this.parsed.rightSide = this.parseNextWith(JavaStatementParser);
 
-    this.assert(
-      !!this.parsed.leftSide ||
-      !!this.parsed.rightSide &&
-      !!this.parsed.rightSide.leftSide,
-      'Invalid isolated operator'
-    );
+    this.assert(this.hasParsedSide(), 'Invalid isolated operator');
   }
 
   @Match(';')
@@ -235,25 +235,37 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
   }
 
   /**
-   * Statements starting with an opening parenthesis may
-   * be parsed as lambda expressions or parenthetical
-   * statements, so we handle them here.
+   * Determines whether the current left-side statement can be
+   * appended with a property chain.
    */
-  private handleOpenParenthesis (): void {
-    const isLambdaExpressionParameterBlock = this.currentTokenMatches(JavaUtils.isLambdaExpression);
+  private canAppendPropertyChain (): boolean {
+    const { leftSide } = this.parsed;
 
-    if (isLambdaExpressionParameterBlock) {
-      this.parsed.leftSide = this.parseNextWith(JavaLambdaExpressionParser);
-    } else {
-      this.next();
-
-      const statement = this.parseNextWith(JavaStatementParser);
-
-      this.eat(')');
-
-      statement.isParenthetical = true;
-
-      this.parsed.leftSide = statement;
+    if (!leftSide) {
+      return false;
     }
+
+    const { node } = leftSide;
+    const { anonymousObjectBody, arrayAllocationCount, arrayLiteral } = leftSide as JavaSyntax.IJavaInstantiation;
+
+    const isAtypicalInstantiation = (
+      !!anonymousObjectBody ||
+      !!arrayAllocationCount ||
+      !!arrayLiteral
+    );
+
+    return (
+      node === JavaSyntax.JavaSyntaxNode.FUNCTION_CALL ||
+      node === JavaSyntax.JavaSyntaxNode.INSTANTIATION &&
+      !isAtypicalInstantiation
+    );
+  }
+
+  private hasParsedSide (): boolean {
+    return (
+      !!this.parsed.leftSide ||
+      !!this.parsed.rightSide &&
+      !!this.parsed.rightSide.leftSide
+    );
   }
 }

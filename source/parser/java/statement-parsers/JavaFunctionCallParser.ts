@@ -65,7 +65,7 @@ export default class JavaFunctionCallParser extends AbstractParser<JavaSyntax.IJ
     this.next();
   }
 
-  @Eat(TokenUtils.isWord)
+  @Allow(TokenUtils.isWord)
   protected onFunctionName (): void {
     this.parsed.name = this.currentToken.value;
   }
