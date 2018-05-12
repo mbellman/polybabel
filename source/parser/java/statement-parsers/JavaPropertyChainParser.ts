@@ -45,43 +45,30 @@ export default class JavaPropertyChainParser extends AbstractParser<JavaSyntax.I
     };
   }
 
-  @Match(token => (
-    TokenUtils.isWord(token) &&
-    !JavaUtils.isType(token) &&
-    !JavaUtils.isFunctionCall(token)
-  ))
-  protected onWordProperty (): void {
-    this.parsed.properties.push(this.currentToken.value);
-  }
-
-  /**
-   * Types can exist on a property chain if the properties
-   * correspond to nested namespaces, though the previous
-   * properties must all be strings, and the act of adding
-   * the type property immediately stops the parser and
-   * terminates the chain.
-   */
-  @Match(JavaUtils.isType)
-  protected onTypeProperty (): void {
-    const nonStringProperties = this.parsed.properties
-      .filter(property => typeof property !== 'string');
-
-    this.assert(nonStringProperties.length === 0);
-
-    const type = this.parseNextWith(JavaTypeParser);
-
-    this.parsed.properties.push(type);
-    this.stop();
+  @Match(TokenUtils.isWord)
+  protected onWord (): void {
+    if (this.currentTokenMatches(JavaUtils.isFunctionCall)) {
+      this.parseFunctionCallProperty();
+    } else if (this.currentTokenMatches(JavaUtils.isType)) {
+      this.parseTypeProperty();
+    } else {
+      this.parseWordProperty();
+    }
   }
 
   @Match('.')
   protected onDelimiter (): void {
-    this.assert(TokenUtils.isText(this.nextToken));
+    this.assert(
+      TokenUtils.isText(this.nextToken) &&
+      /[^.[]/.test(this.nextToken.value)
+    );
+
     this.next();
 
     if (this.currentTokenMatches('<')) {
-      // Parse the incoming property as a generic-type method call
-      this.onFunctionCallProperty();
+      // Parse the incoming property as a
+      // generic-type method call
+      this.parseFunctionCallProperty();
     }
   }
 
@@ -112,15 +99,37 @@ export default class JavaPropertyChainParser extends AbstractParser<JavaSyntax.I
     }
   }
 
-  @Match(JavaUtils.isFunctionCall)
-  protected onFunctionCallProperty (): void {
+  @Match(/./)
+  protected onEnd (): void {
+    this.stop();
+  }
+
+  private parseFunctionCallProperty (): void {
     const functionCall = this.parseNextWith(JavaFunctionCallParser);
 
     this.parsed.properties.push(functionCall);
   }
 
-  @Match(/./)
-  protected onEnd (): void {
+  /**
+   * Types can exist on a property chain if the properties
+   * correspond to nested namespaces, though the previous
+   * properties must all be strings, and the act of adding
+   * the type property immediately stops the parser and
+   * terminates the chain.
+   */
+  private parseTypeProperty (): void {
+    const nonStringProperties = this.parsed.properties
+      .filter(property => typeof property !== 'string');
+
+    this.assert(nonStringProperties.length === 0);
+
+    const type = this.parseNextWith(JavaTypeParser);
+
+    this.parsed.properties.push(type);
     this.stop();
+  }
+
+  private parseWordProperty (): void {
+    this.parsed.properties.push(this.currentToken.value);
   }
 }

@@ -31,8 +31,24 @@ export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJava
 
   @Eat(TokenUtils.isWord)
   protected onInterfaceName (): void {
-    // TODO: Parse as a type
     this.parsed.name = this.currentToken.value;
+  }
+
+  @Allow('<')
+  protected onGenericTypes (): void {
+    this.next();
+
+    const genericTypesParser = new SequenceParser({
+      ValueParser: JavaTypeParser,
+      delimiter: ',',
+      terminator: '>'
+    });
+
+    const { values } = this.parseNextWith(genericTypesParser);
+
+    this.parsed.genericTypes = values;
+
+    this.next();
   }
 
   @Allow(JavaConstants.Keyword.EXTENDS)

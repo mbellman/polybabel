@@ -6,7 +6,9 @@ import JavaInterfaceParser from './JavaInterfaceParser';
 import JavaModifiableParser from './JavaModifiableParser';
 import JavaObjectMethodParser from './JavaObjectMethodParser';
 import JavaStatementParser from './JavaStatementParser';
+import JavaTypeParser from './JavaTypeParser';
 import JavaVariableDeclarationParser from './statement-parsers/JavaVariableDeclarationParser';
+import SequenceParser from '../common/SequenceParser';
 import { Eat, Match } from '../common/parser-decorators';
 import { Implements } from 'trampoline-framework';
 import { INamed, ITyped } from '../common/syntax-types';
@@ -85,6 +87,22 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
 
   }
 
+  @Match('<')
+  protected onGenericTypes (): void {
+    this.next();
+
+    const genericTypesParser = new SequenceParser({
+      ValueParser: JavaTypeParser,
+      delimiter: ',',
+      terminator: '>'
+    });
+
+    const { values } = this.parseNextWith(genericTypesParser);
+
+    this.updateCurrentMember({ genericTypes: values });
+    this.next();
+  }
+
   @Match(JavaUtils.isType)
   protected onNonObjectMember (): void {
     const { type, name } = this.parseNextWith(JavaVariableDeclarationParser);
@@ -101,7 +119,13 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
    */
   @Match('=')
   protected onFieldAssignment (): void {
-    this.assert(this.isTypedAndNamed());
+    const hasGenericTypes = !!(this.currentMember as JavaSyntax.IJavaObjectMethod).genericTypes;
+
+    this.assert(
+      this.isTypedAndNamed() &&
+      !hasGenericTypes
+    );
+
     this.next();
 
     const node = JavaSyntax.JavaSyntaxNode.OBJECT_FIELD;

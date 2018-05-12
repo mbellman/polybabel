@@ -43,8 +43,14 @@ export default class JavaLiteralParser extends AbstractParser<JavaSyntax.IJavaLi
 
   @Match(TokenUtils.isNumber)
   protected onNumberLiteral (): void {
+    const isNonInteger = /^[fdlFDL]$/.test(this.nextToken.value);
+
     this.parsed.type = JavaSyntax.JavaLiteralType.NUMBER;
     this.parsed.value = this.currentToken.value;
+
+    if (isNonInteger) {
+      this.next();
+    }
 
     this.finish();
   }

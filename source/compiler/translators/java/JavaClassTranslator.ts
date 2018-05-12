@@ -239,7 +239,10 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
               .emit('function ')
               .emitNodeWith(JavaObjectMethodTranslator, method);
           },
-          () => this.newline()
+          () => {
+            this.emit(';')
+              .newline();
+          }
         )
         .newlineIf(hasClasses)
         .emitObjectsWith(JavaClassTranslator, classes, false)

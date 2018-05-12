@@ -172,6 +172,7 @@ export namespace JavaSyntax {
    */
   export interface IJavaClass extends IJavaSyntaxNode, IJavaObject {
     node: JavaSyntaxNode.CLASS;
+    genericTypes?: IJavaType[];
   }
 
   /**
@@ -179,6 +180,7 @@ export namespace JavaSyntax {
    */
   export interface IJavaInterface extends IJavaSyntaxNode, IJavaObject {
     node: JavaSyntaxNode.INTERFACE;
+    genericTypes?: IJavaType[];
   }
 
   /**
@@ -204,9 +206,10 @@ export namespace JavaSyntax {
    */
   export interface IJavaObjectMethod extends IJavaSyntaxNode, IJavaModifiable, ITyped<IJavaType>, INamed, IWithParameters<IJavaVariableDeclaration> {
     node: JavaSyntaxNode.OBJECT_METHOD;
+    annotations?: IJavaAnnotation[];
+    genericTypes?: IJavaType[];
     throws: IJavaType[];
     block: IJavaBlock;
-    annotations?: IJavaAnnotation[];
   }
 
   /**

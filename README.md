@@ -20,15 +20,15 @@ Polybabel's emphasis on idiomatic programming means the standard libraries and A
 * Interoperability between languages - 0%
 
 ### Java
-1. Parsing - 95%?
+1. Parsing - 97%?
 * * Package statements ✔
 * * Import statements ✔
-* * Classes ✔
+* * Classes - 99%
+* * - Constructors
 * * Interfaces ✔
 * * Enums - 0%
 * * Fields ✔
-* * Methods - 95%
-* * - Generic method definitions - 0%
+* * Methods ✔
 * * Varargs ✔
 * * Generics - 70%?
 * * - Generic syntax ✔
