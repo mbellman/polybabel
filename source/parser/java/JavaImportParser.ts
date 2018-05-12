@@ -1,6 +1,5 @@
 import AbstractParser from '../common/AbstractParser';
 import JavaReferenceParser from './statement-parsers/JavaReferenceParser';
-import SequenceParser from '../common/SequenceParser';
 import { Allow, Eat, Match, SingleLineParser } from '../common/parser-decorators';
 import { Implements } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
@@ -76,15 +75,13 @@ export default class JavaImportParser extends AbstractParser<JavaSyntax.IJavaImp
 
     this.next();
 
-    const nonDefaultImportsParser = new SequenceParser({
+    const nonDefaultImportReferences = this.parseSequence({
       ValueParser: JavaReferenceParser,
       delimiter: ',',
       terminator: '}'
     });
 
-    const { values } = this.parseNextWith(nonDefaultImportsParser);
-
-    this.parsed.nonDefaultImports = values.map(({ value }) => value);
+    this.parsed.nonDefaultImports = nonDefaultImportReferences.map(({ value }) => value);
   }
 
   @Match('}')

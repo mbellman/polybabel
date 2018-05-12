@@ -60,6 +60,12 @@ import { Language } from '../source/system/constants';
   @Bound private compile (): void {
     const editorContent = this.editor.getValue();
 
+    if (editorContent.length === 0) {
+      this.showOutput('Editor is empty');
+
+      return;
+    }
+
     this.saveEditorContent(editorContent);
 
     try {

@@ -1,13 +1,12 @@
 import AbstractParser from '../../common/AbstractParser';
 import JavaBlockParser from '../JavaBlockParser';
+import JavaReferenceParser from './JavaReferenceParser';
 import JavaTypeParser from '../JavaTypeParser';
-import SequenceParser from '../../common/SequenceParser';
 import { Allow, Eat, Match } from '../../common/parser-decorators';
 import { Implements } from 'trampoline-framework';
 import { JavaConstants } from '../java-constants';
 import { JavaSyntax } from '../java-syntax';
 import { TokenUtils } from '../../../tokenizer/token-utils';
-import JavaReferenceParser from './JavaReferenceParser';
 
 export default class JavaTryCatchParser extends AbstractParser<JavaSyntax.IJavaTryCatch> {
   @Implements protected getDefault (): JavaSyntax.IJavaTryCatch {
@@ -35,13 +34,12 @@ export default class JavaTryCatchParser extends AbstractParser<JavaSyntax.IJavaT
     this.eatNext('(');
     this.allow(JavaConstants.Keyword.FINAL);
 
-    const exceptionSequenceParser = new SequenceParser({
+    const exceptionTypes = this.parseSequence({
       ValueParser: JavaTypeParser,
       delimiter: '|',
       terminator: token => token.nextTextToken.value === ')'
     });
 
-    const { values: exceptionTypes } = this.parseNextWith(exceptionSequenceParser);
     const exceptionReference = this.parseNextWith(JavaReferenceParser);
 
     this.parsed.exceptionSets.push(exceptionTypes);

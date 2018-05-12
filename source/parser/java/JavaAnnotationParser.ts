@@ -1,6 +1,5 @@
 import AbstractParser from '../common/AbstractParser';
 import JavaStatementParser from './JavaStatementParser';
-import SequenceParser from '../common/SequenceParser';
 import { Allow, Eat } from '../common/parser-decorators';
 import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from './java-syntax';
@@ -29,15 +28,11 @@ export default class JavaAnnotationParser extends AbstractParser<JavaSyntax.IJav
   protected onStartAnnotationArguments (): void {
     this.next();
 
-    const annotationArgumentsParser = new SequenceParser({
+    this.parsed.arguments = this.parseSequence({
       ValueParser: JavaStatementParser,
       delimiter: ',',
       terminator: ')'
     });
-
-    const { values } = this.parseNextWith(annotationArgumentsParser);
-
-    this.parsed.arguments = values;
 
     this.finish();
   }

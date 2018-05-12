@@ -8,13 +8,13 @@ import JavaObjectMethodParser from './JavaObjectMethodParser';
 import JavaStatementParser from './JavaStatementParser';
 import JavaTypeParser from './JavaTypeParser';
 import JavaVariableDeclarationParser from './statement-parsers/JavaVariableDeclarationParser';
-import SequenceParser from '../common/SequenceParser';
 import { Eat, Match } from '../common/parser-decorators';
 import { Implements } from 'trampoline-framework';
 import { INamed, ITyped } from '../common/syntax-types';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { JavaUtils } from './java-utils';
+import { TokenUtils } from '../../tokenizer/token-utils';
 
 /**
  * @todo @description
@@ -30,13 +30,9 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
   @Implements protected getDefault (): JavaSyntax.IJavaObjectBody {
     return {
       node: null,
+      constructors: [],
       members: []
     };
-  }
-
-  @Eat('{')
-  protected onEnterObjectBody (): void {
-    this.next();
   }
 
   @Match(JavaUtils.isComment)
@@ -46,7 +42,7 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
 
   @Match('@')
   protected onAnnotation (): void {
-    this.assert(!this.isTypedAndNamed());
+    this.assert(!this.currentMemberIsTypedAndNamed());
 
     const annotation = this.parseNextWith(JavaAnnotationParser);
 
@@ -61,6 +57,109 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
     const modifiable = this.parseNextWith(JavaModifiableParser);
 
     this.updateCurrentMember(modifiable);
+  }
+
+  @Match(JavaUtils.isConstructor)
+  protected onConstructor (): void {
+    let access: JavaSyntax.JavaAccessModifier;
+
+    if (this.currentMember !== null) {
+      const { genericTypes } = this.currentMember as JavaSyntax.IJavaObjectMethod;
+      const { isFinal, isStatic, isAbstract } = this.currentMember;
+
+      this.assert(
+        !genericTypes,
+        'Constructors cannot be generic'
+      );
+
+      this.assert(
+        !isFinal && !isStatic && !isAbstract,
+        'Constructors cannot be final, static, or abstract'
+      );
+
+      access = this.currentMember.access;
+    }
+
+    const name = this.eat(TokenUtils.isWord);
+    const method = this.parseNextWith(JavaObjectMethodParser);
+
+    this.parsed.constructors.push({
+      ...method,
+      access,
+      name
+    });
+  }
+
+  @Match('<')
+  protected onGenericTypes (): void {
+    this.assert(!this.currentMemberIsTypedAndNamed());
+    this.next();
+
+    const genericTypes = this.parseSequence({
+      ValueParser: JavaTypeParser,
+      delimiter: ',',
+      terminator: '>'
+    });
+
+    this.updateCurrentMember({ genericTypes });
+    this.next();
+  }
+
+  @Match(JavaUtils.isPropertyChain)
+  @Match(JavaUtils.isType)
+  protected onNonObjectMember (): void {
+    const { type, name } = this.parseNextWith(JavaVariableDeclarationParser);
+
+    this.updateCurrentMember({ type, name });
+    this.assertCurrentTokenMatch(/[=(;]/);
+  }
+
+  /**
+   * Fields lack their own parser class since by the time
+   * we can determine that we're parsing a field, indicated
+   * by an assignment operator, all we have left to parse
+   * is its right-side statement value.
+   */
+  @Match('=')
+  protected onFieldAssignment (): void {
+    const hasGenericTypes = !!(this.currentMember as JavaSyntax.IJavaObjectMethod).genericTypes;
+
+    this.assert(
+      this.currentMemberIsTypedAndNamed() &&
+      !hasGenericTypes
+    );
+
+    this.next();
+
+    const node = JavaSyntax.JavaSyntaxNode.OBJECT_FIELD;
+    const value = this.parseNextWith(JavaStatementParser);
+
+    this.updateCurrentMember({ node, value });
+    this.addCurrentMember();
+    this.next();
+  }
+
+  @Match(';')
+  protected onFieldOrAbstractMethodEnd (): void {
+    this.assert(this.currentMemberIsTypedAndNamed());
+
+    const { value } = this.currentMember as JavaSyntax.IJavaObjectField;
+
+    if (!value) {
+      this.addCurrentMember();
+    }
+
+    this.next();
+  }
+
+  @Match('(')
+  protected onMethodDefinition (): void {
+    this.assert(this.currentMemberIsTypedAndNamed());
+
+    const { node, parameters, throws, block } = this.parseNextWith(JavaObjectMethodParser);
+
+    this.updateCurrentMember({ node, parameters, throws, block });
+    this.addCurrentMember();
   }
 
   @Match(JavaConstants.Keyword.CLASS)
@@ -87,78 +186,6 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
 
   }
 
-  @Match('<')
-  protected onGenericTypes (): void {
-    this.next();
-
-    const genericTypesParser = new SequenceParser({
-      ValueParser: JavaTypeParser,
-      delimiter: ',',
-      terminator: '>'
-    });
-
-    const { values } = this.parseNextWith(genericTypesParser);
-
-    this.updateCurrentMember({ genericTypes: values });
-    this.next();
-  }
-
-  @Match(JavaUtils.isType)
-  protected onNonObjectMember (): void {
-    const { type, name } = this.parseNextWith(JavaVariableDeclarationParser);
-
-    this.updateCurrentMember({ type, name });
-    this.assertCurrentTokenMatch(/[=(;]/);
-  }
-
-  /**
-   * Fields lack their own parser class since by the time
-   * we can determine that we're parsing a field, indicated
-   * by an assignment operator, all we have left to parse
-   * is its right-side statement value.
-   */
-  @Match('=')
-  protected onFieldAssignment (): void {
-    const hasGenericTypes = !!(this.currentMember as JavaSyntax.IJavaObjectMethod).genericTypes;
-
-    this.assert(
-      this.isTypedAndNamed() &&
-      !hasGenericTypes
-    );
-
-    this.next();
-
-    const node = JavaSyntax.JavaSyntaxNode.OBJECT_FIELD;
-    const value = this.parseNextWith(JavaStatementParser);
-
-    this.updateCurrentMember({ node, value });
-    this.addCurrentMember();
-    this.next();
-  }
-
-  @Match(';')
-  protected onFieldOrAbstractMethodEnd (): void {
-    this.assert(this.isTypedAndNamed());
-
-    const { value } = this.currentMember as JavaSyntax.IJavaObjectField;
-
-    if (!value) {
-      this.addCurrentMember();
-    }
-
-    this.next();
-  }
-
-  @Match('(')
-  protected onMethodDefinition (): void {
-    this.assert(this.isTypedAndNamed());
-
-    const { node, parameters, throws, block } = this.parseNextWith(JavaObjectMethodParser);
-
-    this.updateCurrentMember({ node, parameters, throws, block });
-    this.addCurrentMember();
-  }
-
   @Match('}')
   protected onExit (): void {
     this.finish();
@@ -175,7 +202,7 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
     this.currentMember = null;
   }
 
-  private isTypedAndNamed (): boolean {
+  private currentMemberIsTypedAndNamed (): boolean {
     if (this.currentMember === null) {
       return false;
     }

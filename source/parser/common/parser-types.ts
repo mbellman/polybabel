@@ -1,4 +1,7 @@
+import AbstractParser from './AbstractParser';
 import { Callback } from '../../system/types';
+import { Constructor } from 'trampoline-framework';
+import { ISyntaxNode } from './syntax-types';
 import { IToken } from '../../tokenizer/types';
 
 /**
@@ -59,4 +62,13 @@ export type TokenMatcher = [ TokenMatch, string ];
 export interface IDecoratedTokenMatcher {
   tokenMatcher: TokenMatcher;
   type: TokenMatcherType;
+}
+
+/**
+ * @todo @description
+ */
+export interface IParseSequenceConfiguration<V extends ISyntaxNode> {
+  ValueParser: Constructor<AbstractParser<V>>;
+  delimiter: TokenMatch;
+  terminator: TokenMatch;
 }

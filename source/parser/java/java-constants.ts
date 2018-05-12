@@ -9,6 +9,7 @@ export namespace JavaConstants {
     CLASS = 'class',
     INTERFACE = 'interface',
     ENUM = 'enum',
+    SUPER = 'super',
     EXTENDS = 'extends',
     IMPLEMENTS = 'implements',
     THROWS = 'throws',
@@ -18,6 +19,9 @@ export namespace JavaConstants {
     STATIC = 'static',
     FINAL = 'final',
     ABSTRACT = 'abstract',
+    TRANSIENT = 'transient',
+    NATIVE = 'native',
+    SYNCHRONIZED = 'synchronized',
     NEW = 'new',
     TRUE = 'true',
     FALSE = 'false',
@@ -96,7 +100,10 @@ export namespace JavaConstants {
   export const Modifiers: string[] = [
     Keyword.STATIC,
     Keyword.FINAL,
-    Keyword.ABSTRACT
+    Keyword.ABSTRACT,
+    Keyword.TRANSIENT,
+    Keyword.NATIVE,
+    Keyword.SYNCHRONIZED
   ];
 
   export const AccessModifierMap: IHashMap<JavaSyntax.JavaAccessModifier> = {

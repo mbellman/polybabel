@@ -1,10 +1,10 @@
 import chalk from 'chalk';
 import { BaseOf, Callback, Without } from '../../system/types';
 import { Bound, Constructor, IConstructable } from 'trampoline-framework';
+import { IDecoratedTokenMatcher, IParseSequenceConfiguration, TokenMatch, TokenMatcher, TokenMatcherType } from './parser-types';
 import { ISyntaxNode } from './syntax-types';
 import { IToken, TokenType } from '../../tokenizer/types';
 import { ParserUtils } from './parser-utils';
-import { TokenMatch, TokenMatcher, IDecoratedTokenMatcher, TokenMatcherType } from './parser-types';
 import { TokenUtils } from '../../tokenizer/token-utils';
 
 export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode> {
@@ -165,22 +165,6 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
   }
 
   /**
-   * Determines whether a token match is contained within the
-   * current parsing line starting from the current token.
-   */
-  @Bound protected lineContains (tokenMatch: TokenMatch): boolean {
-    if (this.currentTokenMatches(tokenMatch)) {
-      return true;
-    }
-
-    const targetToken = this.findMatchingToken(TokenUtils.getNextToken, token => {
-      return ParserUtils.tokenMatches(token, tokenMatch) || TokenUtils.isNewline(token);
-    });
-
-    return !TokenUtils.isNewline(targetToken);
-  }
-
-  /**
    * Skips to the next token of type WORD, NUMBER, or SYMBOL in the
    * token stream, stopping at the final EOF token in the stream.
    * Also tracks indentation level.
@@ -237,6 +221,32 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
   }
 
   /**
+   * Parses a sequence of one or multiple repeated syntactic forms into
+   * an array of syntax nodes using a provided configuration object.
+   */
+  protected parseSequence <T extends ISyntaxNode>(configuration: IParseSequenceConfiguration<T>): T[] {
+    const { terminator, ValueParser, delimiter } = configuration;
+    const values: T[] = [];
+
+    if (!this.currentTokenMatches(terminator)) {
+      while (!this.isEOF()) {
+        const nextValue = this.parseNextWith(ValueParser);
+
+        values.push(nextValue);
+
+        if (this.currentTokenMatches(terminator)) {
+          break;
+        }
+
+        this.assertCurrentTokenMatch(delimiter);
+        this.next();
+      }
+    }
+
+    return values;
+  }
+
+  /**
    * Stops the parser without any errors, but with the intent of letting
    * the parent parser continue from the current token.
    *
@@ -278,26 +288,6 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
 
   private createParser <A extends AbstractParser>(ParserClass: Constructor<A>): A {
     return new (ParserClass as IConstructable<A>)();
-  }
-
-  /**
-   * Performs a token search, starting from the current token, using a step
-   * function to define how to change the lookup position on each search
-   * step, and a predicate function to determine when a target token has
-   * been found. If a token satisfying the predicate function is matched,
-   * that token is returned.
-   *
-   * The current token will not be counted as a match even if it happens
-   * to satisfy the predicate function.
-   */
-  private findMatchingToken (stepFunction: Callback<IToken, IToken>, tokenPredicate: Callback<IToken, boolean>): IToken {
-    let token = stepFunction(this.currentToken);
-
-    while (token && !TokenUtils.isEOF(token) && !tokenPredicate(token)) {
-      token = stepFunction(token);
-    }
-
-    return token;
   }
 
   /**

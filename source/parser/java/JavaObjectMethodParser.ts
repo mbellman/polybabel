@@ -2,11 +2,10 @@ import AbstractParser from '../common/AbstractParser';
 import JavaBlockParser from './JavaBlockParser';
 import JavaTypeParser from './JavaTypeParser';
 import JavaVariableDeclarationParser from './statement-parsers/JavaVariableDeclarationParser';
-import SequenceParser from '../common/SequenceParser';
+import { Allow, Eat, Match } from '../common/parser-decorators';
 import { Implements, Override } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
-import { Match, Eat, Allow } from '../common/parser-decorators';
 import { TokenUtils } from '../../tokenizer/token-utils';
 
 export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJavaObjectMethod> {
@@ -27,15 +26,11 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
     this.assert(TokenUtils.isWord(this.previousTextToken));
     this.next();
 
-    const parametersParser = new SequenceParser({
+    this.parsed.parameters = this.parseSequence({
       ValueParser: JavaVariableDeclarationParser,
       delimiter: ',',
       terminator: ')'
     });
-
-    const { values } = this.parseNextWith(parametersParser);
-
-    this.parsed.parameters = values;
   }
 
   @Eat(')')
@@ -47,15 +42,11 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
   protected onThrows (): void {
     this.next();
 
-    const throwsParser = new SequenceParser({
+    this.parsed.throws = this.parseSequence({
       ValueParser: JavaTypeParser,
       delimiter: ',',
       terminator: /[;{]/
     });
-
-    const { values } = this.parseNextWith(throwsParser);
-
-    this.parsed.throws = values;
   }
 
   @Allow('{')

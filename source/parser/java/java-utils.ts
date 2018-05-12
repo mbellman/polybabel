@@ -111,6 +111,21 @@ export namespace JavaUtils {
   }
 
   /**
+   * Determines whether a token corresponds to a constructor
+   * definition inside an object body.
+   *
+   * @example
+   *
+   *  SomeClass(
+   */
+  export function isConstructor (token: IToken): boolean {
+    return (
+      TokenUtils.isWord(token) &&
+      token.nextTextToken.value === '('
+    );
+  }
+
+  /**
    * Determines whether a token corresponds to an isolated
    * value reference. Uses a potentially large number of
    * lookaheads to distinguish references on the left side
@@ -138,6 +153,7 @@ export namespace JavaUtils {
     // Flanked tokens are those which have tokens on both
     // sides isolating them as singular syntactic units
     const isFlanked = (
+      TokenUtils.isStartOfLine(token) ||
       !TokenUtils.isWord(token.previousTextToken) ||
       ParserUtils.tokenMatches(token.previousTextToken, [
         INSTANCEOF,
@@ -203,7 +219,7 @@ export namespace JavaUtils {
     return (
       // object. OR object[
       TokenUtils.isWord(token) &&
-      ParserUtils.tokenMatches(token.nextToken, /[.[]/) &&
+      ParserUtils.tokenMatches(token.nextTextToken, /[.[]/) &&
       // Avoid confusion with token patterns of the form
       // Object[], which signify array types
       !ParserUtils.tokenMatches(token.nextToken.nextToken, ']')
@@ -365,8 +381,13 @@ export namespace JavaUtils {
    *  /* ...
    */
   export function isComment ({ value, nextToken }: IToken): boolean {
+    const isSlash = value === '/';
+
+    if (!isSlash) {
+      return false;
+    }
+
     return (
-      value === '/' &&
       nextToken.value === '/' ||
       nextToken.value === '*'
     );

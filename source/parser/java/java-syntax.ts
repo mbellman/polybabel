@@ -87,6 +87,11 @@ export namespace JavaSyntax {
     THROW = 'THROW'
   }
 
+  export enum JavaWildcardBound {
+    UPPER,
+    LOWER
+  }
+
   /**
    * A property in a Java property chain.
    */
@@ -146,6 +151,11 @@ export namespace JavaSyntax {
     namespaceChain: string[];
     genericTypes: IJavaType[];
     arrayDimensions: number;
+    isWildcard?: boolean;
+    wildcardBound?: JavaWildcardBound;
+    wildcardBoundType?: IJavaType;
+    parameterBoundName?: string;
+    parameterBoundTypes?: IJavaType[];
   }
 
   /**
@@ -153,6 +163,7 @@ export namespace JavaSyntax {
    * an array of its members.
    */
   export interface IJavaObjectBody extends IJavaSyntaxNode {
+    constructors?: IJavaObjectMethod[];
     members: JavaObjectMember[];
   }
 

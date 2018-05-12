@@ -3,6 +3,7 @@ import { Allow, Eat } from '../common/parser-decorators';
 import { Implements } from 'trampoline-framework';
 import { ISyntaxNode } from '../common/syntax-types';
 import { TokenUtils } from '../../tokenizer/token-utils';
+import { JavaUtils } from './java-utils';
 
 export default class JavaCommentParser extends AbstractParser<ISyntaxNode> {
   @Implements protected getDefault (): ISyntaxNode {
@@ -27,7 +28,7 @@ export default class JavaCommentParser extends AbstractParser<ISyntaxNode> {
     }
 
     this.next();
-    this.stop();
+    this.safelyStopComment();
   }
 
   @Allow('*')
@@ -46,6 +47,19 @@ export default class JavaCommentParser extends AbstractParser<ISyntaxNode> {
 
         break;
       }
+    }
+
+    this.safelyStopComment();
+  }
+
+  /**
+   * Stops after parsing the comment, with a contingency for the
+   * presence of an additional comment. All comments should be
+   * skipped through so valid code can continue being parsed.
+   */
+  private safelyStopComment (): void {
+    if (this.currentTokenMatches(JavaUtils.isComment)) {
+      this.parseNextWith(JavaCommentParser);
     }
 
     this.stop();

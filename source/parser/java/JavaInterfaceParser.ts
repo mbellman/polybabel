@@ -2,7 +2,6 @@ import AbstractParser from '../common/AbstractParser';
 import JavaModifiableParser from './JavaModifiableParser';
 import JavaObjectBodyParser from './JavaObjectBodyParser';
 import JavaTypeParser from './JavaTypeParser';
-import SequenceParser from '../common/SequenceParser';
 import { Allow, Eat, Match } from '../common/parser-decorators';
 import { Implements, Override } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
@@ -38,15 +37,11 @@ export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJava
   protected onGenericTypes (): void {
     this.next();
 
-    const genericTypesParser = new SequenceParser({
+    this.parsed.genericTypes = this.parseSequence({
       ValueParser: JavaTypeParser,
       delimiter: ',',
       terminator: '>'
     });
-
-    const { values } = this.parseNextWith(genericTypesParser);
-
-    this.parsed.genericTypes = values;
 
     this.next();
   }
@@ -56,19 +51,16 @@ export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJava
     this.assert(this.parsed.extended.length === 0);
     this.next();
 
-    const extendsParser = new SequenceParser({
+    this.parsed.extended = this.parseSequence({
       ValueParser: JavaTypeParser,
       delimiter: ',',
       terminator: '{'
     });
-
-    const { values } = this.parseNextWith(extendsParser);
-
-    this.parsed.extended = values;
   }
 
   @Allow('{')
   protected onInterfaceBody (): void {
+    this.next();
     this.emulate(JavaObjectBodyParser);
     this.stop();
   }

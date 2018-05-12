@@ -77,7 +77,6 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
       [ JavaConstants.Keyword.WHILE, JavaWhileLoopParser, true ],
       [ JavaConstants.Keyword.SWITCH, JavaSwitchParser, true ],
       [ JavaConstants.Keyword.TRY, JavaTryCatchParser, true ],
-      [ JavaUtils.isComment, JavaCommentParser, true ],
       [ '@', JavaAnnotationParser, true ]
     ];
   }
@@ -90,6 +89,10 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
   }
 
   @Override protected onFirstToken (): void {
+    if (this.currentTokenMatches(JavaUtils.isComment)) {
+      this.onComment();
+    }
+
     for (const [ tokenMatch, Parser, isSelfTerminating ] of JavaStatementParser.StatementMatchers) {
       if (this.currentTokenMatches(tokenMatch)) {
         this.parsed.leftSide = this.parseNextWith(Parser);
@@ -101,6 +104,11 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
         return;
       }
     }
+  }
+
+  @Match(JavaUtils.isComment)
+  protected onComment (): void {
+    this.parseNextWith(JavaCommentParser);
   }
 
   @Match('(')
@@ -205,6 +213,12 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
 
   @Match(JavaUtils.isOperator)
   protected onOperator (): void {
+    if (this.currentTokenMatches(JavaUtils.isComment)) {
+      this.onComment();
+
+      return;
+    }
+
     const { leftSide } = this.parsed;
 
     this.assert(

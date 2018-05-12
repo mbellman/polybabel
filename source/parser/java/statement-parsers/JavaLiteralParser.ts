@@ -5,7 +5,6 @@ import { JavaSyntax } from '../java-syntax';
 import { Match } from '../../common/parser-decorators';
 import { ParserUtils } from '../../common/parser-utils';
 import { TokenUtils } from '../../../tokenizer/token-utils';
-import SequenceParser from '../../common/SequenceParser';
 import JavaStatementParser from '../JavaStatementParser';
 
 /**
@@ -90,16 +89,13 @@ export default class JavaLiteralParser extends AbstractParser<JavaSyntax.IJavaLi
   protected onArrayLiteral (): void {
     this.next();
 
-    const arrayLiteralParser = new SequenceParser({
+    this.parsed.type = JavaSyntax.JavaLiteralType.ARRAY;
+
+    this.parsed.value = this.parseSequence({
       ValueParser: JavaStatementParser,
       delimiter: ',',
       terminator: '}'
     });
-
-    const { values } = this.parseNextWith(arrayLiteralParser);
-
-    this.parsed.type = JavaSyntax.JavaLiteralType.ARRAY;
-    this.parsed.value = values;
 
     this.finish();
   }

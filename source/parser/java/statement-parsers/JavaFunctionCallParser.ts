@@ -1,7 +1,6 @@
 import AbstractParser from '../../common/AbstractParser';
 import JavaStatementParser from '../JavaStatementParser';
 import JavaTypeParser from '../JavaTypeParser';
-import SequenceParser from '../../common/SequenceParser';
 import { Allow, Eat } from '../../common/parser-decorators';
 import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../java-syntax';
@@ -52,15 +51,11 @@ export default class JavaFunctionCallParser extends AbstractParser<JavaSyntax.IJ
   protected onGenericArgumentsStart (): void {
     this.next();
 
-    const genericArgumentsParser = new SequenceParser({
+    this.parsed.genericArguments = this.parseSequence({
       ValueParser: JavaTypeParser,
       delimiter: ',',
       terminator: '>'
     });
-
-    const { values } = this.parseNextWith(genericArgumentsParser);
-
-    this.parsed.genericArguments = values;
 
     this.next();
   }
@@ -74,15 +69,11 @@ export default class JavaFunctionCallParser extends AbstractParser<JavaSyntax.IJ
   protected onArgumentsStart (): void {
     this.next();
 
-    const argumentsParser = new SequenceParser({
+    this.parsed.arguments = this.parseSequence({
       ValueParser: JavaStatementParser,
       delimiter: ',',
       terminator: ')'
     });
-
-    const { values } = this.parseNextWith(argumentsParser);
-
-    this.parsed.arguments = values;
   }
 
   @Eat(')')

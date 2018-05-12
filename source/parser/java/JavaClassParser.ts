@@ -2,7 +2,6 @@ import AbstractParser from '../common/AbstractParser';
 import JavaModifiableParser from './JavaModifiableParser';
 import JavaObjectBodyParser from './JavaObjectBodyParser';
 import JavaTypeParser from './JavaTypeParser';
-import SequenceParser from '../common/SequenceParser';
 import { Allow, Eat } from '../common/parser-decorators';
 import { Implements, Override } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
@@ -39,15 +38,11 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
   protected onGenericTypes (): void {
     this.next();
 
-    const genericTypesParser = new SequenceParser({
+    this.parsed.genericTypes = this.parseSequence({
       ValueParser: JavaTypeParser,
       delimiter: ',',
       terminator: '>'
     });
-
-    const { values } = this.parseNextWith(genericTypesParser);
-
-    this.parsed.genericTypes = values;
 
     this.next();
   }
@@ -77,19 +72,16 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
 
   @Eat('{')
   protected onStartClassBody (): void {
+    this.next();
     this.emulate(JavaObjectBodyParser);
     this.stop();
   }
 
   private getClauseTypeSequence (): JavaSyntax.IJavaType[] {
-    const typesParser = new SequenceParser({
+    return this.parseSequence({
       ValueParser: JavaTypeParser,
       delimiter: ',',
-      terminator: [ ...JavaConstants.ReservedWords, '{' ]
+      terminator: [ JavaConstants.Keyword.IMPLEMENTS, '{' ]
     });
-
-    const { values } = this.parseNextWith(typesParser);
-
-    return values;
   }
 }

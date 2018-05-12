@@ -3,7 +3,6 @@ import JavaLiteralParser from './JavaLiteralParser';
 import JavaObjectBodyParser from '../JavaObjectBodyParser';
 import JavaStatementParser from '../JavaStatementParser';
 import JavaTypeParser from '../JavaTypeParser';
-import SequenceParser from '../../common/SequenceParser';
 import { Allow, Eat } from '../../common/parser-decorators';
 import { Implements } from 'trampoline-framework';
 import { JavaConstants } from '../java-constants';
@@ -73,15 +72,12 @@ export default class JavaInstantiationParser extends AbstractParser<JavaSyntax.I
     this.assert(!this.parsed.arrayAllocationCount);
     this.next();
 
-    const argumentsParser = new SequenceParser({
+    this.parsed.arguments = this.parseSequence({
       ValueParser: JavaStatementParser,
       delimiter: ',',
       terminator: ')'
     });
 
-    const { values } = this.parseNextWith(argumentsParser);
-
-    this.parsed.arguments = values;
     this.isObjectInstantiation = true;
   }
 
@@ -97,6 +93,8 @@ export default class JavaInstantiationParser extends AbstractParser<JavaSyntax.I
   @Allow('{')
   protected onBrace (): void {
     if (this.isObjectInstantiation) {
+      this.next();
+
       this.parsed.anonymousObjectBody = this.parseNextWith(JavaObjectBodyParser);
     } else {
       this.parsed.arrayLiteral = this.parseNextWith(JavaLiteralParser);
