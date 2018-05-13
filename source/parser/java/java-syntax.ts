@@ -95,7 +95,7 @@ export namespace JavaSyntax {
   /**
    * A property in a Java property chain.
    */
-  export type JavaProperty = string | IJavaStatement | IJavaFunctionCall | IJavaInstantiation | IJavaType;
+  export type JavaProperty = string | IJavaStatement | IJavaFunctionCall | IJavaInstantiation | IJavaLiteral | IJavaType;
 
   /**
    * A Java object member.
@@ -243,6 +243,7 @@ export namespace JavaSyntax {
     operator?: IJavaOperator;
     rightSide?: IJavaStatement;
     isParenthetical?: boolean;
+    cast?: IJavaType;
   }
 
   /**
@@ -307,7 +308,7 @@ export namespace JavaSyntax {
   export interface IJavaInstantiation extends IJavaSyntaxNode, IWithArguments<IJavaStatement> {
     node: JavaSyntaxNode.INSTANTIATION;
     constructor: IJavaType;
-    arrayAllocationCount?: string;
+    arrayAllocationSize?: IJavaStatement;
     arrayLiteral?: IJavaLiteral;
     anonymousObjectBody?: IJavaObjectBody;
   }

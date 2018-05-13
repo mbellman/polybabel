@@ -1,7 +1,6 @@
 import AbstractParser from '../common/AbstractParser';
 import JavaAnnotationParser from './JavaAnnotationParser';
 import JavaClassParser from './JavaClassParser';
-import JavaCommentParser from './JavaCommentParser';
 import JavaInterfaceParser from './JavaInterfaceParser';
 import JavaModifiableParser from './JavaModifiableParser';
 import JavaObjectMethodParser from './JavaObjectMethodParser';
@@ -33,11 +32,6 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
       constructors: [],
       members: []
     };
-  }
-
-  @Match(JavaUtils.isComment)
-  protected onComment (): void {
-    this.parseNextWith(JavaCommentParser);
   }
 
   @Match('@')

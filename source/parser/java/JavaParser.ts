@@ -1,12 +1,11 @@
 import AbstractParser from '../common/AbstractParser';
 import JavaAnnotationParser from './JavaAnnotationParser';
 import JavaClassParser from './JavaClassParser';
-import JavaCommentParser from './JavaCommentParser';
 import JavaImportParser from './JavaImportParser';
 import JavaInterfaceParser from './JavaInterfaceParser';
 import JavaModifiableParser from './JavaModifiableParser';
 import JavaPackageParser from './JavaPackageParser';
-import { Eat, Match, Allow } from '../common/parser-decorators';
+import { Allow, Eat, Match } from '../common/parser-decorators';
 import { Implements } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
@@ -39,12 +38,6 @@ export default class JavaParser extends AbstractParser<JavaSyntax.IJavaSyntaxTre
       package: null,
       nodes: []
     };
-  }
-
-  @Allow(JavaUtils.isComment)
-  @Match(JavaUtils.isComment)
-  protected onComment (): void {
-    this.parseNextWith(JavaCommentParser);
   }
 
   @Allow(JavaConstants.Keyword.PACKAGE)

@@ -55,7 +55,9 @@ export default class JavaInstantiationParser extends AbstractParser<JavaSyntax.I
 
   @Allow('[')
   protected onStartArrayAllocation (): void {
-    this.parsed.arrayAllocationCount = this.eatNext(TokenUtils.isNumber);
+    this.next();
+
+    this.parsed.arrayAllocationSize = this.parseNextWith(JavaStatementParser);
   }
 
   @Allow(']')
@@ -69,7 +71,7 @@ export default class JavaInstantiationParser extends AbstractParser<JavaSyntax.I
 
   @Allow('(')
   protected onStartArguments (): void {
-    this.assert(!this.parsed.arrayAllocationCount);
+    this.assert(!this.parsed.arrayAllocationSize);
     this.next();
 
     this.parsed.arguments = this.parseSequence({

@@ -5,11 +5,20 @@ import JavaTranslator from './translators/java/JavaTranslator';
 import JavaTypeReconciler from './type-reconcilers/JavaTypeReconciler';
 import JavaValidator from './validators/JavaValidator';
 import TypeDictionary from './TypeDictionary';
-import { Autowired, IConstructable, IHashMap, Wired } from 'trampoline-framework';
+import { IConstructable, IHashMap } from 'trampoline-framework';
 import { ISyntaxTree } from '../parser/common/syntax-types';
 import { Language } from '../system/constants';
 
-@Wired
+/**
+ * @internal
+ */
+type CompilerError = [ string, string ];
+
+/**
+ * @internal
+ */
+type CompilerErrorHandler = (file: string, message: string) => void;
+
 export default class Compiler {
   private static translatorMap: IHashMap<IConstructable<AbstractTranslator>> = {
     [Language.JAVA]: JavaTranslator
@@ -23,12 +32,10 @@ export default class Compiler {
     [Language.JAVA]: JavaValidator
   };
 
-  private compiledFileMap: IHashMap<string> = {};
-  private errors: string[] = [];
+  private compiledCodeMap: IHashMap<string> = {};
+  private errors: CompilerError[] = [];
   private syntaxTreeMap: IHashMap<ISyntaxTree> = {};
-
-  @Autowired()
-  private typeDictionary: TypeDictionary;
+  private typeDictionary: TypeDictionary = new TypeDictionary();
 
   public add (file: string, syntaxTree: ISyntaxTree): void {
     this.syntaxTreeMap[file] = syntaxTree;
@@ -41,29 +48,54 @@ export default class Compiler {
     }
   }
 
+  public addError (file: string, message: string): void {
+    this.errors.push([ file, message ]);
+  }
+
   public compileAll (): void {
     Object.keys(this.syntaxTreeMap).forEach(file => {
       this.compileFile(file);
     });
   }
 
+  /**
+   * @todo Add validation step
+   */
   public compileFile (file: string): void {
     const syntaxTree = this.syntaxTreeMap[file];
     const Translator = Compiler.translatorMap[syntaxTree.language];
 
-    if (Translator) {
+    if (syntaxTree && Translator) {
       const translator = new Translator(syntaxTree);
       const translation = translator.getTranslation();
 
-      this.compiledFileMap[file] = translation;
+      this.compiledCodeMap[file] = translation;
+    } else {
+      this.addError(file, 'Unable to compile');
     }
   }
 
-  public getCompiledFile (file: string): string {
-    return this.compiledFileMap[file];
+  public forEachError (handler: CompilerErrorHandler): void {
+    this.errors.forEach(([ file, message ]) => {
+      handler(file, message);
+    });
   }
 
-  public getErrors (): string[] {
-    return this.errors;
+  public getCompiledCode (file: string): string {
+    return this.compiledCodeMap[file];
+  }
+
+  public getSyntaxTree (file: string): ISyntaxTree {
+    return this.syntaxTreeMap[file];
+  }
+
+  public hasErrors (): boolean {
+    return this.errors.length > 0;
+  }
+
+  public reset (): void {
+    this.syntaxTreeMap = {};
+    this.compiledCodeMap = {};
+    this.errors.length = 0;
   }
 }

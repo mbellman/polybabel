@@ -143,6 +143,9 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
           case JavaSyntax.JavaSyntaxNode.INSTANTIATION:
             this.emitNodeWith(JavaInstantiationTranslator, property);
             break;
+          case JavaSyntax.JavaSyntaxNode.LITERAL:
+            this.emitNodeWith(JavaLiteralTranslator, property);
+            break;
           case JavaSyntax.JavaSyntaxNode.STATEMENT:
             this.emitNodeWith(JavaStatementTranslator, property);
             break;
@@ -353,8 +356,11 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
   private isDotDelimitedProperty (property: JavaSyntax.JavaProperty): boolean {
     return (
       typeof property === 'string' ||
+      property.node === JavaSyntax.JavaSyntaxNode.STATEMENT &&
+      (property as JavaSyntax.IJavaStatement).isParenthetical ||
       property.node === JavaSyntax.JavaSyntaxNode.FUNCTION_CALL ||
-      property.node === JavaSyntax.JavaSyntaxNode.INSTANTIATION
+      property.node === JavaSyntax.JavaSyntaxNode.INSTANTIATION ||
+      property.node === JavaSyntax.JavaSyntaxNode.LITERAL
     );
   }
 }

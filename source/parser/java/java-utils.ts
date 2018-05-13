@@ -1,7 +1,7 @@
 import { IToken } from '../../tokenizer/types';
 import { JavaConstants } from './java-constants';
 import { ParserUtils } from '../common/parser-utils';
-import { TokenPredicate, TokenMatch } from '../common/parser-types';
+import { TokenMatch, TokenMatcherType, TokenPredicate } from '../common/parser-types';
 import { TokenUtils } from '../../tokenizer/token-utils';
 
 export namespace JavaUtils {
@@ -13,21 +13,62 @@ export namespace JavaUtils {
    *
    * @internal
    */
-  const InvalidGenericTokens: TokenMatch = [
-    /[^?<>,.\w]/,
+  const InvalidTypeTokens: TokenMatch = [
+    /[^?&<>,.[\]\w]/,
     TokenUtils.isNumber
   ];
 
   /**
-   * An array of token matches disqualifying a token from being
-   * contained within a lambda expression parameters block.
-   * Incidentally, these are the same as the set of invalid
-   * generic tokens, since lambda expression parameters must
-   * be typed or untyped references - which are restricted to
-   * the same class of tokens. For semantic clarity, we provide
-   * an alias for use in isLambdaExpression().
+   * A regex matching tokens which cannot be the value targeted
+   * by a type-cast. If the token following a potential cast
+   * operation matches any of the characters in the regex set,
+   * we're dealing with something other than a cast.
+   *
+   * The match is effectively the set of all Java operators,
+   * condensed into a regex and one literal word match for
+   * matching efficiency. Cast-like statements followed by an
+   * operator could instead be parentheses-enclosed references,
+   * or they could represent lambda expression parameters
+   * preceding the -> arrow.
+   *
+   * @internal
    */
-  const InvalidLambdaExpressionParameterTokens = InvalidGenericTokens;
+  const InvalidCastValueTokens: TokenMatch = [
+    /[=+\-*\/!&?:|^~<>]/,
+    JavaConstants.Operator.INSTANCEOF
+  ];
+
+  /**
+   * Determines whether a token corresponds to the beginning
+   * of a non-trivial cast operation, i.e. that to a generic,
+   * array, or namespaced type.
+   *
+   * Trivial cast operations are those with a single-word type,
+   * which helps avoid expensive lookaheads.
+   *
+   * @internal
+   */
+  const isNonTrivialCast = TokenUtils.createTokenSearchPredicate(
+    token => token.nextTextToken,
+    ({ value }) => value === ')',
+    token => !ParserUtils.tokenMatches(token.nextTextToken, InvalidCastValueTokens),
+    token => ParserUtils.tokenMatches(token, InvalidTypeTokens)
+  );
+
+  /**
+   * Determines whether a token corresponds to the beginning of a
+   * multi-parameter lambda expression, enclosed in parentheses and
+   * containing a sequence of one or more parameter (variable)
+   * declarations, all followed by a -> arrow.
+   *
+   * @internal
+   */
+  const isMultiParameterLambdaExpression = TokenUtils.createTokenSearchPredicate(
+    token => token.nextTextToken,
+    ({ value }) => value === ')',
+    token => isLambdaExpressionArrow(token.nextTextToken),
+    token => ParserUtils.tokenMatches(token, InvalidTypeTokens)
+  );
 
   /**
    * Determines whether a token corresponds to the beginning of a
@@ -65,17 +106,12 @@ export namespace JavaUtils {
    *
    * @internal
    */
-  function isGenericBlock (token: IToken): boolean {
-    while ((token = token.nextTextToken) && !TokenUtils.isEOF(token)) {
-      if (ParserUtils.tokenMatches(token, '>')) {
-        return true;
-      } else if (ParserUtils.tokenMatches(token, InvalidGenericTokens)) {
-        return false;
-      }
-    }
-
-    return false;
-  }
+  const isGenericBlock = TokenUtils.createTokenSearchPredicate(
+    token => token.nextTextToken,
+    ({ value }) => value === '>',
+    token => true,
+    token => ParserUtils.tokenMatches(token, InvalidTypeTokens)
+  );
 
   /**
    * Determines whether a token corresponds to the beginning of a
@@ -148,7 +184,7 @@ export namespace JavaUtils {
     }
 
     const { INSTANCEOF } = JavaConstants.Operator;
-    const { RETURN, THROW } = JavaConstants.Keyword;
+    const { RETURN, THROW, CASE } = JavaConstants.Keyword;
 
     // Flanked tokens are those which have tokens on both
     // sides isolating them as singular syntactic units
@@ -158,7 +194,8 @@ export namespace JavaUtils {
       ParserUtils.tokenMatches(token.previousTextToken, [
         INSTANCEOF,
         RETURN,
-        THROW
+        THROW,
+        CASE
       ])
     ) && (
       ParserUtils.tokenMatches(token.nextTextToken, INSTANCEOF) ||
@@ -360,36 +397,47 @@ export namespace JavaUtils {
       return false;
     }
 
-    while ((token = token.nextTextToken) && !TokenUtils.isEOF(token)) {
-      if (token.value === ')') {
-        return isLambdaExpressionArrow(token.nextTextToken);
-      } else if (ParserUtils.tokenMatches(token, InvalidLambdaExpressionParameterTokens)) {
-        return false;
-      }
-    }
-
-    return false;
+    return isMultiParameterLambdaExpression(token);
   }
 
   /**
    * Determines whether a token corresponds to the beginning of
-   * a comment line or block.
+   * a cast operation.
    *
    * @example
    *
-   *  // ...
-   *  /* ...
+   *  (String) value
+   *  (Map[]) hashSets
+   *  (SubGenericType<...>) superGenericType
+   *  (Type) (
    */
-  export function isComment ({ value, nextToken }: IToken): boolean {
-    const isSlash = value === '/';
-
-    if (!isSlash) {
+  export function isCast (token: IToken): boolean {
+    if (token.value !== '(') {
+      // Optimize for non-opening-parenthesis tokens
       return false;
     }
 
-    return (
-      nextToken.value === '/' ||
-      nextToken.value === '*'
+    const startingToken = token.nextTextToken;
+
+    if (!TokenUtils.isWord(startingToken)) {
+      // Optimize for opening parentheses not followed by words
+      return false;
+    }
+
+    // Trivial casts are those which cast a value to
+    // a type with a single word name, e.g. (String).
+    // These are the quickest to check for and likely
+    // cover the majority of cases.
+    const isTrivialCast = (
+      startingToken.nextTextToken.value === ')' &&
+      !ParserUtils.tokenMatches(startingToken.nextTextToken.nextTextToken, InvalidCastValueTokens)
     );
+
+    if (isTrivialCast) {
+      // Optimize for trivial cast operations
+      return true;
+    }
+
+    return isNonTrivialCast(token);
   }
 }

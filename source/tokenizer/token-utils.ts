@@ -1,5 +1,6 @@
 import { Callback } from '../system/types';
 import { IToken, TokenType } from './types';
+import { TokenPredicate } from '../parser/common/parser-types';
 
 export namespace TokenUtils {
   export function getPreviousToken ({ previousToken }: IToken): IToken {
@@ -48,5 +49,42 @@ export namespace TokenUtils {
       TokenUtils.isNewline(previousToken) ||
       TokenUtils.isIndentation(previousToken)
     );
+  }
+
+  /**
+   * Returns a special token searcher function which steps
+   * through the token stream using a provided step function,
+   * with the goal of determining whether a predicate-qualifying
+   * or predicate-disqualifying token is eventually reached.
+   * This ultimately makes composing lookahead or lookbehind
+   * routines easier than constructing loops manually.
+   *
+   * The provided search test qualifier evaluates the current
+   * token and determines whether we're ready to evaluate it
+   * with an actual search qualifier. If the search qualifier
+   * returns true, the search is successful; otherwise it fails.
+   *
+   * The provided search disqualifier is evaluated each time
+   * the search test qualifier fails, and if it returns true
+   * before the next step cycle, the search fails. Otherwise,
+   * we continue to the next step and repeat the cycle.
+   */
+  export function createTokenSearchPredicate (
+    tokenStepFunction: Callback<IToken>,
+    searchTestQualifier: TokenPredicate,
+    searchQualifier: TokenPredicate,
+    searchDisqualifier: TokenPredicate
+  ): TokenPredicate {
+    return (token: IToken) => {
+      while ((token = tokenStepFunction(token)) && !isEOF(token)) {
+        if (searchTestQualifier(token)) {
+          return searchQualifier(token);
+        } else if (searchDisqualifier(token)) {
+          return false;
+        }
+      }
+
+      return false;
+    };
   }
 }

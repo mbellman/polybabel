@@ -7,11 +7,11 @@ import { JavaSyntax } from '../../../parser/java/java-syntax';
 
 export default class JavaInstantiationTranslator extends AbstractTranslator<JavaSyntax.IJavaInstantiation> {
   @Implements protected translate (): void {
-    const { anonymousObjectBody, arrayAllocationCount, arrayLiteral } = this.syntaxNode;
+    const { anonymousObjectBody, arrayAllocationSize, arrayLiteral } = this.syntaxNode;
 
     if (anonymousObjectBody) {
       this.emitAnonymousObject();
-    } else if (arrayAllocationCount || arrayLiteral) {
+    } else if (arrayAllocationSize || arrayLiteral) {
       this.emitArrayInstantiation();
     } else {
       this.emitRegularInstantiation();
@@ -85,10 +85,12 @@ export default class JavaInstantiationTranslator extends AbstractTranslator<Java
   }
 
   private emitArrayInstantiation (): this {
-    const { arrayAllocationCount, arrayLiteral } = this.syntaxNode;
+    const { arrayAllocationSize, arrayLiteral } = this.syntaxNode;
 
-    if (arrayAllocationCount && !arrayLiteral) {
-      return this.emit(`new Array(${arrayAllocationCount})`);
+    if (arrayAllocationSize && !arrayLiteral) {
+      return this.emit('new Array(')
+        .emitNodeWith(JavaStatementTranslator, arrayAllocationSize)
+        .emit(')');
     } else {
       return this.emitNodeWith(JavaLiteralTranslator, arrayLiteral);
     }

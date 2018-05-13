@@ -2,8 +2,8 @@
  * Language name constants.
  */
 export const enum Language {
-  JAVA = 'JAVA',
-  PYTHON = 'PYTHON',
-  RUBY = 'RUBY',
+  JAVA = 'Java',
+  PYTHON = 'Python',
+  RUBY = 'Ruby',
   C_SHARP = 'C#'
 }

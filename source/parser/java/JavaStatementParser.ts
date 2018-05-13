@@ -1,7 +1,6 @@
 import AbstractParser from '../common/AbstractParser';
 import JavaAnnotationParser from './JavaAnnotationParser';
 import JavaClassParser from './JavaClassParser';
-import JavaCommentParser from './JavaCommentParser';
 import JavaForLoopParser from './statement-parsers/JavaForLoopParser';
 import JavaFunctionCallParser from './statement-parsers/JavaFunctionCallParser';
 import JavaIfElseParser from './statement-parsers/JavaIfElseParser';
@@ -24,6 +23,7 @@ import { JavaUtils } from './java-utils';
 import { ParserUtils } from '../common/parser-utils';
 import { TokenMatch } from '../common/parser-types';
 import { TokenUtils } from '../../tokenizer/token-utils';
+import JavaTypeParser from './JavaTypeParser';
 
 /**
  * A 3-tuple which contains a token match, a parser class
@@ -89,10 +89,6 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
   }
 
   @Override protected onFirstToken (): void {
-    if (this.currentTokenMatches(JavaUtils.isComment)) {
-      this.onComment();
-    }
-
     for (const [ tokenMatch, Parser, isSelfTerminating ] of JavaStatementParser.StatementMatchers) {
       if (this.currentTokenMatches(tokenMatch)) {
         this.parsed.leftSide = this.parseNextWith(Parser);
@@ -106,23 +102,19 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
     }
   }
 
-  @Match(JavaUtils.isComment)
-  protected onComment (): void {
-    this.parseNextWith(JavaCommentParser);
-  }
-
   @Match('(')
-  protected onParentheticalStatement (): void {
+  protected onOpenParenthesis (): void {
     this.assert(this.parsed.leftSide === null);
+
+    const isCast = JavaUtils.isCast(this.currentToken);
+
     this.next();
 
-    const statement = this.parseNextWith(JavaStatementParser);
-
-    this.eat(')');
-
-    statement.isParenthetical = true;
-
-    this.parsed.leftSide = statement;
+    if (isCast) {
+      this.parseCastedStatement();
+    } else {
+      this.parseParentheticalStatement();
+    }
   }
 
   /**
@@ -213,12 +205,6 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
 
   @Match(JavaUtils.isOperator)
   protected onOperator (): void {
-    if (this.currentTokenMatches(JavaUtils.isComment)) {
-      this.onComment();
-
-      return;
-    }
-
     const { leftSide } = this.parsed;
 
     this.assert(
@@ -259,20 +245,26 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
       return false;
     }
 
-    const { node } = leftSide;
-    const { anonymousObjectBody, arrayAllocationCount, arrayLiteral } = leftSide as JavaSyntax.IJavaInstantiation;
+    switch (leftSide.node) {
+      case JavaSyntax.JavaSyntaxNode.STATEMENT:
+        return (leftSide as JavaSyntax.IJavaStatement).isParenthetical;
+      case JavaSyntax.JavaSyntaxNode.FUNCTION_CALL:
+        return true;
+      case JavaSyntax.JavaSyntaxNode.INSTANTIATION:
+        const { anonymousObjectBody, arrayAllocationSize, arrayLiteral } = leftSide as JavaSyntax.IJavaInstantiation;
 
-    const isAtypicalInstantiation = (
-      !!anonymousObjectBody ||
-      !!arrayAllocationCount ||
-      !!arrayLiteral
-    );
+        return (
+          !anonymousObjectBody &&
+          !arrayAllocationSize &&
+          !arrayLiteral
+        );
+      case JavaSyntax.JavaSyntaxNode.LITERAL:
+        const { type } = leftSide as JavaSyntax.IJavaLiteral;
 
-    return (
-      node === JavaSyntax.JavaSyntaxNode.FUNCTION_CALL ||
-      node === JavaSyntax.JavaSyntaxNode.INSTANTIATION &&
-      !isAtypicalInstantiation
-    );
+        return type === JavaSyntax.JavaLiteralType.STRING;
+    }
+
+    return false;
   }
 
   private hasParsedSide (): boolean {
@@ -281,5 +273,33 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
       !!this.parsed.rightSide &&
       !!this.parsed.rightSide.leftSide
     );
+  }
+
+  /**
+   * Parses statements beginning with a cast operation.
+   * The portion to the right of the cast is parsed as
+   * a child statement and assigned to this statement's
+   * left-side.
+   */
+  private parseCastedStatement (): void {
+    this.parsed.cast = this.parseNextWith(JavaTypeParser);
+
+    this.eat(')');
+
+    this.parsed.leftSide = this.parseNextWith(JavaStatementParser);
+  }
+
+  /**
+   * Parses parenthetical statements, assigning the parsed
+   * result to this statement's left-side.
+   */
+  private parseParentheticalStatement (): void {
+    const statement = this.parseNextWith(JavaStatementParser);
+
+    this.eat(')');
+
+    statement.isParenthetical = true;
+
+    this.parsed.leftSide = statement;
   }
 }

@@ -1,22 +1,27 @@
 import * as CodeMirror from 'codemirror';
 import Compiler from '../source/compiler/Compiler';
 import parse from '../source/parser/parse';
+import sanitize from '../source/sanitizer/sanitize';
 import tokenize from '../source/tokenizer/tokenize';
-import { Automated, Bound, IHashMap, Run } from 'trampoline-framework';
+import { Automated, Autowired, Bound, IHashMap, Run, Wired } from 'trampoline-framework';
 import { ISyntaxTree } from '../source/parser/common/syntax-types';
 import { js_beautify } from 'js-beautify';
 import { Language } from '../source/system/constants';
 
-@Automated class Demo {
+@Wired @Automated class Demo {
   private static readonly EDITOR_CONTENT_LOCALSTORAGE_KEY = 'polybabel-demo-editor-content';
   private static readonly RECOMPILATION_DELAY = 400;
+
+  @Autowired()
+  private compiler: Compiler;
+
   private compilationStartTime: number;
   private demoLanguage: string;
   private editor: CodeMirror.EditorFromTextArea;
   private outputBlock: HTMLElement = document.querySelector('.output-block');
 
   private options: IHashMap<boolean> = {
-    syntaxTree: false
+    showSyntaxTree: false
   };
 
   private preview: CodeMirror.EditorFromTextArea;
@@ -66,22 +71,38 @@ import { Language } from '../source/system/constants';
       return;
     }
 
+    this.compiler.reset();
     this.saveEditorContent(editorContent);
 
+    // Compilation
     try {
       this.compilationStartTime = Date.now();
 
-      const firstToken = tokenize(editorContent);
+      const sanitizedEditorContent = sanitize(editorContent, Language.JAVA);
+      const firstToken = tokenize(sanitizedEditorContent);
       const syntaxTree = parse(firstToken, Language.JAVA);
 
-      if (this.options.syntaxTree) {
-        this.outputTotalCompilationTime();
+      this.compiler.add('demo', syntaxTree);
+      this.compiler.compileFile('demo');
+    } catch (e) {
+      this.compiler.addError('demo', e.message);
+    }
+
+    // Post-compilation output
+    if (this.compiler.hasErrors()) {
+      this.showCompilerErrors();
+    } else {
+      this.outputTotalCompilationTime();
+
+      if (this.options.showSyntaxTree) {
+        const syntaxTree = this.compiler.getSyntaxTree('demo');
+
         this.preview.setValue(js_beautify(JSON.stringify(syntaxTree)));
       } else {
-        this.translateSyntaxTree(syntaxTree);
+        const code = this.compiler.getCompiledCode('demo');
+
+        this.preview.setValue(code);
       }
-    } catch (e) {
-      this.showOutput(`Error: ${e.message}`);
     }
   }
 
@@ -115,27 +136,18 @@ import { Language } from '../source/system/constants';
     window.localStorage.setItem(Demo.EDITOR_CONTENT_LOCALSTORAGE_KEY, editorContent);
   }
 
-  private showOutput (output: string): void {
-    this.outputBlock.innerHTML = output;
+  private showCompilerErrors (): void {
+    const errors: string[] = [];
+
+    this.compiler.forEachError((file, message) => {
+      errors.push(`Compilation Error: ${message}`);
+    });
+
+    this.showOutput(errors.join('<br />'));
   }
 
-  private translateSyntaxTree (syntaxTree: ISyntaxTree): void {
-    const compiler = new Compiler();
-
-    compiler.add('demo', syntaxTree);
-    compiler.compileFile('demo');
-
-    const errors = compiler.getErrors();
-
-    if (errors.length > 0) {
-      this.showOutput(errors.join('<br />'));
-    } else {
-      this.outputTotalCompilationTime();
-
-      const code = compiler.getCompiledFile('demo');
-
-      this.preview.setValue(code);
-    }
+  private showOutput (output: string): void {
+    this.outputBlock.innerHTML = output;
   }
 }
 

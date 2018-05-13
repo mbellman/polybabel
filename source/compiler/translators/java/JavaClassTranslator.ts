@@ -59,6 +59,7 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
     }
 
     this.emitInstanceSide()
+      .newline()
       .emitStaticSide();
   }
 

@@ -4,6 +4,7 @@ import assert from './system/assert';
 import chalk from 'chalk';
 import Compiler from './compiler/Compiler';
 import parse from './parser/parse';
+import sanitize from './sanitizer/sanitize';
 import tokenize from './tokenizer/tokenize';
 import { getFileContents, resolveFilesDeep } from './system/file';
 import { getFlags, IFlags } from './system/flags';
@@ -11,11 +12,7 @@ import { IConfiguration, resolveConfiguration } from './system/configuration';
 import { IHashMap } from 'trampoline-framework';
 import { ISyntaxTree } from 'parser/common/syntax-types';
 import { Language } from './system/constants';
-
-/**
- * @internal
- */
-type FileErrorMessage = [ string, string ];
+import { LanguageSpecificationMap } from './system/language-spec';
 
 /**
  * Maps file extensions to language constants.
@@ -32,7 +29,7 @@ const LanguageMap: IHashMap<Language> = {
 function getLanguageByExtension (extension: string): Language {
   const language = LanguageMap[extension];
 
-  if (typeof language !== 'undefined') {
+  if (language) {
     return language;
   }
 
@@ -42,20 +39,8 @@ function getLanguageByExtension (extension: string): Language {
 /**
  * @internal
  */
-function handleFileErrorMessages (fileErrorMessages: FileErrorMessage[]): void {
-  for (const [ file, message ] of fileErrorMessages) {
-    console.log(chalk.bgBlue(' Compilation Error: '), chalk.bgRed(` ${file} `));
-    console.log(` ${message}`);
-  }
-
-  console.log(chalk.red('\nFailed to compile.\n'));
-}
-
-/**
- * @internal
- */
-async function processFiles (directory: string, files: string[]): Promise<void> {
-  const fileErrorMessages: FileErrorMessage[] = [];
+async function createCompiler (directory: string, files: string[]): Promise<Compiler> {
+  const compiler = new Compiler();
 
   for (const file of files) {
     const extension = file.split('.').pop();
@@ -63,18 +48,17 @@ async function processFiles (directory: string, files: string[]): Promise<void> 
     try {
       const language = getLanguageByExtension(extension);
       const fileContents = await getFileContents(`${process.cwd()}/${directory}/${file}`);
-      const firstToken = tokenize(fileContents);
-      const syntaxTree: ISyntaxTree<any> = parse(firstToken, language);
+      const sanitizedFileContents = sanitize(fileContents, language);
+      const firstToken = tokenize(sanitizedFileContents);
+      const syntaxTree = parse(firstToken, language);
+
+      compiler.add(file, syntaxTree);
     } catch (e) {
-      fileErrorMessages.push([ file, e.message ]);
+      compiler.addError(file, e.message);
     }
   }
 
-  if (fileErrorMessages.length > 0) {
-    handleFileErrorMessages(fileErrorMessages);
-  } else {
-    console.log(chalk.green(`Compiled ${files.length} files.\n`));
-  }
+  return compiler;
 }
 
 /**
@@ -87,10 +71,15 @@ async function main (args: string[]) {
   const flags = getFlags(args);
   const { inputFolderName } = await resolveConfiguration(flags);
   const inputFiles = await resolveFilesDeep(inputFolderName);
+  const compiler = await createCompiler(inputFolderName, inputFiles);
 
-  await processFiles(inputFolderName, inputFiles);
+  compiler.compileAll();
 
-  console.log(chalk.white.bold(`Done. ${Date.now() - startTime}ms`));
+  if (compiler.hasErrors()) {
+    console.log(chalk.red('Failed to compile.'));
+  } else {
+    console.log(chalk.white.bold(`Done. ${Date.now() - startTime}ms`));
+  }
 }
 
 main(process.argv);

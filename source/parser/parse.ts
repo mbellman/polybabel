@@ -1,30 +1,30 @@
 import AbstractParser from './common/AbstractParser';
+import assert from '../system/assert';
 import JavaParser from './java/JavaParser';
 import { IConstructable, IHashMap } from 'trampoline-framework';
 import { ISyntaxTree } from './common/syntax-types';
 import { IToken } from '../tokenizer/types';
 import { Language } from '../system/constants';
+import { LanguageSpecificationMap } from '../system/language-spec';
 import { TokenUtils } from '../tokenizer/token-utils';
 
 /**
  * Parses a list of {tokens} into a syntax tree using a parser
  * class determined by {language}.
- *
- * Both the omission of an explicit return type and the use of
- * a switch statement over a simpler language-to-parser map are
- * deliberate; this allows the returned syntax tree type to be
- * properly inferred from the language constant alone based on
- * static analysis of the function.
  */
-export default function parse (firstToken: IToken, language: Language) {
+export default function parse (firstToken: IToken, language: Language): ISyntaxTree {
   if (TokenUtils.isEOF(firstToken)) {
     return null;
   }
 
-  switch (language) {
-    case Language.JAVA:
-      return new JavaParser().parse(firstToken);
-  }
+  const languageSpecification = LanguageSpecificationMap[language];
 
-  return null;
+  assert(
+    !!languageSpecification,
+    `The included ${language} language specification does not provide a parser`
+  );
+
+  const { Parser } = languageSpecification;
+
+  return new Parser().parse(firstToken);
 }
