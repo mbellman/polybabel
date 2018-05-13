@@ -1,8 +1,8 @@
-import AbstractTranslator from '../../common/AbstractTranslator';
-import JavaBlockTranslator from './JavaBlockTranslator';
-import JavaStatementTranslator from './JavaStatementTranslator';
+import AbstractTranslator from '../../../common/AbstractTranslator';
+import JavaBlockTranslator from '../JavaBlockTranslator';
+import JavaStatementTranslator from '../JavaStatementTranslator';
 import { Implements } from 'trampoline-framework';
-import { JavaSyntax } from '../../../parser/java/java-syntax';
+import { JavaSyntax } from '../../../../parser/java/java-syntax';
 
 export default class JavaLambdaExpressionTranslator extends AbstractTranslator<JavaSyntax.IJavaLambdaExpression> {
   @Implements protected translate (): void {

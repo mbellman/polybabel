@@ -1,12 +1,11 @@
 import * as CodeMirror from 'codemirror';
 import Compiler from '../source/compiler/Compiler';
-import parse from '../source/parser/parse';
-import sanitize from '../source/sanitizer/sanitize';
 import tokenize from '../source/tokenizer/tokenize';
 import { Automated, Autowired, Bound, IHashMap, Run, Wired } from 'trampoline-framework';
 import { ISyntaxTree } from '../source/parser/common/syntax-types';
 import { js_beautify } from 'js-beautify';
 import { Language } from '../source/system/constants';
+import { LanguageSpecification } from '../source/language-specifications';
 
 @Wired @Automated class Demo {
   private static readonly EDITOR_CONTENT_LOCALSTORAGE_KEY = 'polybabel-demo-editor-content';
@@ -78,9 +77,10 @@ import { Language } from '../source/system/constants';
     try {
       this.compilationStartTime = Date.now();
 
-      const sanitizedEditorContent = sanitize(editorContent, Language.JAVA);
+      const { sanitizer, Parser } = LanguageSpecification[Language.JAVA];
+      const sanitizedEditorContent = sanitizer(editorContent);
       const firstToken = tokenize(sanitizedEditorContent);
-      const syntaxTree = parse(firstToken, Language.JAVA);
+      const syntaxTree = new Parser().parse(firstToken);
 
       this.compiler.add('demo', syntaxTree);
       this.compiler.compileFile('demo');

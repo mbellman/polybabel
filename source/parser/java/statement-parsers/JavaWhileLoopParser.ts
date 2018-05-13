@@ -1,7 +1,7 @@
 import AbstractParser from '../../common/AbstractParser';
 import JavaBlockParser from '../JavaBlockParser';
 import JavaStatementParser from '../JavaStatementParser';
-import { Eat } from '../../common/parser-decorators';
+import { Eat, Allow } from '../../common/parser-decorators';
 import { Implements } from 'trampoline-framework';
 import { JavaConstants } from '../java-constants';
 import { JavaSyntax } from '../java-syntax';
@@ -32,9 +32,21 @@ export default class JavaWhileLoopParser extends AbstractParser<JavaSyntax.IJava
     this.next();
   }
 
-  @Eat('{')
+  @Allow('{')
   protected onBlock (): void {
     this.parsed.block = this.parseNextWith(JavaBlockParser);
+
+    this.stop();
+  }
+
+  @Allow(/./)
+  protected onSingleLineWhileLoop (): void {
+    const statement = this.parseNextWith(JavaStatementParser);
+
+    this.parsed.block = {
+      node: JavaSyntax.JavaSyntaxNode.BLOCK,
+      nodes: [ statement ]
+    };
 
     this.stop();
   }

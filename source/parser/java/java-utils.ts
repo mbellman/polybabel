@@ -179,7 +179,7 @@ export namespace JavaUtils {
     const isWord = TokenUtils.isWord(token);
 
     if (!isWord) {
-      // Optimize for non-words; return false immediately
+      // Optimize for non-words
       return false;
     }
 
@@ -204,8 +204,7 @@ export namespace JavaUtils {
     );
 
     if (!isFlanked) {
-      // Optimize for non-flanked tokens; return false before
-      // any additional logic checks have to be made
+      // Optimize for non-flanked tokens
       return false;
     }
 

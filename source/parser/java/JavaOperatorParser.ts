@@ -87,6 +87,7 @@ export default class JavaOperatorParser extends AbstractParser<JavaSyntax.IJavaO
     ],
     [EXCLAMATION]: [
       [ [ EQUAL ], JavaSyntax.JavaOperator.NOT_EQUAL_TO ],
+      [ [ EXCLAMATION ], JavaSyntax.JavaOperator.DOUBLE_NOT ],
       [ [ /.*/ ], JavaSyntax.JavaOperator.NEGATE ]
     ],
     [QUESTION]: [

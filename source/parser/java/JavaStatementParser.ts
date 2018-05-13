@@ -13,6 +13,7 @@ import JavaPropertyChainParser from './statement-parsers/JavaPropertyChainParser
 import JavaReferenceParser from './statement-parsers/JavaReferenceParser';
 import JavaSwitchParser from './statement-parsers/JavaSwitchParser';
 import JavaTryCatchParser from './statement-parsers/JavaTryCatchParser';
+import JavaTypeParser from './JavaTypeParser';
 import JavaVariableDeclarationParser from './statement-parsers/JavaVariableDeclarationParser';
 import JavaWhileLoopParser from './statement-parsers/JavaWhileLoopParser';
 import { Allow, Match } from '../common/parser-decorators';
@@ -23,7 +24,6 @@ import { JavaUtils } from './java-utils';
 import { ParserUtils } from '../common/parser-utils';
 import { TokenMatch } from '../common/parser-types';
 import { TokenUtils } from '../../tokenizer/token-utils';
-import JavaTypeParser from './JavaTypeParser';
 
 /**
  * A 3-tuple which contains a token match, a parser class
@@ -56,7 +56,7 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
    * E.g., an instruction might be incorrectly parsed as
    * a reference if the reference matcher came first.
    *
-   * See: onStatement()
+   * @see: onStatement()
    *
    * A getter is used to circumvent circular dependency
    * issues with CommonJS; returning the list in a method
@@ -118,10 +118,11 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
   }
 
   /**
-   * Handles a . token as an 'operator' defining a continuing
-   * property chain on an already-parsed left-side statement.
-   * Only certain statement types allow appending property
-   * chains; see canAppendPropertyChain().
+   * Handles a . or [ token as an 'operator' defining a continuing
+   * property chain on an already-parsed left-side statement. Only
+   * certain statement types allow appending property chains.
+   *
+   * @see canAppendPropertyChain()
    */
   @Match('.')
   @Match('[')
@@ -221,7 +222,10 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
     this.parsed.operator = this.parseNextWith(JavaOperatorParser);
     this.parsed.rightSide = this.parseNextWith(JavaStatementParser);
 
-    this.assert(this.hasParsedSide(), 'Invalid isolated operator');
+    this.assert(
+      this.hasParsedSide(),
+      'Invalid operator placement'
+    );
   }
 
   @Match(';')
@@ -235,8 +239,12 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
   }
 
   /**
-   * Determines whether the current left-side statement can be
-   * appended with a property chain.
+   * Determines whether the current left-side statement can
+   * be appended with a property chain. Used to assert that
+   * a property chain is allowed when encountering a . or [
+   * token after parsing the left side.
+   *
+   * @see onContinuingPropertyChain()
    */
   private canAppendPropertyChain (): boolean {
     const { leftSide } = this.parsed;

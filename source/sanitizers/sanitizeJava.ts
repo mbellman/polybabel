@@ -6,7 +6,7 @@ function replaceComment (comment: string): string {
   let replacement = '';
   let i = 0;
 
-  while (++i <= totalLineBreaks) {
+  while (++i < totalLineBreaks) {
     replacement += '\n';
   }
 
@@ -24,7 +24,7 @@ function sanitizeComments (code: string): string {
  * @internal
  */
 function sanitizeEmptyLines (code: string): string {
-  return code.replace(/^\s+?$/g, '\r\n');
+  return code.replace(/[ \t]+?\n/g, '\n');
 }
 
 export default function sanitizeJava (code: string): string {

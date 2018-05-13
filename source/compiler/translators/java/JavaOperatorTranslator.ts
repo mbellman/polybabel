@@ -18,6 +18,7 @@ export default class JavaOperatorTranslator extends AbstractTranslator<JavaSynta
     [JavaSyntax.JavaOperator.INCREMENT]: '++',
     [JavaSyntax.JavaOperator.DECREMENT]: '--',
     [JavaSyntax.JavaOperator.NEGATE]: '!',
+    [JavaSyntax.JavaOperator.DOUBLE_NOT]: '!!',
     [JavaSyntax.JavaOperator.EQUAL_TO]: '===',
     [JavaSyntax.JavaOperator.NOT_EQUAL_TO]: '!==',
     [JavaSyntax.JavaOperator.CONDITIONAL_AND]: '&&',

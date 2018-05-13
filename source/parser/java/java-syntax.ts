@@ -61,6 +61,7 @@ export namespace JavaSyntax {
     INCREMENT,
     DECREMENT,
     NEGATE,
+    DOUBLE_NOT,
     EQUAL_TO,
     NOT_EQUAL_TO,
     CONDITIONAL_AND,

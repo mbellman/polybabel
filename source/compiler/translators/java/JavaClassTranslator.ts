@@ -59,7 +59,6 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
     }
 
     this.emitInstanceSide()
-      .newline()
       .emitStaticSide();
   }
 
@@ -224,17 +223,19 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
     const hasEnums = enums.length > 0;
 
     if (this.hasStaticMembers()) {
-      this.emitNodes(
-          fields,
-          field => {
-            if (JavaTranslatorUtils.isEmptyObjectMember(field)) {
-              return false;
-            }
+      this.newlineIf(fields.length > 0)
+        .emitNodes(
+            fields,
+            field => {
+              if (JavaTranslatorUtils.isEmptyObjectMember(field)) {
+                return false;
+              }
 
-            this.emitField(field, false);
-          },
-          () => this.newline()
-      ).newlineIf(hasStaticMethods)
+              this.emitField(field, false);
+            },
+            () => this.newline()
+        )
+        .newlineIf(hasStaticMethods)
         .emitNodes(
           methods,
           method => {

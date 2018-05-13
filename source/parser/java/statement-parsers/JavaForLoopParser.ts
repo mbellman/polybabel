@@ -49,15 +49,29 @@ export default class JavaForLoopParser extends AbstractParser<JavaSyntax.IJavaFo
 
   @Match(/./)
   protected onLoopStatement (): void {
-    this.assert(
+    const { statements } = this.parsed;
+
+    // If we encounter any token other than a { after all
+    // statements are parsed, we treat it as a statement
+    // for a single-line loop
+    const isSingleLineForLoop = (
       this.parsed.isEnhanced
-        ? this.parsed.statements.length === 1
-        : this.parsed.statements.length < 3
+        ? statements.length === 2
+        : statements.length === 3
     );
 
     const statement = this.parseNextWith(JavaStatementParser);
 
-    this.parsed.statements.push(statement);
+    if (isSingleLineForLoop) {
+      this.parsed.block = {
+        node: JavaSyntax.JavaSyntaxNode.BLOCK,
+        nodes: [ statement ]
+      };
+
+      this.stop();
+    } else {
+      this.parsed.statements.push(statement);
+    }
   }
 
   @Match(';')

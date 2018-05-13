@@ -3,8 +3,6 @@
 import assert from './system/assert';
 import chalk from 'chalk';
 import Compiler from './compiler/Compiler';
-import parse from './parser/parse';
-import sanitize from './sanitizer/sanitize';
 import tokenize from './tokenizer/tokenize';
 import { getFileContents, resolveFilesDeep } from './system/file';
 import { getFlags, IFlags } from './system/flags';
@@ -12,7 +10,7 @@ import { IConfiguration, resolveConfiguration } from './system/configuration';
 import { IHashMap } from 'trampoline-framework';
 import { ISyntaxTree } from 'parser/common/syntax-types';
 import { Language } from './system/constants';
-import { LanguageSpecificationMap } from './system/language-spec';
+import { LanguageSpecification } from './language-specifications/index';
 
 /**
  * Maps file extensions to language constants.
@@ -47,10 +45,11 @@ async function createCompiler (directory: string, files: string[]): Promise<Comp
 
     try {
       const language = getLanguageByExtension(extension);
+      const { sanitizer, Parser } = LanguageSpecification[language];
       const fileContents = await getFileContents(`${process.cwd()}/${directory}/${file}`);
-      const sanitizedFileContents = sanitize(fileContents, language);
+      const sanitizedFileContents = sanitizer(fileContents);
       const firstToken = tokenize(sanitizedFileContents);
-      const syntaxTree = parse(firstToken, language);
+      const syntaxTree = new Parser().parse(firstToken);
 
       compiler.add(file, syntaxTree);
     } catch (e) {
@@ -73,7 +72,7 @@ async function main (args: string[]) {
   const inputFiles = await resolveFilesDeep(inputFolderName);
   const compiler = await createCompiler(inputFolderName, inputFiles);
 
-  compiler.compileAll();
+  compiler.run();
 
   if (compiler.hasErrors()) {
     console.log(chalk.red('Failed to compile.'));
