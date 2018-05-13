@@ -71,9 +71,9 @@ export default class JavaPropertyChainTranslator extends AbstractTranslator<Java
   }
 
   /**
-   * Determines whether a property in a Java property chain
-   * can be delimited by a single . in the emit, as opposed
-   * to those which require [...] bracket delimiters.
+   * Determines whether a property can be delimited by
+   * a single . in the emit, as opposed to those which
+   * require [...] bracket delimiters.
    */
   private isDotDelimitedProperty (property: JavaSyntax.JavaProperty): boolean {
     return (

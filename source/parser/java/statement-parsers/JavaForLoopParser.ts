@@ -53,7 +53,7 @@ export default class JavaForLoopParser extends AbstractParser<JavaSyntax.IJavaFo
 
     // If we encounter any token other than a { after all
     // statements are parsed, we treat it as a statement
-    // for a single-line loop
+    // for an inline loop
     const isSingleLineForLoop = (
       this.parsed.isEnhanced
         ? statements.length === 2

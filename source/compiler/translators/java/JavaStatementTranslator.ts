@@ -1,6 +1,7 @@
 import AbstractTranslator from '../../common/AbstractTranslator';
 import JavaBlockTranslator from './JavaBlockTranslator';
 import JavaClassTranslator from './JavaClassTranslator';
+import JavaDoWhileLoopTranslator from './statement-translators/JavaDoWhileLoopTranslator';
 import JavaForLoopTranslator from './statement-translators/JavaForLoopTranslator';
 import JavaFunctionCallTranslator from './statement-translators/JavaFunctionCallTranslator';
 import JavaIfElseTranslator from './statement-translators/JavaIfElseTranslator';
@@ -78,6 +79,9 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
         break;
       case JavaSyntax.JavaSyntaxNode.WHILE_LOOP:
         this.emitNodeWith(JavaWhileLoopTranslator, leftSide as JavaSyntax.IJavaWhileLoop);
+        break;
+      case JavaSyntax.JavaSyntaxNode.DO_WHILE_LOOP:
+        this.emitNodeWith(JavaDoWhileLoopTranslator, leftSide as JavaSyntax.IJavaDoWhileLoop);
         break;
       case JavaSyntax.JavaSyntaxNode.SWITCH:
         this.emitNodeWith(JavaSwitchTranslator, leftSide as JavaSyntax.IJavaSwitch);

@@ -1,6 +1,7 @@
 import AbstractParser from '../common/AbstractParser';
 import JavaAnnotationParser from './JavaAnnotationParser';
 import JavaClassParser from './JavaClassParser';
+import JavaDoWhileLoopParser from './statement-parsers/JavaDoWhileLoopParser';
 import JavaForLoopParser from './statement-parsers/JavaForLoopParser';
 import JavaFunctionCallParser from './statement-parsers/JavaFunctionCallParser';
 import JavaIfElseParser from './statement-parsers/JavaIfElseParser';
@@ -75,6 +76,7 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
       [ JavaConstants.Keyword.IF, JavaIfElseParser, true ],
       [ JavaConstants.Keyword.FOR, JavaForLoopParser, true ],
       [ JavaConstants.Keyword.WHILE, JavaWhileLoopParser, true ],
+      [ JavaConstants.Keyword.DO, JavaDoWhileLoopParser, false ],
       [ JavaConstants.Keyword.SWITCH, JavaSwitchParser, true ],
       [ JavaConstants.Keyword.TRY, JavaTryCatchParser, true ],
       [ '@', JavaAnnotationParser, true ]

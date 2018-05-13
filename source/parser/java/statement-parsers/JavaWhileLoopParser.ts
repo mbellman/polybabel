@@ -40,7 +40,7 @@ export default class JavaWhileLoopParser extends AbstractParser<JavaSyntax.IJava
   }
 
   @Allow(/./)
-  protected onSingleLineWhileLoop (): void {
+  protected onInlineLineWhileLoop (): void {
     const statement = this.parseNextWith(JavaStatementParser);
 
     this.parsed.block = {

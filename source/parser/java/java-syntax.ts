@@ -1,5 +1,6 @@
 import { IAccessible, IBlock, INamed, ISyntaxNode, ISyntaxTree, ITyped, IValued, IWithArguments, IWithParameters } from '../common/syntax-types';
 import { Language } from '../../system/constants';
+import { Without } from '../../system/types';
 
 export namespace JavaSyntax {
   export const enum JavaSyntaxNode {
@@ -25,6 +26,7 @@ export namespace JavaSyntax {
     IF_ELSE = 'IF ELSE',
     FOR_LOOP = 'FOR LOOP',
     WHILE_LOOP = 'WHILE LOOP',
+    DO_WHILE_LOOP = 'DO_WHILE_LOOP',
     SWITCH = 'SWITCH',
     TRY_CATCH = 'TRY_CATCH',
     INSTRUCTION = 'INSTRUCTION',
@@ -342,6 +344,13 @@ export namespace JavaSyntax {
     node: JavaSyntaxNode.WHILE_LOOP;
     condition: IJavaStatement;
     block: IJavaBlock;
+  }
+
+  /**
+   * A Java do-while loop statement.
+   */
+  export interface IJavaDoWhileLoop extends IJavaSyntaxNode, Without<IJavaWhileLoop, 'node'> {
+    node: JavaSyntaxNode.DO_WHILE_LOOP;
   }
 
   /**

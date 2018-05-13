@@ -28,6 +28,7 @@ export namespace JavaConstants {
     NULL = 'null',
     IF = 'if',
     ELSE = 'else',
+    DO = 'do',
     WHILE = 'while',
     FOR = 'for',
     SWITCH = 'switch',
