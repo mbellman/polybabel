@@ -2,7 +2,7 @@ import AbstractParser from '../common/AbstractParser';
 import JavaModifiableParser from './JavaModifiableParser';
 import JavaObjectBodyParser from './JavaObjectBodyParser';
 import JavaTypeParser from './JavaTypeParser';
-import { Allow, Eat } from '../common/parser-decorators';
+import { Allow, Expect } from '../common/parser-decorators';
 import { Implements, Override } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
@@ -24,12 +24,12 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
     this.emulate(JavaModifiableParser);
   }
 
-  @Eat(JavaConstants.Keyword.CLASS)
+  @Expect(JavaConstants.Keyword.CLASS)
   protected onClassKeyword (): void {
     this.next();
   }
 
-  @Eat(TokenUtils.isWord)
+  @Expect(TokenUtils.isWord)
   protected onClassName (): void {
     this.parsed.name = this.currentToken.value;
   }
@@ -70,7 +70,7 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
     this.parsed.implemented = this.getClauseTypeSequence();
   }
 
-  @Eat('{')
+  @Expect('{')
   protected onStartClassBody (): void {
     this.next();
     this.emulate(JavaObjectBodyParser);

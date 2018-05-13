@@ -5,7 +5,36 @@ import { JavaSyntax } from '../../../../parser/java/java-syntax';
 
 export default class JavaTryCatchTranslator extends AbstractTranslator<JavaSyntax.IJavaTryCatch> {
   @Implements protected translate (): void {
-    const { tryBlock, exceptionSets, exceptionReferences, catchBlocks, finallyBlock } = this.syntaxNode;
+    const { tryBlock, catchBlocks, finallyBlock } = this.syntaxNode;
+
+    this.emit('try {')
+      .enterBlock()
+      .emitNodeWith(JavaBlockTranslator, tryBlock)
+      .exitBlock()
+      .emit('}');
+
+    if (catchBlocks.length > 0) {
+      this.emitCatchBlocks();
+    }
+
+    if (finallyBlock) {
+      this.emit(' finally {')
+        .enterBlock()
+        .emitNodeWith(JavaBlockTranslator, finallyBlock)
+        .exitBlock()
+        .emit('}');
+    }
+  }
+
+  /**
+   * Emits each separate catch block as a series of if-else
+   * blocks, using 'instanceof' on the exception instance
+   * to map exception types to conditional blocks. JavaScript
+   * lacks a spec-standard way of handling multiple catch
+   * blocks with different error/exception types in each.
+   */
+  private emitCatchBlocks (): this {
+    const { catchBlocks, exceptionSets, exceptionReferences } = this.syntaxNode;
 
     // Since it is possible to use different exception reference
     // names for each catch statement, and since the emitted try/
@@ -14,12 +43,10 @@ export default class JavaTryCatchTranslator extends AbstractTranslator<JavaSynta
     // names using locally-scoped variables.
     const firstExceptionName = exceptionReferences[0].value;
 
-    this.emit('try {')
+    return this
+      .emit(`catch (${firstExceptionName}) {`)
       .enterBlock()
-      .emitNodeWith(JavaBlockTranslator, tryBlock)
-      .exitBlock()
-      .emit(`} catch (${firstExceptionName}) {`)
-      .enterBlock()
+      // Alias any alternately-named exception references
       .emitNodes(
         exceptionReferences,
         exceptionReference => {
@@ -32,54 +59,34 @@ export default class JavaTryCatchTranslator extends AbstractTranslator<JavaSynta
           }
         }
       )
-      .emitTranslatedCatchBlocks()
+      // Emit content of each catch block
+      .emitNodes(
+        catchBlocks,
+        (catchBlock, index) => {
+          const exceptions = exceptionSets[index];
+          const exceptionName = exceptionReferences[index].value;
+
+          this.emit(index === 0 ? 'if (' : ' else if (')
+            // Multiple exception types may have been piped together
+            // for use within this catch statement, so we need to emit
+            // each instanceof check separated by ||
+            .emitNodes(
+              exceptions,
+              exception => {
+                const exceptionTypeName = exception.namespaceChain.join('.');
+
+                this.emit(`${exceptionName} instanceof ${exceptionTypeName}`);
+              },
+              () => this.emit(' || ')
+            )
+            .emit(') {')
+            .enterBlock()
+            .emitNodeWith(JavaBlockTranslator, catchBlock)
+            .exitBlock()
+            .emit('}');
+        }
+      )
       .exitBlock()
       .emit('}');
-
-    if (finallyBlock) {
-      this.emit(' finally {')
-        .enterBlock()
-        .emitNodeWith(JavaBlockTranslator, finallyBlock)
-        .exitBlock()
-        .emit('}');
-    }
-  }
-
-  /**
-   * Emit each separate catch block as a series of if-else
-   * blocks, using 'instanceof' on the exception instance
-   * to map exception types to conditional blocks. JavaScript
-   * lacks a spec-standard way of handling multiple catch
-   * blocks with different error/exception types in each.
-   */
-  private emitTranslatedCatchBlocks (): this {
-    const { catchBlocks, exceptionSets, exceptionReferences } = this.syntaxNode;
-
-    return this.emitNodes(
-      catchBlocks,
-      (catchBlock, index) => {
-        const exceptions = exceptionSets[index];
-        const exceptionName = exceptionReferences[index].value;
-
-        this.emit(index === 0 ? 'if (' : ' else if (')
-          // Multiple exception types may have been piped together
-          // for use within this catch statement, so we need to emit
-          // each instanceof check separated by ||
-          .emitNodes(
-            exceptions,
-            exception => {
-              const exceptionTypeName = exception.namespaceChain.join('.');
-
-              this.emit(`${exceptionName} instanceof ${exceptionTypeName}`);
-            },
-            () => this.emit(' || ')
-          )
-          .emit(') {')
-          .enterBlock()
-          .emitNodeWith(JavaBlockTranslator, catchBlock)
-          .exitBlock()
-          .emit('}');
-      }
-    );
   }
 }

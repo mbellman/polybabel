@@ -3,7 +3,7 @@ import JavaBlockParser from '../JavaBlockParser';
 import JavaReferenceParser from './JavaReferenceParser';
 import JavaStatementParser from '../JavaStatementParser';
 import JavaVariableDeclarationParser from './JavaVariableDeclarationParser';
-import { Allow, Eat } from '../../common/parser-decorators';
+import { Allow, Expect } from '../../common/parser-decorators';
 import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../java-syntax';
 import { JavaUtils } from '../java-utils';
@@ -54,12 +54,12 @@ export default class JavaLambdaExpressionParser extends AbstractParser<JavaSynta
     }
   }
 
-  @Eat('-')
+  @Expect('-')
   protected onArrow (): void {
     this.next();
   }
 
-  @Eat('>')
+  @Expect('>')
   protected onArrowHead (): void {
     this.next();
   }

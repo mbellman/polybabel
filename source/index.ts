@@ -75,6 +75,11 @@ async function main (args: string[]) {
   compiler.run();
 
   if (compiler.hasErrors()) {
+    compiler.forEachError((file, message) => {
+      console.log(`${file}:`);
+      console.log(message);
+    });
+
     console.log(chalk.red('Failed to compile.'));
   } else {
     console.log(chalk.white.bold(`Done. ${Date.now() - startTime}ms`));

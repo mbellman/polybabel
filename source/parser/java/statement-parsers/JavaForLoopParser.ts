@@ -1,7 +1,7 @@
 import AbstractParser from '../../common/AbstractParser';
 import JavaBlockParser from '../JavaBlockParser';
 import JavaStatementParser from '../JavaStatementParser';
-import { Eat, Match } from '../../common/parser-decorators';
+import { Expect, Match } from '../../common/parser-decorators';
 import { Implements } from 'trampoline-framework';
 import { JavaConstants } from '../java-constants';
 import { JavaSyntax } from '../java-syntax';
@@ -37,12 +37,12 @@ export default class JavaForLoopParser extends AbstractParser<JavaSyntax.IJavaFo
     };
   }
 
-  @Eat(JavaConstants.Keyword.FOR)
+  @Expect(JavaConstants.Keyword.FOR)
   protected onFor (): void {
     this.next();
   }
 
-  @Eat('(')
+  @Expect('(')
   protected onStartLoopStatementBlock (): void {
     this.next();
   }

@@ -3,7 +3,7 @@ import JavaTypeParser from '../JavaTypeParser';
 import { Implements, Override } from 'trampoline-framework';
 import { JavaConstants } from '../java-constants';
 import { JavaSyntax } from '../java-syntax';
-import { Match, Allow, Eat } from '../../common/parser-decorators';
+import { Match, Allow, Expect } from '../../common/parser-decorators';
 import { TokenUtils } from '../../../tokenizer/token-utils';
 
 export default class JavaVariableDeclarationParser extends AbstractParser<JavaSyntax.IJavaVariableDeclaration> {
@@ -20,7 +20,7 @@ export default class JavaVariableDeclarationParser extends AbstractParser<JavaSy
     this.parsed.isFinal = true;
   }
 
-  @Eat(TokenUtils.isWord)
+  @Expect(TokenUtils.isWord)
   protected onType (): void {
     this.parsed.type = this.parseNextWith(JavaTypeParser);
   }
@@ -37,7 +37,7 @@ export default class JavaVariableDeclarationParser extends AbstractParser<JavaSy
     this.parsed.isVariadic = true;
   }
 
-  @Eat(TokenUtils.isWord)
+  @Expect(TokenUtils.isWord)
   protected onVariableName (): void {
     this.parsed.name = this.currentToken.value;
   }

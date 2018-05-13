@@ -5,7 +5,7 @@ import JavaImportParser from './JavaImportParser';
 import JavaInterfaceParser from './JavaInterfaceParser';
 import JavaModifiableParser from './JavaModifiableParser';
 import JavaPackageParser from './JavaPackageParser';
-import { Allow, Eat, Match } from '../common/parser-decorators';
+import { Allow, Expect, Match } from '../common/parser-decorators';
 import { Implements } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';

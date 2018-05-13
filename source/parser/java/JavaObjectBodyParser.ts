@@ -7,12 +7,12 @@ import JavaObjectMethodParser from './JavaObjectMethodParser';
 import JavaStatementParser from './JavaStatementParser';
 import JavaTypeParser from './JavaTypeParser';
 import JavaVariableDeclarationParser from './statement-parsers/JavaVariableDeclarationParser';
-import { Eat, Match } from '../common/parser-decorators';
 import { Implements } from 'trampoline-framework';
 import { INamed, ITyped } from '../common/syntax-types';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { JavaUtils } from './java-utils';
+import { Match } from '../common/parser-decorators';
 import { TokenUtils } from '../../tokenizer/token-utils';
 
 /**

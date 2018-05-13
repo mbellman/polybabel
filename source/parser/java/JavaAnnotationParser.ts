@@ -1,6 +1,6 @@
 import AbstractParser from '../common/AbstractParser';
 import JavaStatementParser from './JavaStatementParser';
-import { Allow, Eat } from '../common/parser-decorators';
+import { Allow, Expect } from '../common/parser-decorators';
 import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from './java-syntax';
 import { TokenUtils } from '../../tokenizer/token-utils';
@@ -14,12 +14,12 @@ export default class JavaAnnotationParser extends AbstractParser<JavaSyntax.IJav
     };
   }
 
-  @Eat('@')
+  @Expect('@')
   protected onStart (): void {
     this.next();
   }
 
-  @Eat(TokenUtils.isWord)
+  @Expect(TokenUtils.isWord)
   protected onAnnotationName (): void {
     this.parsed.name = this.currentToken.value;
   }

@@ -3,7 +3,7 @@ import JavaLiteralParser from './JavaLiteralParser';
 import JavaObjectBodyParser from '../JavaObjectBodyParser';
 import JavaStatementParser from '../JavaStatementParser';
 import JavaTypeParser from '../JavaTypeParser';
-import { Allow, Eat } from '../../common/parser-decorators';
+import { Allow, Expect } from '../../common/parser-decorators';
 import { Implements } from 'trampoline-framework';
 import { JavaConstants } from '../java-constants';
 import { JavaSyntax } from '../java-syntax';
@@ -43,12 +43,12 @@ export default class JavaInstantiationParser extends AbstractParser<JavaSyntax.I
     };
   }
 
-  @Eat(JavaConstants.Keyword.NEW)
+  @Expect(JavaConstants.Keyword.NEW)
   protected onNew (): void {
     this.next();
   }
 
-  @Eat(TokenUtils.isWord)
+  @Expect(TokenUtils.isWord)
   protected onConstructor (): void {
     this.parsed.constructor = this.parseNextWith(JavaTypeParser);
   }

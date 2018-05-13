@@ -1,11 +1,11 @@
 import AbstractParser from '../../common/AbstractParser';
+import JavaStatementParser from '../JavaStatementParser';
 import { Implements } from 'trampoline-framework';
 import { JavaConstants } from '../java-constants';
 import { JavaSyntax } from '../java-syntax';
 import { Match } from '../../common/parser-decorators';
 import { ParserUtils } from '../../common/parser-utils';
 import { TokenUtils } from '../../../tokenizer/token-utils';
-import JavaStatementParser from '../JavaStatementParser';
 
 /**
  * Parses literal values and finishes at their termination.

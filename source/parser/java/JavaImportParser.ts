@@ -1,6 +1,6 @@
 import AbstractParser from '../common/AbstractParser';
 import JavaReferenceParser from './statement-parsers/JavaReferenceParser';
-import { Allow, Eat, Match, SingleLineParser } from '../common/parser-decorators';
+import { Allow, Expect, Match, SingleLineParser } from '../common/parser-decorators';
 import { Implements } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
@@ -32,7 +32,7 @@ export default class JavaImportParser extends AbstractParser<JavaSyntax.IJavaImp
     };
   }
 
-  @Eat(JavaConstants.Keyword.IMPORT)
+  @Expect(JavaConstants.Keyword.IMPORT)
   protected onImport (): void {
     this.next();
   }
@@ -48,7 +48,7 @@ export default class JavaImportParser extends AbstractParser<JavaSyntax.IJavaImp
     }
   }
 
-  @Eat(TokenUtils.isWord)
+  @Expect(TokenUtils.isWord)
   @Match(/./)
   protected onPathPart (): void {
     this.assert(this.parsed.nonDefaultImports.length === 0);

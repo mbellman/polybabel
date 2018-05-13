@@ -1,5 +1,5 @@
 import AbstractParser from '../common/AbstractParser';
-import { Eat, Match, SingleLineParser } from '../common/parser-decorators';
+import { Expect, Match, SingleLineParser } from '../common/parser-decorators';
 import { Implements } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
@@ -14,12 +14,12 @@ export default class JavaPackageParser extends AbstractParser<JavaSyntax.IJavaPa
     };
   }
 
-  @Eat(JavaConstants.Keyword.PACKAGE)
+  @Expect(JavaConstants.Keyword.PACKAGE)
   protected onPackage (): void {
     this.next();
   }
 
-  @Eat(TokenUtils.isWord)
+  @Expect(TokenUtils.isWord)
   @Match(TokenUtils.isWord)
   protected onPackagePath (): void {
     this.parsed.paths.push(this.currentToken.value);

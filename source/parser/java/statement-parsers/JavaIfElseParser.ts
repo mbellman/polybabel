@@ -1,7 +1,7 @@
 import AbstractParser from '../../common/AbstractParser';
 import JavaBlockParser from '../JavaBlockParser';
 import JavaStatementParser from '../JavaStatementParser';
-import { Allow, Eat, Match } from '../../common/parser-decorators';
+import { Allow, Expect, Match } from '../../common/parser-decorators';
 import { Implements } from 'trampoline-framework';
 import { JavaConstants } from '../java-constants';
 import { JavaSyntax } from '../java-syntax';
@@ -30,12 +30,12 @@ export default class JavaIfElseParser extends AbstractParser<JavaSyntax.IJavaIfE
     };
   }
 
-  @Eat(JavaConstants.Keyword.IF)
+  @Expect(JavaConstants.Keyword.IF)
   protected onIf (): void {
     this.next();
   }
 
-  @Eat('(')
+  @Expect('(')
   protected onStartConditionalStatement (): void {
     this.next();
 
@@ -44,7 +44,7 @@ export default class JavaIfElseParser extends AbstractParser<JavaSyntax.IJavaIfE
     this.parsed.conditions.push(conditionalStatement);
   }
 
-  @Eat(')')
+  @Expect(')')
   protected onEndConditionalStatement (): void {
     this.next();
   }

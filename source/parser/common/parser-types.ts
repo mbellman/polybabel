@@ -16,19 +16,19 @@ type BaseTokenMatch = string | RegExp | TokenPredicate;
  * Constants representing the type of behavior for a token matcher
  * added to a parser class via decoration.
  *
- * EAT - Requires the current token in the parsing stream to
+ * EXPECT - Requires the current token in the parsing stream to
  *  satisfy its token matcher.
  *
  * ALLOW - Allows, but does not require, the current token in
  *  the parsing stream to satisfy its token matcher.
  *
- * MATCH - After EAT and ALLOW token matchers have been exhausted,
+ * MATCH - Once EXPECT and ALLOW token matchers have been exhausted,
  *  used to handle additional tokens in the parsing stream. If
  *  a new token doesn't satisfy any MATCH-type token matchers,
  *  the parser halts.
  */
 export const enum TokenMatcherType {
-  EAT,
+  EXPECT,
   ALLOW,
   MATCH
 }

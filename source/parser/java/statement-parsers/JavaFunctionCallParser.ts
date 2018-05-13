@@ -1,7 +1,7 @@
 import AbstractParser from '../../common/AbstractParser';
 import JavaStatementParser from '../JavaStatementParser';
 import JavaTypeParser from '../JavaTypeParser';
-import { Allow, Eat } from '../../common/parser-decorators';
+import { Allow, Expect } from '../../common/parser-decorators';
 import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../java-syntax';
 import { TokenUtils } from '../../../tokenizer/token-utils';
@@ -65,7 +65,7 @@ export default class JavaFunctionCallParser extends AbstractParser<JavaSyntax.IJ
     this.parsed.name = this.currentToken.value;
   }
 
-  @Eat('(')
+  @Expect('(')
   protected onArgumentsStart (): void {
     this.next();
 
@@ -76,7 +76,7 @@ export default class JavaFunctionCallParser extends AbstractParser<JavaSyntax.IJ
     });
   }
 
-  @Eat(')')
+  @Expect(')')
   protected onArgumentsEnd (): void {
     this.finish();
   }

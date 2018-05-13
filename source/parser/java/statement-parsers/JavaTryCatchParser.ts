@@ -2,7 +2,7 @@ import AbstractParser from '../../common/AbstractParser';
 import JavaBlockParser from '../JavaBlockParser';
 import JavaReferenceParser from './JavaReferenceParser';
 import JavaTypeParser from '../JavaTypeParser';
-import { Allow, Eat, Match } from '../../common/parser-decorators';
+import { Allow, Expect, Match } from '../../common/parser-decorators';
 import { Implements } from 'trampoline-framework';
 import { JavaConstants } from '../java-constants';
 import { JavaSyntax } from '../java-syntax';
@@ -19,12 +19,12 @@ export default class JavaTryCatchParser extends AbstractParser<JavaSyntax.IJavaT
     };
   }
 
-  @Eat(JavaConstants.Keyword.TRY)
+  @Expect(JavaConstants.Keyword.TRY)
   protected onTry (): void {
     this.next();
   }
 
-  @Eat('{')
+  @Expect('{')
   protected onTryBlock (): void {
     this.parsed.tryBlock = this.parseNextWith(JavaBlockParser);
   }

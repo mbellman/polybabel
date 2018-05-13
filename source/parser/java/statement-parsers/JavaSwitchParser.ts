@@ -1,10 +1,10 @@
 import AbstractParser from '../../common/AbstractParser';
 import JavaBlockParser from '../JavaBlockParser';
 import JavaStatementParser from '../JavaStatementParser';
+import { Expect, Match } from '../../common/parser-decorators';
 import { Implements, Override } from 'trampoline-framework';
 import { JavaConstants } from '../java-constants';
 import { JavaSyntax } from '../java-syntax';
-import { Match, Eat } from '../../common/parser-decorators';
 
 /**
  * Parses switch statements and stops after completion.
@@ -31,24 +31,24 @@ export default class JavaSwitchParser extends AbstractParser<JavaSyntax.IJavaSwi
     };
   }
 
-  @Eat(JavaConstants.Keyword.SWITCH)
+  @Expect(JavaConstants.Keyword.SWITCH)
   protected onSwitch (): void {
     this.next();
   }
 
-  @Eat('(')
+  @Expect('(')
   protected onStartSwitchValue (): void {
     this.next();
 
     this.parsed.value = this.parseNextWith(JavaStatementParser);
   }
 
-  @Eat(')')
+  @Expect(')')
   protected onEndSwitchValue (): void {
     this.next();
   }
 
-  @Eat('{')
+  @Expect('{')
   protected onEnterSwitchBlock (): void {
     this.next();
   }
@@ -82,11 +82,12 @@ export default class JavaSwitchParser extends AbstractParser<JavaSyntax.IJavaSwi
       this.nextToken.value === ':'
     );
 
-    // Skip the tokens 'default' and ':'
-    this.next();
-    this.next();
+    this.next(); // 'default'
+    this.next(); // ':'
 
     this.parsed.defaultBlock = this.parseNextWith(JavaBlockParser);
+
+    this.stop();
   }
 
   /**

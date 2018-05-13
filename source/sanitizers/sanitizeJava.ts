@@ -17,7 +17,7 @@ function replaceComment (comment: string): string {
  * @internal
  */
 function sanitizeComments (code: string): string {
-  return code.replace(/(\/\*(.|\n)*?\*\/|\/\/.*\n)/g, replaceComment);
+  return code.replace(/\/\*(.|\n|\r\n)*?\*\/|\/\/[ ].*(\n|\r\n)/g, replaceComment);
 }
 
 /**

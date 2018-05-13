@@ -1,7 +1,7 @@
 import AbstractParser from '../../common/AbstractParser';
 import JavaBlockParser from '../JavaBlockParser';
 import JavaStatementParser from '../JavaStatementParser';
-import { Eat, Allow } from '../../common/parser-decorators';
+import { Allow, Expect } from '../../common/parser-decorators';
 import { Implements } from 'trampoline-framework';
 import { JavaConstants } from '../java-constants';
 import { JavaSyntax } from '../java-syntax';
@@ -15,19 +15,19 @@ export default class JavaWhileLoopParser extends AbstractParser<JavaSyntax.IJava
     };
   }
 
-  @Eat(JavaConstants.Keyword.WHILE)
+  @Expect(JavaConstants.Keyword.WHILE)
   protected onWhile (): void {
     this.next();
   }
 
-  @Eat('(')
+  @Expect('(')
   protected onCondition (): void {
     this.next();
 
     this.parsed.condition = this.parseNextWith(JavaStatementParser);
   }
 
-  @Eat(')')
+  @Expect(')')
   protected onConditionEnd (): void {
     this.next();
   }

@@ -12,7 +12,13 @@ export default class JavaObjectMethodTranslator extends AbstractTranslator<JavaS
     this.emit(`${name} (`)
       .emitNodes(
         parameters,
-        parameter => this.emit(`${parameter.name}`),
+        parameter => {
+          if (parameter.isVariadic) {
+            this.emit('...');
+          }
+
+          this.emit(`${parameter.name}`);
+        },
         () => this.emit(', ')
       )
       .emit(') {')

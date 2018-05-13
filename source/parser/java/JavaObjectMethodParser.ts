@@ -2,7 +2,7 @@ import AbstractParser from '../common/AbstractParser';
 import JavaBlockParser from './JavaBlockParser';
 import JavaTypeParser from './JavaTypeParser';
 import JavaVariableDeclarationParser from './statement-parsers/JavaVariableDeclarationParser';
-import { Allow, Eat, Match } from '../common/parser-decorators';
+import { Allow, Expect, Match } from '../common/parser-decorators';
 import { Implements, Override } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
@@ -21,7 +21,7 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
     };
   }
 
-  @Eat('(')
+  @Expect('(')
   protected onParametersStart (): void {
     this.assert(TokenUtils.isWord(this.previousTextToken));
     this.next();
@@ -33,7 +33,7 @@ export default class JavaObjectMethodParser extends AbstractParser<JavaSyntax.IJ
     });
   }
 
-  @Eat(')')
+  @Expect(')')
   protected onParametersEnd (): void {
     this.next();
   }

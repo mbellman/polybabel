@@ -1,5 +1,5 @@
 import AbstractParser from '../common/AbstractParser';
-import { Allow, Eat, Match } from '../common/parser-decorators';
+import { Allow, Expect, Match } from '../common/parser-decorators';
 import { Implements, Override } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
@@ -87,7 +87,7 @@ export default class JavaTypeParser extends AbstractParser<JavaSyntax.IJavaType>
     this.stop();
   }
 
-  @Eat(TokenUtils.isWord)
+  @Expect(TokenUtils.isWord)
   protected onTypeName (): void {
     const isParameterBoundType = this.nextTextToken.value === JavaConstants.Keyword.EXTENDS;
 
