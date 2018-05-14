@@ -24,17 +24,10 @@ export namespace JavaUtils {
    * operation matches any of the characters in the regex set,
    * we're dealing with something other than a cast.
    *
-   * The match is effectively the set of all Java operators,
-   * condensed into a regex and one literal word match for
-   * matching efficiency. Cast-like statements followed by an
-   * operator could instead be parentheses-enclosed references,
-   * or they could represent lambda expression parameters
-   * preceding the -> arrow.
-   *
    * @internal
    */
   const InvalidCastValueTokens: TokenMatch = [
-    /[=+\-*\/!&?:|^~<>]/,
+    /[^(\w]/,
     JavaConstants.Operator.INSTANCEOF
   ];
 

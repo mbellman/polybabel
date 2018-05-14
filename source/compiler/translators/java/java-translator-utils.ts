@@ -44,10 +44,16 @@ export namespace JavaTranslatorUtils {
    * e.g. that of an operation. A one-sided statement
    * might have a null right side, or it might have a
    * right side which was parsed and then terminated
-   * immediately, resulting in its own null left side.
+   * immediately, e.g. i++.
    */
   export function isTwoSidedStatement ({ leftSide, rightSide }: JavaSyntax.IJavaStatement): boolean {
-    return !!leftSide && !!rightSide && !!rightSide.leftSide;
+    return (
+      !!leftSide &&
+      !!rightSide && (
+        !!rightSide.leftSide ||
+        !!rightSide.rightSide
+      )
+    );
   }
 
   /**

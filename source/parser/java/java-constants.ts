@@ -20,6 +20,7 @@ export namespace JavaConstants {
     FINAL = 'final',
     ABSTRACT = 'abstract',
     TRANSIENT = 'transient',
+    VOLATILE = 'volatile',
     NATIVE = 'native',
     SYNCHRONIZED = 'synchronized',
     NEW = 'new',
@@ -104,6 +105,7 @@ export namespace JavaConstants {
     Keyword.ABSTRACT,
     Keyword.TRANSIENT,
     Keyword.NATIVE,
+    Keyword.VOLATILE,
     Keyword.SYNCHRONIZED
   ];
 

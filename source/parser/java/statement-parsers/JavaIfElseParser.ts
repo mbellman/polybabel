@@ -20,6 +20,11 @@ import { JavaSyntax } from '../java-syntax';
  *  } else {
  *    ...
  *  }
+ *
+ *  if (...)
+ *    ...
+ *  else
+ *    ...
  */
 export default class JavaIfElseParser extends AbstractParser<JavaSyntax.IJavaIfElse> {
   @Implements protected getDefault (): JavaSyntax.IJavaIfElse {
@@ -47,14 +52,19 @@ export default class JavaIfElseParser extends AbstractParser<JavaSyntax.IJavaIfE
   @Expect(')')
   protected onEndConditionalStatement (): void {
     this.next();
+
+    if (!this.currentTokenMatches('{')) {
+      this.parseInlineConditional();
+    }
   }
 
-  /**
-   * @todo Allow inline/single-line if/else statements
-   */
   @Allow('{')
   protected onConditionalBlock (): void {
-    this.assert(this.parsed.conditions.length > 0);
+    this.assert(
+      this.parsed.conditions.length > 0 &&
+      this.previousTextToken.value === ')' ||
+      this.previousTextToken.value === JavaConstants.Keyword.ELSE
+    );
 
     const block = this.parseNextWith(JavaBlockParser);
 
@@ -64,6 +74,21 @@ export default class JavaIfElseParser extends AbstractParser<JavaSyntax.IJavaIfE
   @Allow(JavaConstants.Keyword.ELSE)
   protected onElse (): void {
     this.next();
+
+    const isInlineElse = !this.currentTokenMatches([
+      '{',
+      JavaConstants.Keyword.IF
+    ]);
+
+    if (isInlineElse) {
+      this.parseInlineConditional();
+    }
+  }
+
+  @Allow('{')
+  protected onElseBlock (): void {
+    this.onConditionalBlock();
+    this.stop();
   }
 
   @Allow(JavaConstants.Keyword.IF)
@@ -77,14 +102,23 @@ export default class JavaIfElseParser extends AbstractParser<JavaSyntax.IJavaIfE
     this.stop();
   }
 
-  @Allow('{')
-  protected onElseBlock (): void {
-    this.onConditionalBlock();
-    this.stop();
-  }
-
   @Match(/./)
   protected onEnd (): void {
     this.stop();
+  }
+
+  /**
+   * Parses the incoming token stream as an inline conditional
+   * instead of a traditional block.
+   */
+  private parseInlineConditional (): void {
+    const statement = this.parseNextWith(JavaStatementParser);
+
+    this.parsed.blocks.push({
+      node: JavaSyntax.JavaSyntaxNode.BLOCK,
+      nodes: [ statement ]
+    });
+
+    this.next();
   }
 }
