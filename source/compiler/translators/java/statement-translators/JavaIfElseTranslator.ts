@@ -13,7 +13,7 @@ export default class JavaIfElseTranslator extends AbstractTranslator<JavaSyntax.
       (block, index) => {
         const isLastBlock = index === blocks.length - 1;
 
-        if (isLastBlock && blocks.length > 1) {
+        if (isLastBlock && blocks.length > conditions.length) {
           this.emit(' else {');
         } else {
           this.emit(index === 0 ? 'if (' : ' else if (')

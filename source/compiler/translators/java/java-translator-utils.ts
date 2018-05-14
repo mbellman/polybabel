@@ -44,7 +44,7 @@ export namespace JavaTranslatorUtils {
    * e.g. that of an operation. A one-sided statement
    * might have a null right side, or it might have a
    * right side which was parsed and then terminated
-   * immediately, e.g. i++.
+   * immediately, e.g. 'i++;'.
    */
   export function isTwoSidedStatement ({ leftSide, rightSide }: JavaSyntax.IJavaStatement): boolean {
     return (

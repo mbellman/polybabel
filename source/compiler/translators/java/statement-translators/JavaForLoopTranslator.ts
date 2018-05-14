@@ -41,7 +41,7 @@ export default class JavaForLoopTranslator extends AbstractTranslator<JavaSyntax
             this.emitNodeWith(JavaStatementTranslator, statement);
           }
         },
-        () => this.emit('; ')
+        () => this.emit(';')
       )
       .emit(') {')
       .enterBlock()
