@@ -65,8 +65,6 @@ export default class JavaLiteralParser extends AbstractParser<JavaSyntax.IJavaLi
 
     while (!this.isEOF()) {
       this.parsed.value += this.currentToken.value;
-
-      // Advance one token at a time to preserve whitespace
       this.currentToken = this.nextToken;
 
       if (this.currentTokenMatches(terminatorQuote) && !isBackslashed) {

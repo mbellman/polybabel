@@ -1,5 +1,5 @@
 import { Callback } from '../../system/types';
-import { TokenMatch, TokenMatcher, TokenMatcherType, IDecoratedTokenMatcher } from './parser-types';
+import { DecoratedTokenMatcherField, IDecoratedParser, IDecoratedTokenMatcher, ISanitizer, TokenMatch, TokenMatcherType } from './parser-types';
 
 /**
  * A decorated token matchers sorting comparator which sorts by
@@ -38,16 +38,16 @@ function sortDecoratedTokenMatchers (decoratedTokenMatcherA: IDecoratedTokenMatc
  * default, determines whether the token matchers list should be
  * sorted after each new token matcher is added.
  */
-function createTokenMatcherDecorator (tokenMatcherKey: string, tokenMatcherType: TokenMatcherType, shouldSort: boolean = false): Callback<TokenMatch, MethodDecorator> {
+function createTokenMatcherDecorator (field: DecoratedTokenMatcherField, tokenMatcherType: TokenMatcherType, shouldSort: boolean = false): Callback<TokenMatch, MethodDecorator> {
   return (tokenMatch: TokenMatch): MethodDecorator => {
     return (target: any, methodName: string) => {
-      const { constructor } = target;
+      const decoratedParser = target.constructor as IDecoratedParser;
 
-      if (!constructor[tokenMatcherKey]) {
-        constructor[tokenMatcherKey] = [];
+      if (!decoratedParser[field]) {
+        decoratedParser[field] = [];
       }
 
-      const decoratedTokenMatchers: IDecoratedTokenMatcher[] = target.constructor[tokenMatcherKey];
+      const decoratedTokenMatchers = decoratedParser[field];
 
       decoratedTokenMatchers.push({
         tokenMatcher: [ tokenMatch, methodName ],
@@ -96,5 +96,20 @@ export const Match = createTokenMatcherDecorator('streamMatchers', TokenMatcherT
  * line at a time, halting if any newline tokens are passed.
  */
 export function SingleLineParser (target: any): void {
-  target.isSingleLineParser = true;
+  (target as IDecoratedParser).isSingleLineParser = true;
+}
+
+/**
+ * @todo @description
+ */
+export function ProvideSanitizer (sanitizer: ISanitizer): ClassDecorator {
+  return (target: any) => {
+    const decoratedParser = target as IDecoratedParser;
+
+    if (!decoratedParser.sanitizers) {
+      decoratedParser.sanitizers = [];
+    }
+
+    decoratedParser.sanitizers.push(sanitizer);
+  };
 }

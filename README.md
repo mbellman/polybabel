@@ -20,13 +20,15 @@ Polybabel's emphasis on idiomatic programming means the standard libraries and A
 * Interoperability between languages - 0%
 
 ### Java
-#### Pending work:
+#### Remaining items:
 1. Parsing/Translation:
 * * Ternaries
-* * Additional shorthand assignment operators
 * * Explicit constructor translation
-* * Hexadecimal number parsing
 * * Enums
+* * Additional shorthand assignment operators
+* * Hexadecimal number parsing
+* * Assertions
+* * Improved comment sanitization
 * * Static/instance initializer blocks
 * * Overloading
 2. Validation

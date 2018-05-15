@@ -1,11 +1,12 @@
 import AbstractParser from '../common/AbstractParser';
 import JavaAnnotationParser from './JavaAnnotationParser';
 import JavaClassParser from './JavaClassParser';
+import JavaCommentParser from './JavaCommentParser';
 import JavaImportParser from './JavaImportParser';
 import JavaInterfaceParser from './JavaInterfaceParser';
 import JavaModifiableParser from './JavaModifiableParser';
 import JavaPackageParser from './JavaPackageParser';
-import { Allow, Expect, Match } from '../common/parser-decorators';
+import { Allow, Expect, Match, ProvideSanitizer } from '../common/parser-decorators';
 import { Implements } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
@@ -16,6 +17,10 @@ import { Language } from '../../system/constants';
  * Parses an entire Java file, generating a syntax tree from
  * the contained code.
  */
+@ProvideSanitizer({
+  match: JavaUtils.isComment,
+  parser: JavaCommentParser
+})
 export default class JavaParser extends AbstractParser<JavaSyntax.IJavaSyntaxTree> {
   private currentAnnotations: JavaSyntax.IJavaAnnotation[] = [];
 

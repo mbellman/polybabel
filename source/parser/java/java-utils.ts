@@ -432,4 +432,21 @@ export namespace JavaUtils {
 
     return isNonTrivialCast(token);
   }
+
+  /**
+   * Determines whether a token corresponds to the beginning of
+   * a comment line or block.
+   *
+   * @example
+   *
+   *  // ...
+   *  /* ...
+   */
+  export function isComment ({ value, nextToken }: IToken): boolean {
+    return (
+      value === '/' &&
+      nextToken.value === '/' ||
+      nextToken.value === '*'
+    );
+  }
 }

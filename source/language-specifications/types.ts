@@ -13,7 +13,6 @@ import { ISyntaxTree } from '../parser/common/syntax-types';
  * @internal
  */
 export interface ILanguageSpecification {
-  sanitizer: Callback<string, string>;
   Parser: IConstructable<AbstractParser<ISyntaxTree>>;
   TypeReconciler: IConstructable<AbstractTypeReconciler>;
   Validator: IConstructable<AbstractValidator>;

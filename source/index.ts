@@ -45,10 +45,9 @@ async function createCompiler (directory: string, files: string[]): Promise<Comp
 
     try {
       const language = getLanguageByExtension(extension);
-      const { sanitizer, Parser } = LanguageSpecification[language];
+      const { Parser } = LanguageSpecification[language];
       const fileContents = await getFileContents(`${process.cwd()}/${directory}/${file}`);
-      const sanitizedFileContents = sanitizer(fileContents);
-      const firstToken = tokenize(sanitizedFileContents);
+      const firstToken = tokenize(fileContents);
       const syntaxTree = new Parser().parse(firstToken);
 
       compiler.add(file, syntaxTree);

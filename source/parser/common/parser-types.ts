@@ -53,15 +53,44 @@ export type TokenMatch = BaseTokenMatch | Array<BaseTokenMatch>;
 export type TokenMatcher = [ TokenMatch, string ];
 
 /**
+ * A special static field key used by parser classes. The field
+ * contains an array of IDecoratedTokenMatcher objects which
+ * determines either starting token match or stream token match
+ * behavior. The token matches are supplied by decorators.
+ *
+ * @see IDecoratedTokenMatcher
+ * @see parser-decorators.ts
+ */
+export type DecoratedTokenMatcherField = 'starterMatchers' | 'streamMatchers';
+
+/**
  * An object containing both a token matcher and a token matcher
  * type to determine the nature of the matcher.
  *
- * See: TokenMatcherType
- * See: parser-decorators
+ * @see TokenMatcherType
+ * @see parser-decorators.ts
  */
 export interface IDecoratedTokenMatcher {
   tokenMatcher: TokenMatcher;
   type: TokenMatcherType;
+}
+
+/**
+ * @todo @description
+ */
+export interface ISanitizer {
+  match: TokenMatch;
+  parser: Constructor<AbstractParser>;
+}
+
+/**
+ * @todo @description
+ */
+export interface IDecoratedParser {
+  starterMatchers: IDecoratedTokenMatcher[];
+  streamMatchers: IDecoratedTokenMatcher[];
+  sanitizers: ISanitizer[];
+  isSingleLineParser: boolean;
 }
 
 /**

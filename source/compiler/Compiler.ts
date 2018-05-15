@@ -40,7 +40,6 @@ export default class Compiler {
 
     if (syntaxTree) {
       const { Translator } = LanguageSpecification[syntaxTree.language];
-
       const translation = new Translator(syntaxTree).getTranslation();
 
       this.compiledCodeMap[file] = translation;

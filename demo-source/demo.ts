@@ -77,9 +77,8 @@ import { LanguageSpecification } from '../source/language-specifications';
     try {
       this.compilationStartTime = Date.now();
 
-      const { sanitizer, Parser } = LanguageSpecification[Language.JAVA];
-      const sanitizedEditorContent = sanitizer(editorContent);
-      const firstToken = tokenize(sanitizedEditorContent);
+      const { Parser } = LanguageSpecification[Language.JAVA];
+      const firstToken = tokenize(editorContent);
       const syntaxTree = new Parser().parse(firstToken);
 
       this.compiler.add('demo', syntaxTree);

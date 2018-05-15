@@ -1,7 +1,7 @@
 import chalk from 'chalk';
-import { BaseOf, Callback, Without } from '../../system/types';
-import { Bound, Constructor, IConstructable } from 'trampoline-framework';
-import { IDecoratedTokenMatcher, IParseSequenceConfiguration, TokenMatch, TokenMatcher, TokenMatcherType } from './parser-types';
+import { BaseOf, Without } from '../../system/types';
+import { Constructor, IConstructable } from 'trampoline-framework';
+import { IDecoratedTokenMatcher, IParseSequenceConfiguration, TokenMatch, TokenMatcherType, ISanitizer, IDecoratedParser } from './parser-types';
 import { ISyntaxNode } from './syntax-types';
 import { IToken, TokenType } from '../../tokenizer/types';
 import { ParserUtils } from './parser-utils';
@@ -83,7 +83,7 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
     this.assert(this.currentTokenMatches(tokenMatch), errorMessage);
   }
 
-  @Bound protected currentTokenMatches (tokenMatch: TokenMatch): boolean {
+  protected currentTokenMatches (tokenMatch: TokenMatch): boolean {
     return ParserUtils.tokenMatches(this.currentToken, tokenMatch);
   }
 
@@ -161,7 +161,7 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
   }
 
   protected isEOF (): boolean {
-    return TokenUtils.isEOF(this.currentToken);
+    return this.currentTokenMatches(TokenUtils.isEOF);
   }
 
   /**
@@ -174,7 +174,7 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
 
     this.currentToken = this.nextTextToken;
 
-    if (this.currentTokenMatches(TokenUtils.isEOF)) {
+    if (this.isEOF()) {
       this.finish();
 
       return;
@@ -212,6 +212,8 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
     const parserInstance = parser instanceof AbstractParser
       ? parser
       : this.createParser(parser);
+
+    this.provideSanitizers(parserInstance);
 
     const parsed = parserInstance.parse(this.currentToken);
 
@@ -324,6 +326,13 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
   }
 
   /**
+   * @todo @description
+   */
+  private getDecoratedField <K extends keyof IDecoratedParser>(field: K): IDecoratedParser[K] {
+    return (this.constructor as any as IDecoratedParser)[field];
+  }
+
+  /**
    * Returns a colorized, formatted, and source-attributed error message
    * from an arbitrary original error message.
    */
@@ -335,8 +344,18 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
       : `${chalk.blueBright(message)} (${this.constructor.name}) -> ${this.getColorizedLinePreview()}`;
   }
 
+  private handleSanitizers (): void {
+    const sanitizers = this.getDecoratedField('sanitizers') || [];
+
+    for (const { match, parser } of sanitizers) {
+      if (this.currentTokenMatches(match) && !(this instanceof parser)) {
+        this.parseNextWith(parser);
+      }
+    }
+  }
+
   private handleSingleLineParsers (): void {
-    const { isSingleLineParser } = (this.constructor as any);
+    const isSingleLineParser = this.getDecoratedField('isSingleLineParser');
     const isBreakingLine = this.nextTextToken.line > this.currentToken.line;
 
     if (!this.isFinished && isSingleLineParser && isBreakingLine) {
@@ -350,22 +369,19 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
    * loop and halting if a required match is not satisfied.
    */
   private handleStarterMatchers (): void {
-    const matchers: IDecoratedTokenMatcher[] = (this.constructor as any).starterMatchers || [];
+    const starterMatchers = this.getDecoratedField('starterMatchers') || [];
 
-    for (const matcher of matchers) {
-      if (this.isStopped || this.isFinished || this.isEOF()) {
-        break;
-      }
-
-      const { tokenMatcher, type } = matcher;
+    for (const { tokenMatcher, type } of starterMatchers) {
       const [ tokenMatch, methodName ] = tokenMatcher;
       const isOptionalStarter = type === TokenMatcherType.ALLOW;
       const initialToken = this.currentToken;
 
+      this.handleSanitizers();
+
       if (this.currentTokenMatches(tokenMatch)) {
         (this as any)[methodName].call(this);
 
-        if (this.isFinished || this.isStopped || this.isEOF()) {
+        if (this.isDone()) {
           break;
         }
 
@@ -375,6 +391,18 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
       } else if (!isOptionalStarter) {
         this.halt();
       }
+    }
+  }
+
+  private isDone (): boolean {
+    return this.isStopped || this.isFinished || this.isEOF();
+  }
+
+  private provideSanitizers (parserInstance: AbstractParser): void {
+    const parserDecoratedFields = parserInstance.constructor as any as IDecoratedParser;
+
+    if (!parserDecoratedFields.sanitizers) {
+      parserDecoratedFields.sanitizers = this.getDecoratedField('sanitizers');
     }
   }
 
@@ -393,11 +421,10 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
     while (!this.isStopped && !this.isFinished && !this.isEOF()) {
       const initialToken = this.currentToken;
 
-      if (this.currentToken.type !== TokenType.NEWLINE) {
-        this.checkStreamMatchers();
-      }
+      this.handleSanitizers();
+      this.checkStreamMatchers();
 
-      if (this.isFinished || this.isStopped || this.isEOF()) {
+      if (this.isDone()) {
         break;
       }
 
