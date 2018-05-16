@@ -355,9 +355,9 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
     // to represent the ternary condition. If we didn't do
     // this, assigning the condition to 'this.parsed' and
     // setting the whole ternary back on the left side of
-    // the statement would update the condition's left side
-    // by reference to the ternary itself, resulting in
-    // a circular reference and infinite recursion during
+    // the statement at the end would referentially update
+    // the condition's left side to the ternary, resulting
+    // in a circular reference and infinite recursion during
     // translation. A shallow copy suffices since we don't
     // change any deeper properties.
     const condition = Object.assign({}, this.parsed);
