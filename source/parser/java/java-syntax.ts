@@ -30,6 +30,7 @@ export namespace JavaSyntax {
     SWITCH = 'SWITCH',
     TRY_CATCH = 'TRY_CATCH',
     INSTRUCTION = 'INSTRUCTION',
+    TERNARY = 'TERNARY',
     LAMBDA_EXPRESSION = 'LAMBDA_EXPRESSION',
     ANNOTATION = 'ANNOTATION'
   }
@@ -383,6 +384,16 @@ export namespace JavaSyntax {
   export interface IJavaInstruction extends IJavaSyntaxNode, IValued<IJavaStatement> {
     node: JavaSyntaxNode.INSTRUCTION;
     type: JavaInstructionType;
+  }
+
+  /**
+   * A Java ternary expression statement.
+   */
+  export interface IJavaTernary extends IJavaSyntaxNode {
+    node: JavaSyntaxNode.TERNARY;
+    condition: IJavaStatement;
+    left: IJavaStatement;
+    right: IJavaStatement;
   }
 
   /**

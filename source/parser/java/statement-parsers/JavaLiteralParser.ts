@@ -42,12 +42,21 @@ export default class JavaLiteralParser extends AbstractParser<JavaSyntax.IJavaLi
 
   @Match(TokenUtils.isNumber)
   protected onNumberLiteral (): void {
+    const isHexadecimal = (
+      this.currentTokenMatches('0') &&
+      this.nextToken.value.charAt(0) === 'x'
+    );
+
     const isNonInteger = /^[fdlFDL]$/.test(this.nextToken.value);
 
     this.parsed.type = JavaSyntax.JavaLiteralType.NUMBER;
-    this.parsed.value = this.currentToken.value;
+
+    this.parsed.value = isHexadecimal
+      ? this.parseHexadecimalLiteral()
+      : this.currentToken.value;
 
     if (isNonInteger) {
+      // Ignore the f/d/l/F/D/L token after a non-integer number
       this.next();
     }
 
@@ -96,5 +105,14 @@ export default class JavaLiteralParser extends AbstractParser<JavaSyntax.IJavaLi
     });
 
     this.finish();
+  }
+
+  private parseHexadecimalLiteral (): string {
+    let hexadecimal = '';
+
+    hexadecimal += this.eat('0');
+    hexadecimal += this.currentToken.value;
+
+    return hexadecimal;
   }
 }

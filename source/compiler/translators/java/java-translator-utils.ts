@@ -12,7 +12,8 @@ export namespace JavaTranslatorUtils {
     JavaSyntax.JavaSyntaxNode.REFERENCE,
     JavaSyntax.JavaSyntaxNode.FUNCTION_CALL,
     JavaSyntax.JavaSyntaxNode.PROPERTY_CHAIN,
-    JavaSyntax.JavaSyntaxNode.DO_WHILE_LOOP
+    JavaSyntax.JavaSyntaxNode.DO_WHILE_LOOP,
+    JavaSyntax.JavaSyntaxNode.TERNARY
   ];
 
   /**

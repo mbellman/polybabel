@@ -55,7 +55,11 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
    * the list might incorrectly yield false positives over
    * earlier matchers if their placements were switched.
    * E.g., an instruction might be incorrectly parsed as
-   * a reference if the reference matcher came first.
+   * a reference if the reference matcher came first. Some
+   * consideration is also given to the relative frequency
+   * of statement types, and speeding up checks for more
+   * common ones by including them earlier in the list
+   * where priority does not cause conflicts.
    *
    * @see: onStatement()
    *
@@ -217,17 +221,28 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
         // aren't operable
         ? leftSide.node !== JavaSyntax.JavaSyntaxNode.LAMBDA_EXPRESSION
         // If we haven't parsed a left side yet, ensure
-        // that this operator can only be !, ++, or --
+        // that this operator is only !, +, or -, which
+        // represent the only valid operator tokens for
+        // an absent left-side statement
         : /[!+-]/.test(this.currentToken.value)
     );
 
-    this.parsed.operator = this.parseNextWith(JavaOperatorParser);
-    this.parsed.rightSide = this.parseNextWith(JavaStatementParser);
+    if (this.currentTokenMatches(JavaUtils.isTernary)) {
+      // Ternary operations are distinct from normal operations
+      // since they have three operands, and also represent the
+      // only valid case for using a : operator in a statement,
+      // so we handle them separately
+      this.parseTernary();
+    } else {
+      // Handle as a normal left-side/right-side operation
+      this.parsed.operator = this.parseNextWith(JavaOperatorParser);
+      this.parsed.rightSide = this.parseNextWith(JavaStatementParser);
 
-    this.assert(
-      this.hasParsedSide(),
-      'Invalid operator placement'
-    );
+      this.assert(
+        this.hasParsedSide(),
+        'Invalid operator placement'
+      );
+    }
   }
 
   @Match(';')
@@ -290,6 +305,10 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
    * The portion to the right of the cast is parsed as
    * a child statement and assigned to this statement's
    * left-side.
+   *
+   * A separate 'JavaCastParser' is omitted because casted
+   * statements are simply types wrapped in parentheses
+   * followed by a normal statement.
    */
   private parseCastedStatement (): void {
     this.parsed.cast = this.parseNextWith(JavaTypeParser);
@@ -302,6 +321,9 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
   /**
    * Parses parenthetical statements, assigning the parsed
    * result to this statement's left-side.
+   *
+   * A separate 'JavaParentheticalParser' is omitted because
+   * a parenthetical statement is still just a statement.
    */
   private parseParentheticalStatement (): void {
     const statement = this.parseNextWith(JavaStatementParser);
@@ -311,5 +333,47 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
     statement.isParenthetical = true;
 
     this.parsed.leftSide = statement;
+  }
+
+  /**
+   * Parses a ternary statement after encountering a special ?
+   * operator, using the existing left-side statement as the
+   * condition operand, and reassigning the resulting ternary
+   * back onto the statement's left side.
+   *
+   * A separate 'JavaTernaryParser' is omitted because, while a
+   * ternary would more intuitively be parsed from the beginning
+   * of the condition statement, we can't determine that we've
+   * encountered a ternary operation until after the condition
+   * statement is parsed and the token stream comes upon the
+   * ternary's ? operator.
+   */
+  private parseTernary (): void {
+    this.eat('?');
+
+    // Make a shallow copy of the current parsed statement
+    // to represent the ternary condition. If we didn't do
+    // this, assigning the condition to 'this.parsed' and
+    // setting the whole ternary back on the left side of
+    // the statement would update the condition's left side
+    // by reference to the ternary itself, resulting in
+    // a circular reference and infinite recursion during
+    // translation. A shallow copy suffices since we don't
+    // change any deeper properties.
+    const condition = Object.assign({}, this.parsed);
+    const left = this.parseNextWith(JavaStatementParser);
+
+    this.eat(':');
+
+    const right = this.parseNextWith(JavaStatementParser);
+
+    const ternaryStatement: JavaSyntax.IJavaTernary = {
+      node: JavaSyntax.JavaSyntaxNode.TERNARY,
+      condition,
+      left,
+      right
+    };
+
+    this.parsed.leftSide = ternaryStatement;
   }
 }

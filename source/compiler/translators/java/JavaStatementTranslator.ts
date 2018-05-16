@@ -92,6 +92,9 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
       case JavaSyntax.JavaSyntaxNode.CLASS:
         this.emitNodeWith(JavaClassTranslator, leftSide as JavaSyntax.IJavaClass);
         break;
+      case JavaSyntax.JavaSyntaxNode.TERNARY:
+        this.emitTernary(leftSide as JavaSyntax.IJavaTernary);
+        break;
       case JavaSyntax.JavaSyntaxNode.LAMBDA_EXPRESSION:
         this.emitNodeWith(JavaLambdaExpressionTranslator, leftSide as JavaSyntax.IJavaLambdaExpression);
         break;
@@ -114,5 +117,13 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
     }
 
     this.emit(value);
+  }
+
+  private emitTernary ({ condition, left, right }: JavaSyntax.IJavaTernary): void {
+    this.emitNodeWith(JavaStatementTranslator, condition)
+      .emit(' ? ')
+      .emitNodeWith(JavaStatementTranslator, left)
+      .emit(' : ')
+      .emitNodeWith(JavaStatementTranslator, right);
   }
 }

@@ -109,6 +109,19 @@ export namespace JavaConstants {
     Keyword.SYNCHRONIZED
   ];
 
+  export const Instructions: string[] = [
+    JavaConstants.Keyword.RETURN,
+    JavaConstants.Keyword.THROW,
+    JavaConstants.Keyword.CONTINUE,
+    JavaConstants.Keyword.BREAK
+  ];
+
+  export const KeywordLiterals: string[] = [
+    JavaConstants.Keyword.TRUE,
+    JavaConstants.Keyword.FALSE,
+    JavaConstants.Keyword.NULL
+  ];
+
   export const AccessModifierMap: IHashMap<JavaSyntax.JavaAccessModifier> = {
     [Keyword.PUBLIC]: JavaSyntax.JavaAccessModifier.PUBLIC,
     [Keyword.PROTECTED]: JavaSyntax.JavaAccessModifier.PROTECTED,

@@ -32,6 +32,20 @@ export namespace JavaUtils {
   ];
 
   /**
+   * A subset of reserved words which may precede a ( token,
+   * causing a false positive for function call checks. Used
+   * to disqualify a token from being a function call.
+   *
+   * @internal
+   */
+  const InvalidFunctionNames: TokenMatch = [
+    JavaConstants.Keyword.IF,
+    JavaConstants.Keyword.FOR,
+    JavaConstants.Keyword.WHILE,
+    JavaConstants.Keyword.SWITCH
+  ];
+
+  /**
    * Determines whether a token corresponds to the beginning
    * of a non-trivial cast operation, i.e. that to a generic,
    * array, or namespaced type.
@@ -267,13 +281,15 @@ export namespace JavaUtils {
    *  )(
    */
   export function isFunctionCall (token: IToken): boolean {
-    if (ParserUtils.tokenMatches(token, [
-      JavaConstants.Keyword.IF,
-      JavaConstants.Keyword.FOR,
-      JavaConstants.Keyword.WHILE
-    ])) {
-      // Avoid confusion between method names and
-      // if/while/for statements
+    if (token.value !== '(' && token.nextToken.value !== '(') {
+      // Optimize for tokens which can't possible match a
+      // function call signature, e.g. those not equal to
+      // or followed by (
+      return false;
+    }
+
+    if (ParserUtils.tokenMatches(token, InvalidFunctionNames)) {
+      // Optimize for invalid (certain reserved keyword) names
       return false;
     }
 
@@ -282,7 +298,7 @@ export namespace JavaUtils {
       TokenUtils.isWord(token) &&
       ParserUtils.tokenMatches(token.nextToken, '(')
     ) || (
-      // ]( OR )(
+      // ]( OR )(, e.g. in property/function call chains
       ParserUtils.tokenMatches(token.previousToken, /[\])]/) &&
       ParserUtils.tokenMatches(token, '(')
     );
@@ -295,6 +311,7 @@ export namespace JavaUtils {
    * @example
    *
    *  5
+   *  0x10C
    *  '
    *  "
    *  {
@@ -305,12 +322,11 @@ export namespace JavaUtils {
   export function isLiteral (token: IToken): boolean {
     return (
       TokenUtils.isNumber(token) ||
-      ParserUtils.tokenMatches(token, /["'{]/) ||
-      ParserUtils.tokenMatches(token, [
-        JavaConstants.Keyword.TRUE,
-        JavaConstants.Keyword.FALSE,
-        JavaConstants.Keyword.NULL,
-      ])
+      /["'{]/.test(token.value) ||
+      ParserUtils.tokenMatches(token, JavaConstants.KeywordLiterals) ||
+      // Hexadecimal number
+      token.value === '0' &&
+      token.nextToken.value.charAt(0) === 'x'
     );
   }
 
@@ -318,7 +334,7 @@ export namespace JavaUtils {
    * Determines whether a token corresponds to the beginning
    * of an operator.
    *
-   * See: JavaConstants.Operator
+   * @see JavaConstants.Operators
    */
   export function isOperator (token: IToken): boolean {
     return ParserUtils.tokenMatches(token, JavaConstants.Operators);
@@ -327,14 +343,27 @@ export namespace JavaUtils {
   /**
    * Determines whether a token corresponds to the beginning
    * of an instruction.
+   *
+   * @see JavaConstants.Instructions
    */
   export function isInstruction (token: IToken): boolean {
-    return ParserUtils.tokenMatches(token, [
-      JavaConstants.Keyword.RETURN,
-      JavaConstants.Keyword.THROW,
-      JavaConstants.Keyword.CONTINUE,
-      JavaConstants.Keyword.BREAK
-    ]);
+    return ParserUtils.tokenMatches(token, JavaConstants.Instructions);
+  }
+
+  /**
+   * Determines whether a token corresponds to the beginning of
+   * a ternary operation. Uses one token lookahead to distinguish
+   * the toke from an 'Elvis' (?:) operator.
+   *
+   * @example
+   *
+   *   ? ...
+   */
+  export function isTernary (token: IToken): boolean {
+    return (
+      token.value === '?' &&
+      token.nextTextToken.value !== ':'
+    );
   }
 
   /**
@@ -444,9 +473,10 @@ export namespace JavaUtils {
    */
   export function isComment ({ value, nextToken }: IToken): boolean {
     return (
-      value === '/' &&
-      nextToken.value === '/' ||
-      nextToken.value === '*'
+      value === '/' && (
+        nextToken.value === '/' ||
+        nextToken.value === '*'
+      )
     );
   }
 }

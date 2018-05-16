@@ -44,7 +44,7 @@ export default class JavaTryCatchTranslator extends AbstractTranslator<JavaSynta
     const firstExceptionName = exceptionReferences[0].value;
 
     return this
-      .emit(`catch (${firstExceptionName}) {`)
+      .emit(` catch (${firstExceptionName}) {`)
       .enterBlock()
       // Alias any alternately-named exception references
       .emitNodes(

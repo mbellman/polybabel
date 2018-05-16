@@ -7,9 +7,9 @@ import { JavaTranslatorUtils } from './java-translator-utils';
 
 export default class JavaObjectMethodTranslator extends AbstractTranslator<JavaSyntax.IJavaObjectMethod> {
   @Implements protected translate (): void {
-    const { name, parameters, block } = this.syntaxNode;
+    const { isStatic, name, parameters, block } = this.syntaxNode;
 
-    this.emit(`${name} (`)
+    this.emit(isStatic ? '(' : `${name} (`)
       .emitNodes(
         parameters,
         parameter => {
