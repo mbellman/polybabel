@@ -286,7 +286,7 @@ export namespace JavaUtils {
     const nextTextTokenIsOpenParenthesis = token.nextTextToken.value === '(';
 
     if (token.value !== '(' && !nextTextTokenIsOpenParenthesis) {
-      // Optimize for tokens which can't possible match a
+      // Optimize for tokens which can't possibly match a
       // function call signature, e.g. those not equal to
       // or followed by (
       return false;

@@ -48,8 +48,8 @@ export default class JavaCommentParser extends AbstractParser<ISyntaxNode> {
       );
 
       if (isEndOfComment) {
-        this.next(); // *
-        this.next(); // /
+        this.next(); // '*'
+        this.next(); // '/'
 
         break;
       }

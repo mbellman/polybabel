@@ -194,14 +194,6 @@ export namespace JavaSyntax {
   }
 
   /**
-   * A Java enum.
-   */
-  export interface IJavaEnum extends IJavaSyntaxNode, IJavaObject {
-    node: JavaSyntaxNode.ENUM;
-    constants: IJavaSyntaxNode[];
-  }
-
-  /**
    * A field on a Java object definition, either uninitialized
    * or assigned to a statement value.
    */

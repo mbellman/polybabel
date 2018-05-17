@@ -14,6 +14,7 @@ import { JavaSyntax } from './java-syntax';
 import { JavaUtils } from './java-utils';
 import { Match } from '../common/parser-decorators';
 import { TokenUtils } from '../../tokenizer/token-utils';
+import JavaEnumParser from './JavaEnumParser';
 
 /**
  * @todo @description
@@ -55,7 +56,7 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
 
   @Match(JavaUtils.isConstructor)
   protected onConstructor (): void {
-    let access: JavaSyntax.JavaAccessModifier;
+    let access: JavaSyntax.JavaAccessModifier = JavaSyntax.JavaAccessModifier.PUBLIC;
 
     if (this.currentMember !== null) {
       const { genericTypes } = this.currentMember as JavaSyntax.IJavaObjectMethod;
@@ -176,12 +177,12 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
     this.addCurrentMember();
   }
 
-  /**
-   * @todo
-   */
   @Match(JavaConstants.Keyword.ENUM)
   protected onNestedEnum (): void {
+    const { node, name, members } = this.parseNextWith(JavaEnumParser);
 
+    this.updateCurrentMember({ node, name, members });
+    this.addCurrentMember();
   }
 
   @Match('}')
@@ -193,6 +194,10 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
     if (this.currentAnnotations.length > 0) {
       this.currentMember.annotations = this.currentAnnotations;
       this.currentAnnotations = [];
+    }
+
+    if (!this.currentMember.access) {
+      this.currentMember.access = JavaSyntax.JavaAccessModifier.PUBLIC;
     }
 
     this.parsed.members.push(this.currentMember as JavaSyntax.JavaObjectMember);

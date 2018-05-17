@@ -22,9 +22,6 @@ Polybabel's emphasis on idiomatic programming means the standard libraries and A
 ### Java
 #### Remaining items:
 1. Parsing/Translation:
-* * Constructor method translation
-* * Enums
-* * Additional shorthand assignment operators
 * * Assertions
 * * Static/instance initializer blocks
 * * Overloading

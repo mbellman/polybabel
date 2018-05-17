@@ -2,6 +2,7 @@ import AbstractParser from '../common/AbstractParser';
 import JavaAnnotationParser from './JavaAnnotationParser';
 import JavaClassParser from './JavaClassParser';
 import JavaCommentParser from './JavaCommentParser';
+import JavaEnumParser from './JavaEnumParser';
 import JavaImportParser from './JavaImportParser';
 import JavaInterfaceParser from './JavaInterfaceParser';
 import JavaModifiableParser from './JavaModifiableParser';
@@ -65,6 +66,13 @@ export default class JavaParser extends AbstractParser<JavaSyntax.IJavaSyntaxTre
     this.currentObjectModifiable = this.parseNextWith(JavaModifiableParser);
   }
 
+  @Match(JavaConstants.Keyword.CLASS)
+  protected onClass (): void {
+    const javaClass = this.parseNextWith(JavaClassParser);
+
+    this.addJavaObjectNode(javaClass);
+  }
+
   @Match(JavaConstants.Keyword.INTERFACE)
   protected onInterface (): void {
     const javaInterface = this.parseNextWith(JavaInterfaceParser);
@@ -72,11 +80,11 @@ export default class JavaParser extends AbstractParser<JavaSyntax.IJavaSyntaxTre
     this.addJavaObjectNode(javaInterface);
   }
 
-  @Match(JavaConstants.Keyword.CLASS)
-  protected onClass (): void {
-    const javaClass = this.parseNextWith(JavaClassParser);
+  @Match(JavaConstants.Keyword.ENUM)
+  protected onEnum (): void {
+    const javaEnum = this.parseNextWith(JavaEnumParser);
 
-    this.addJavaObjectNode(javaClass);
+    this.addJavaObjectNode(javaEnum);
   }
 
   @Match('@')

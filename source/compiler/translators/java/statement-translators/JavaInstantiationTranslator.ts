@@ -139,7 +139,8 @@ export default class JavaInstantiationTranslator extends AbstractTranslator<Java
     const constructorName = this.getConstructorName();
 
     return this.emit(`new ${constructorName}`)
-      .emit('(')
+      .emit('(0')
+      .emit(args.length > 0 ? ', ' : '')
       .emitConstructorArguments()
       .emit(')');
   }
