@@ -52,15 +52,10 @@ export namespace JavaSyntax {
   export enum JavaOperator {
     ASSIGN,
     ADD,
-    ADD_ASSIGN,
     SUBTRACT,
-    SUBTRACT_ASSIGN,
     MULTIPLY,
-    MULTIPLY_ASSIGN,
     DIVIDE,
-    DIVIDE_ASSIGN,
     REMAINDER,
-    REMAINDER_ASSIGN,
     INCREMENT,
     DECREMENT,
     NEGATE,
@@ -239,7 +234,7 @@ export namespace JavaSyntax {
    * statement types. Rather than making a distinction between
    * statements and expressions, statements simply consist of
    * a left-side syntax node, with a possible operator and
-   * right-side statement.
+   * right-side statement node.
    */
   export interface IJavaStatement extends IJavaSyntaxNode {
     node: JavaSyntaxNode.STATEMENT;
@@ -256,6 +251,7 @@ export namespace JavaSyntax {
   export interface IJavaOperator extends IJavaSyntaxNode {
     node: JavaSyntaxNode.OPERATOR;
     operation: JavaOperator;
+    isShorthandAssignment?: boolean;
   }
 
   /**

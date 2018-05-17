@@ -1,5 +1,7 @@
 import AbstractTranslator from '../../../common/AbstractTranslator';
 import JavaBlockTranslator from '../JavaBlockTranslator';
+import JavaClassTranslator from '../JavaClassTranslator';
+import JavaInterfaceTranslator from '../JavaInterfaceTranslator';
 import JavaLiteralTranslator from './JavaLiteralTranslator';
 import JavaStatementTranslator from '../JavaStatementTranslator';
 import { Implements } from 'trampoline-framework';
@@ -47,6 +49,12 @@ export default class JavaInstantiationTranslator extends AbstractTranslator<Java
       .emit(`})(${constructorName})`);
   }
 
+  private emitAnonymousObjectClass (classNode: JavaSyntax.IJavaClass): this {
+    return this.emit(`instance.${classNode.name} = `)
+      .emitNodeWith(JavaClassTranslator, classNode)
+      .emit(';');
+  }
+
   private emitAnonymousObjectField ({ name, value }: JavaSyntax.IJavaObjectField): this {
     if (value) {
       this.emit(`instance.${name} = `)
@@ -57,12 +65,29 @@ export default class JavaInstantiationTranslator extends AbstractTranslator<Java
     return this;
   }
 
+  private emitAnonymousObjectInterface (interfaceNode: JavaSyntax.IJavaInterface): this {
+    const { name } = interfaceNode;
+
+    return this.emit(`instance.${name} = (function(){`)
+      .enterBlock()
+      .emitNodeWith(JavaInterfaceTranslator, interfaceNode)
+      .emit(';')
+      .newline()
+      .emit(`return ${name};`)
+      .exitBlock()
+      .emit('})();');
+  }
+
   private emitAnonymousObjectMember (member: JavaSyntax.JavaObjectMember): this {
     switch (member.node) {
       case JavaSyntax.JavaSyntaxNode.OBJECT_FIELD:
         return this.emitAnonymousObjectField(member as JavaSyntax.IJavaObjectField);
       case JavaSyntax.JavaSyntaxNode.OBJECT_METHOD:
         return this.emitAnonymousObjectMethod(member as JavaSyntax.IJavaObjectMethod);
+      case JavaSyntax.JavaSyntaxNode.CLASS:
+        return this.emitAnonymousObjectClass(member as JavaSyntax.IJavaClass);
+      case JavaSyntax.JavaSyntaxNode.INTERFACE:
+        return this.emitAnonymousObjectInterface(member as JavaSyntax.IJavaInterface);
     }
   }
 

@@ -354,7 +354,7 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
     // Make a shallow copy of the current parsed statement
     // to represent the ternary condition. If we didn't do
     // this, assigning the condition to 'this.parsed' and
-    // setting the whole ternary back on the left side of
+    // assigning the whole ternary back to the left side of
     // the statement at the end would referentially update
     // the condition's left side to the ternary, resulting
     // in a circular reference and infinite recursion during

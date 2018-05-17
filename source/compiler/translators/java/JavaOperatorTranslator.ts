@@ -5,16 +5,11 @@ import { JavaSyntax } from '../../../parser/java/java-syntax';
 export default class JavaOperatorTranslator extends AbstractTranslator<JavaSyntax.IJavaOperator> {
   private static readonly OperationMap: IHashMap<string> = {
     [JavaSyntax.JavaOperator.ADD]: '+',
-    [JavaSyntax.JavaOperator.ADD_ASSIGN]: '+=',
     [JavaSyntax.JavaOperator.ASSIGN]: '=',
     [JavaSyntax.JavaOperator.SUBTRACT]: '-',
-    [JavaSyntax.JavaOperator.SUBTRACT_ASSIGN]: '-=',
     [JavaSyntax.JavaOperator.MULTIPLY]: '*',
-    [JavaSyntax.JavaOperator.MULTIPLY_ASSIGN]: '*=',
     [JavaSyntax.JavaOperator.DIVIDE]: '/',
-    [JavaSyntax.JavaOperator.DIVIDE_ASSIGN]: '/=',
     [JavaSyntax.JavaOperator.REMAINDER]: '%',
-    [JavaSyntax.JavaOperator.REMAINDER_ASSIGN]: '%=',
     [JavaSyntax.JavaOperator.INCREMENT]: '++',
     [JavaSyntax.JavaOperator.DECREMENT]: '--',
     [JavaSyntax.JavaOperator.NEGATE]: '!',
@@ -39,8 +34,12 @@ export default class JavaOperatorTranslator extends AbstractTranslator<JavaSynta
   };
 
   @Implements protected translate (): void {
-    const { operation } = this.syntaxNode;
+    const { operation, isShorthandAssignment } = this.syntaxNode;
 
     this.emit(JavaOperatorTranslator.OperationMap[operation]);
+
+    if (isShorthandAssignment) {
+      this.emit('=');
+    }
   }
 }

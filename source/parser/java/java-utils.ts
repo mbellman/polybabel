@@ -236,9 +236,11 @@ export namespace JavaUtils {
    */
   export function isType (token: IToken): boolean {
     return (
-      TokenUtils.isWord(token) &&
-      // Type type
-      TokenUtils.isWord(token.nextTextToken) ||
+      TokenUtils.isWord(token) && (
+        // Type type
+        TokenUtils.isWord(token.nextTextToken) &&
+        token.nextTextToken.value !== JavaConstants.Operator.INSTANCEOF
+      ) ||
       // Type[]
       ParserUtils.tokenMatches(token.nextToken, '[') &&
       ParserUtils.tokenMatches(token.nextToken.nextToken, ']') ||
@@ -281,7 +283,9 @@ export namespace JavaUtils {
    *  )(
    */
   export function isFunctionCall (token: IToken): boolean {
-    if (token.value !== '(' && token.nextToken.value !== '(') {
+    const nextTextTokenIsOpenParenthesis = token.nextTextToken.value === '(';
+
+    if (token.value !== '(' && !nextTextTokenIsOpenParenthesis) {
       // Optimize for tokens which can't possible match a
       // function call signature, e.g. those not equal to
       // or followed by (
@@ -296,10 +300,10 @@ export namespace JavaUtils {
     return (
       // callFunction(
       TokenUtils.isWord(token) &&
-      ParserUtils.tokenMatches(token.nextToken, '(')
+      nextTextTokenIsOpenParenthesis
     ) || (
       // ]( OR )(, e.g. in property/function call chains
-      ParserUtils.tokenMatches(token.previousToken, /[\])]/) &&
+      ParserUtils.tokenMatches(token.previousTextToken, /[\])]/) &&
       ParserUtils.tokenMatches(token, '(')
     );
   }

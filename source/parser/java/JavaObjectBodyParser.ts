@@ -137,6 +137,10 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
   protected onFieldOrAbstractMethodEnd (): void {
     this.assert(this.currentMemberIsTypedAndNamed());
 
+    if (this.currentMember.node === null) {
+      this.currentMember.node = JavaSyntax.JavaSyntaxNode.OBJECT_FIELD;
+    }
+
     const { value } = this.currentMember as JavaSyntax.IJavaObjectField;
 
     if (!value) {

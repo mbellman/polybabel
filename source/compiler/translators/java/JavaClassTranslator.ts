@@ -62,7 +62,7 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
       .emitStaticSide();
   }
 
-  private addMember (member: JavaSyntax.JavaObjectMember): void {
+  private addMemberToMap (member: JavaSyntax.JavaObjectMember): void {
     const memberSideMap = this.getMemberSideMap(member);
 
     switch (member.node) {
@@ -88,7 +88,7 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
     const { members } = this.syntaxNode;
 
     members.forEach(member => {
-      this.addMember(member);
+      this.addMemberToMap(member);
     });
   }
 
@@ -185,8 +185,9 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
   private emitNestedObjectWith <O extends JavaSyntax.IJavaObject>(Translator: Constructor<AbstractTranslator<O>>, object: O): this {
     return this.emit('(function () {')
       .enterBlock()
-      .emit('return ')
       .emitNodeWith(Translator, object)
+      .newline()
+      .emit(`return ${object.name};`)
       .exitBlock()
       .emit('})();');
   }

@@ -33,9 +33,8 @@ const {
 type OperatorMatcher = [ TokenMatch[], JavaSyntax.JavaOperator ];
 
 /**
- * Parses operators. Stops after parsing if the process
- * advanced the token stream to a non-operator token,
- * and finishes otherwise.
+ * Parses operators. Stops after parsing and stepping out
+ * of an operator's token sequence.
  *
  * @example
  *
@@ -46,14 +45,14 @@ type OperatorMatcher = [ TokenMatch[], JavaSyntax.JavaOperator ];
  *  *, *=
  *  /, /=
  *  %, %=
- *  <, <<, <=
- *  >, >>, >>>, >=
+ *  <, <<, <=, <<=
+ *  >, >>, >>>, >=, >>=, >>>=
  *  !, !=
- *  |, ||
- *  &, &&
+ *  |, ||, !=
+ *  &, &&, &=
  *  ?:
- *  ^
- *  ~
+ *  ^, ^=
+ *  ~, ~=
  *  instanceof
  */
 export default class JavaOperatorParser extends AbstractParser<JavaSyntax.IJavaOperator> {
@@ -69,20 +68,16 @@ export default class JavaOperatorParser extends AbstractParser<JavaSyntax.IJavaO
     ],
     [PLUS]: [
       [ [ PLUS ], JavaSyntax.JavaOperator.INCREMENT ],
-      [ [ EQUAL ], JavaSyntax.JavaOperator.ADD_ASSIGN ],
       [ [ /.*/ ], JavaSyntax.JavaOperator.ADD ]
     ],
     [MINUS]: [
       [ [ MINUS ], JavaSyntax.JavaOperator.DECREMENT ],
-      [ [ EQUAL ], JavaSyntax.JavaOperator.SUBTRACT_ASSIGN ],
       [ [ /.*/ ], JavaSyntax.JavaOperator.SUBTRACT ]
     ],
     [STAR]: [
-      [ [ EQUAL ], JavaSyntax.JavaOperator.MULTIPLY_ASSIGN ],
       [ [ /.*/ ], JavaSyntax.JavaOperator.MULTIPLY ]
     ],
     [SLASH]: [
-      [ [ EQUAL ], JavaSyntax.JavaOperator.DIVIDE_ASSIGN ],
       [ [ /.*/ ], JavaSyntax.JavaOperator.DIVIDE ]
     ],
     [EXCLAMATION]: [
@@ -94,7 +89,6 @@ export default class JavaOperatorParser extends AbstractParser<JavaSyntax.IJavaO
       [ [ COLON ], JavaSyntax.JavaOperator.ELVIS ]
     ],
     [PERCENT]: [
-      [ [ EQUAL ], JavaSyntax.JavaOperator.REMAINDER_ASSIGN ],
       [ [ /.*/ ], JavaSyntax.JavaOperator.REMAINDER ]
     ],
     [LESS_THAN]: [
@@ -128,11 +122,30 @@ export default class JavaOperatorParser extends AbstractParser<JavaSyntax.IJavaO
   };
 
   /**
+   * A list of operators after which an additional = operator
+   * can be provided to designated a shorthand assignment.
+   */
+  private static readonly ValidShorthandAssignmentOperators: JavaSyntax.JavaOperator[] = [
+    JavaSyntax.JavaOperator.ADD,
+    JavaSyntax.JavaOperator.SUBTRACT,
+    JavaSyntax.JavaOperator.MULTIPLY,
+    JavaSyntax.JavaOperator.DIVIDE,
+    JavaSyntax.JavaOperator.REMAINDER,
+    JavaSyntax.JavaOperator.BITWISE_INCLUSIVE_OR,
+    JavaSyntax.JavaOperator.BITWISE_AND,
+    JavaSyntax.JavaOperator.BITWISE_EXCLUSIVE_OR,
+    JavaSyntax.JavaOperator.BITWISE_COMPLEMENT,
+    JavaSyntax.JavaOperator.SIGNED_LEFT_SHIFT,
+    JavaSyntax.JavaOperator.SIGNED_RIGHT_SHIFT,
+    JavaSyntax.JavaOperator.UNSIGNED_RIGHT_SHIFT
+  ];
+
+  /**
    * Determines whether a parsed operator corresponds to an
    * operator matching only the initial operator of a given
    * matcher, e.g. the initial operator followed by any token
    * not explicitly matched. Set after parsing the operator
-   * token stream in getJavaOperator().
+   * token stream in parseJavaOperator().
    */
   private isDefaultOperator: boolean = false;
 
@@ -144,22 +157,40 @@ export default class JavaOperatorParser extends AbstractParser<JavaSyntax.IJavaO
   }
 
   @Override protected onFirstToken (): void {
-    const operator = this.getJavaOperator();
+    const operator = this.parseJavaOperator();
 
     if (operator === null) {
       this.throw('Invalid operator');
     }
 
-    this.parsed.operation = operator;
+    const isShorthandAssignment = this.isShorthandAssignment(operator);
 
-    if (this.isDefaultOperator) {
-      this.stop();
-    } else {
-      this.finish();
+    this.parsed.operation = operator;
+    this.parsed.isShorthandAssignment = isShorthandAssignment;
+
+    if (isShorthandAssignment) {
+      this.skipShorthandAssignmentToken();
     }
+
+    if (!this.isDefaultOperator) {
+      this.next();
+    }
+
+    this.stop();
   }
 
-  private getJavaOperator (): JavaSyntax.JavaOperator {
+  private isShorthandAssignment (operator: JavaSyntax.JavaOperator): boolean {
+    const possibleEqualToken = this.isDefaultOperator
+      ? this.currentToken
+      : this.nextToken;
+
+    return (
+      possibleEqualToken.value === JavaConstants.Operator.EQUAL &&
+      JavaOperatorParser.ValidShorthandAssignmentOperators.indexOf(operator) > -1
+    );
+  }
+
+  private parseJavaOperator (): JavaSyntax.JavaOperator {
     const possibleOperatorMatchers = JavaOperatorParser.OperatorMatcherMap[this.currentToken.value] || [];
 
     for (const [ tokenMatches, operator ] of possibleOperatorMatchers) {
@@ -193,5 +224,22 @@ export default class JavaOperatorParser extends AbstractParser<JavaSyntax.IJavaO
     }
 
     return null;
+  }
+
+  /**
+   * Skips past the shorthand assignment = token after determining
+   * that we've parsed a shorthand assignment. If this is a default
+   * operator, the = token was reached after parsing through an
+   * operation up to any unspecified token (in this case =), so we
+   * skip to the next token. Otherwise, we parsed up to the final
+   * specified token in a specific operator's token chain, and thus
+   * the shorthand assignment = token is the next one.
+   */
+  private skipShorthandAssignmentToken (): void {
+    if (this.isDefaultOperator) {
+      this.next();
+    } else {
+      this.eatNext(JavaConstants.Operator.EQUAL);
+    }
   }
 }

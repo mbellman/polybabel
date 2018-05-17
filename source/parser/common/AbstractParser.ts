@@ -259,7 +259,7 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
   }
 
   protected throw (message: string): void {
-    throw new Error(`Line ${this.currentToken.line}: ${message}`);
+    throw new Error(message);
   }
 
   protected token (): IToken {
@@ -341,7 +341,7 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
 
     return messageIsAlreadyNormalized
       ? message
-      : `${chalk.blueBright(message)} (${this.constructor.name}) -> ${this.getColorizedLinePreview()}`;
+      : `${chalk.blueBright(`Line ${this.currentToken.line}: ${message}`)} (${this.constructor.name}) -> ${this.getColorizedLinePreview()}`;
   }
 
   private handleSanitizers (): void {

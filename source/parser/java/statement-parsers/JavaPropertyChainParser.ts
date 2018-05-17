@@ -47,6 +47,17 @@ export default class JavaPropertyChainParser extends AbstractParser<JavaSyntax.I
 
   @Match(TokenUtils.isWord)
   protected onWord (): void {
+    const didExitPropertyChain = (
+      this.parsed.properties.length > 0 &&
+      this.previousToken.value !== '.'
+    );
+
+    if (didExitPropertyChain) {
+      this.onEnd();
+
+      return;
+    }
+
     if (this.currentTokenMatches(JavaUtils.isFunctionCall)) {
       this.parseFunctionCallProperty();
     } else if (this.currentTokenMatches(JavaUtils.isType)) {
