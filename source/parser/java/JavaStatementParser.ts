@@ -1,5 +1,6 @@
 import AbstractParser from '../common/AbstractParser';
 import JavaAnnotationParser from './JavaAnnotationParser';
+import JavaAssertionParser from './statement-parsers/JavaAssertionParser';
 import JavaClassParser from './JavaClassParser';
 import JavaDoWhileLoopParser from './statement-parsers/JavaDoWhileLoopParser';
 import JavaForLoopParser from './statement-parsers/JavaForLoopParser';
@@ -70,6 +71,7 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
   private static get StatementMatchers (): StatementMatcher[] {
     return [
       [ JavaUtils.isInstruction, JavaInstructionParser, false ],
+      [ JavaConstants.Keyword.ASSERT, JavaAssertionParser, true ],
       [ JavaUtils.isLiteral, JavaLiteralParser, false ],
       [ JavaUtils.isLambdaExpression, JavaLambdaExpressionParser, false ],
       [ JavaUtils.isReference, JavaReferenceParser, false ],
@@ -153,7 +155,6 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
    * @example
    *
    *  this.factories.itemFactory.createItem();
-   *
    *  Namespace.Utils.DataType dataType = ...;
    */
   @Match(JavaUtils.isPropertyChain)
@@ -229,9 +230,9 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
 
     if (this.currentTokenMatches(JavaUtils.isTernary)) {
       // Ternary operations are distinct from normal operations
-      // since they have three operands, and also represent the
-      // only valid case for using a : operator in a statement,
-      // so we handle them separately
+      // since they have three operands, and also represent one
+      // of two valid cases for using a : operator in a statement
+      // (the other being in assertions), so we handle them separately
       this.parseTernary();
     } else {
       // Handle as a normal left-side/right-side operation

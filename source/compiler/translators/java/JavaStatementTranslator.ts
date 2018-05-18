@@ -1,4 +1,5 @@
 import AbstractTranslator from '../../common/AbstractTranslator';
+import JavaAssertionTranslator from './statement-translators/JavaAssertionTranslator';
 import JavaBlockTranslator from './JavaBlockTranslator';
 import JavaClassTranslator from './JavaClassTranslator';
 import JavaDoWhileLoopTranslator from './statement-translators/JavaDoWhileLoopTranslator';
@@ -97,6 +98,9 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
         break;
       case JavaSyntax.JavaSyntaxNode.LAMBDA_EXPRESSION:
         this.emitNodeWith(JavaLambdaExpressionTranslator, leftSide as JavaSyntax.IJavaLambdaExpression);
+        break;
+      case JavaSyntax.JavaSyntaxNode.ASSERTION:
+        this.emitNodeWith(JavaAssertionTranslator, leftSide as JavaSyntax.IJavaAssertion);
         break;
       case JavaSyntax.JavaSyntaxNode.STATEMENT:
         // The left side may itself be a statement, e.g.

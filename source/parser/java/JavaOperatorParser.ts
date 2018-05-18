@@ -123,7 +123,7 @@ export default class JavaOperatorParser extends AbstractParser<JavaSyntax.IJavaO
 
   /**
    * A list of operators after which an additional = operator
-   * can be provided to designated a shorthand assignment.
+   * can be provided to designate a shorthand assignment.
    */
   private static readonly ValidShorthandAssignmentOperators: JavaSyntax.JavaOperator[] = [
     JavaSyntax.JavaOperator.ADD,

@@ -163,9 +163,9 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
 
   @Match(JavaConstants.Keyword.CLASS)
   protected onNestedClass (): void {
-    const { node, extended, implemented, name, members } = this.parseNextWith(JavaClassParser);
+    const { access, isAbstract, isFinal, isStatic, ...classNode } = this.parseNextWith(JavaClassParser);
 
-    this.updateCurrentMember({ node, extended, implemented, name, members });
+    this.updateCurrentMember(classNode);
     this.addCurrentMember();
   }
 

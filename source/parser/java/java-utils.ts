@@ -46,6 +46,22 @@ export namespace JavaUtils {
   ];
 
   /**
+   * A list of words which can precede a reference without
+   * disqualifying its status as such. Normally, references
+   * are word tokens flanked by symbols, but occasionally
+   * they can be preceded by word tokens too.
+   *
+   * @internal
+   */
+  const ValidReferencePrecedingWords: string[] = [
+    JavaConstants.Operator.INSTANCEOF,
+    JavaConstants.Keyword.RETURN,
+    JavaConstants.Keyword.THROW,
+    JavaConstants.Keyword.CASE,
+    JavaConstants.Keyword.ASSERT
+  ];
+
+  /**
    * Determines whether a token corresponds to the beginning
    * of a non-trivial cast operation, i.e. that to a generic,
    * array, or namespaced type.
@@ -191,19 +207,14 @@ export namespace JavaUtils {
     }
 
     const { INSTANCEOF } = JavaConstants.Operator;
-    const { RETURN, THROW, CASE } = JavaConstants.Keyword;
+    const { RETURN, THROW, CASE, ASSERT } = JavaConstants.Keyword;
 
     // Flanked tokens are those which have tokens on both
     // sides isolating them as singular syntactic units
     const isFlanked = (
       TokenUtils.isStartOfLine(token) ||
       !TokenUtils.isWord(token.previousTextToken) ||
-      ParserUtils.tokenMatches(token.previousTextToken, [
-        INSTANCEOF,
-        RETURN,
-        THROW,
-        CASE
-      ])
+      ParserUtils.tokenMatches(token.previousTextToken, ValidReferencePrecedingWords)
     ) && (
       ParserUtils.tokenMatches(token.nextTextToken, INSTANCEOF) ||
       !TokenUtils.isWord(token.nextTextToken) &&

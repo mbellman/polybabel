@@ -41,7 +41,8 @@ export namespace JavaConstants {
     THROW = 'throw',
     TRY = 'try',
     CATCH = 'catch',
-    FINALLY = 'finally'
+    FINALLY = 'finally',
+    ASSERT = 'assert'
   }
 
   export enum Type {

@@ -50,9 +50,13 @@ export default class JavaInstantiationTranslator extends AbstractTranslator<Java
   }
 
   private emitAnonymousObjectClass (classNode: JavaSyntax.IJavaClass): this {
-    return this.emit(`instance.${classNode.name} = `)
+    return this.emit(`instance.${classNode.name} = (function(){`)
+      .enterBlock()
       .emitNodeWith(JavaClassTranslator, classNode)
-      .emit(';');
+      .newline()
+      .emit(`return ${classNode.name};`)
+      .exitBlock()
+      .emit('})();');
   }
 
   private emitAnonymousObjectField ({ name, value }: JavaSyntax.IJavaObjectField): this {

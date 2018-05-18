@@ -119,6 +119,8 @@ export default class JavaIfElseParser extends AbstractParser<JavaSyntax.IJavaIfE
       nodes: [ statement ]
     });
 
-    this.next();
+    if (this.currentTokenMatches(';')) {
+      this.next();
+    }
   }
 }

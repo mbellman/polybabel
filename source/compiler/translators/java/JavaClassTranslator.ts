@@ -195,9 +195,9 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
         didEmitField = true;
       },
       () => this.newline()
-    ).newlineIf(hasClasses)
+    ).newlineIf(didEmitField && hasClasses)
       .emitObjectsWith(JavaClassTranslator, classes, true)
-      .newlineIf(hasInterfaces)
+      .newlineIf(didEmitField || hasClasses && hasInterfaces)
       .emitObjectsWith(JavaInterfaceTranslator, interfaces, true);
 
     if (constructors.length > 0) {
@@ -228,7 +228,7 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
   }
 
   private emitNestedObjectWith <O extends JavaSyntax.IJavaObject>(Translator: Constructor<AbstractTranslator<O>>, object: O): this {
-    return this.emit('(function () {')
+    return this.emit('(function(){')
       .enterBlock()
       .emitNodeWith(Translator, object)
       .newline()

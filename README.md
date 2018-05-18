@@ -10,20 +10,20 @@ Polybabel's emphasis on idiomatic programming means the standard libraries and A
 
 * Tokenization ✔
 * Parsing ✔
-* Parsing errors ✔
 * Syntax tree generation ✔
 * Indentation handling ✔
 * Compilation - 25%?
 * * Type Reconciliation - 10%?
 * * Validation - 5%?
 * * Translation ✔
+* * Line error preview/reporting - 0 %
 * Interoperability between languages - 0%
 
 ### Java
 #### Remaining items:
 1. Parsing/Translation:
-* * Assertions
 * * Static/instance initializer blocks
+* * Emit classes in function/prototype form
 * * Overloading
 2. Validation
 * * All items

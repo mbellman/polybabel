@@ -83,8 +83,12 @@ export namespace JavaTranslatorUtils {
       return true;
     }
 
-    return leftSide
-      ? TerminableStatementNodes.some(node => node === leftSide.node)
-      : isTerminableStatement(rightSide);
+    return (
+      leftSide
+        ? TerminableStatementNodes.some(node => node === leftSide.node) :
+      rightSide
+        ? isTerminableStatement(rightSide) :
+      false
+    );
   }
 }

@@ -32,6 +32,7 @@ export namespace JavaSyntax {
     INSTRUCTION = 'INSTRUCTION',
     TERNARY = 'TERNARY',
     LAMBDA_EXPRESSION = 'LAMBDA_EXPRESSION',
+    ASSERTION = 'ASSERTION',
     ANNOTATION = 'ANNOTATION'
   }
 
@@ -391,6 +392,16 @@ export namespace JavaSyntax {
     node: JavaSyntaxNode.LAMBDA_EXPRESSION;
     statement?: IJavaStatement;
     block?: IJavaBlock;
+  }
+
+  /**
+   * A Java assertion, which requires a condition to be
+   * true before proceeding.
+   */
+  export interface IJavaAssertion extends IJavaSyntaxNode {
+    node: JavaSyntaxNode.ASSERTION;
+    condition: IJavaStatement;
+    message?: IJavaStatement;
   }
 
   /**
