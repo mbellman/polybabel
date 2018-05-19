@@ -15,7 +15,9 @@ export default class JavaInterfaceParser extends AbstractParser<JavaSyntax.IJava
       access: JavaSyntax.JavaAccessModifier.PACKAGE,
       name: null,
       extended: [],
-      members: []
+      members: [],
+      instanceInitializers: [],
+      staticInitializers: []
     };
   }
 

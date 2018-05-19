@@ -1,4 +1,5 @@
 import AbstractTranslator from '../../common/AbstractTranslator';
+import JavaBlockTranslator from './JavaBlockTranslator';
 import JavaInterfaceTranslator from './JavaInterfaceTranslator';
 import JavaObjectMethodTranslator from './JavaObjectMethodTranslator';
 import JavaStatementTranslator from './JavaStatementTranslator';
@@ -10,6 +11,7 @@ import { JavaTranslatorUtils } from './java-translator-utils';
  * @internal
  */
 interface IMemberMap {
+  initializers: JavaSyntax.IJavaBlock[];
   fields: JavaSyntax.IJavaObjectField[];
   methods: JavaSyntax.IJavaObjectMethod[];
   classes: JavaSyntax.IJavaClass[];
@@ -26,15 +28,17 @@ interface IPartitionedMemberMap {
 }
 
 export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.IJavaClass> {
-  private memberMap: IPartitionedMemberMap = {
+  private partitionedMemberMap: IPartitionedMemberMap = {
     constructors: [],
     instanceMembers: {
+      initializers: [],
       fields: [],
       methods: [],
       classes: [],
       interfaces: []
     },
     staticMembers: {
+      initializers: [],
       fields: [],
       methods: [],
       classes: [],
@@ -81,17 +85,19 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
   }
 
   private buildMemberMap (): void {
-    const { members, constructors } = this.syntaxNode;
+    const { members, constructors, instanceInitializers, staticInitializers } = this.syntaxNode;
 
     members.forEach(member => {
       this.addMemberToMap(member);
     });
 
-    this.memberMap.constructors = constructors || [];
+    this.partitionedMemberMap.constructors = constructors || [];
+    this.partitionedMemberMap.instanceMembers.initializers = instanceInitializers;
+    this.partitionedMemberMap.staticMembers.initializers = staticInitializers;
   }
 
   private emitDefinedConstructors (): this {
-    const { constructors } = this.memberMap;
+    const { constructors } = this.partitionedMemberMap;
 
     return this.emitNodes(
       constructors,
@@ -125,8 +131,18 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
     return this.emit(`this.${name} = `);
   }
 
+  private emitInitializers (initializers: JavaSyntax.IJavaBlock[]): this {
+    return this.emitNodes(
+      initializers,
+      initializer => {
+        this.emitNodeWith(JavaBlockTranslator, initializer);
+      },
+      () => this.newline()
+    );
+  }
+
   private emitInstanceMethods (): this {
-    const { methods } = this.memberMap.instanceMembers;
+    const { methods } = this.partitionedMemberMap.instanceMembers;
 
     return this.emitNodes(
       methods,
@@ -143,9 +159,9 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
 
   private emitInstanceSide (): this {
     const hasNonMethodInstanceMembers = this.hasNonMethodInstanceMembers();
-    const hasDefinedConstructors = this.memberMap.constructors.length > 0;
+    const hasDefinedConstructors = this.partitionedMemberMap.constructors.length > 0;
     const shouldEmitJSConstructor = hasNonMethodInstanceMembers || hasDefinedConstructors;
-    const hasInstanceMethods = this.memberMap.instanceMembers.methods.length > 0;
+    const hasInstanceMethods = this.partitionedMemberMap.instanceMembers.methods.length > 0;
 
     this.emit('{')
       .enterBlock();
@@ -169,9 +185,8 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
   }
 
   private emitJSConstructor (): this {
-    const { instanceMembers, constructors } = this.memberMap;
-    const { fields, classes, interfaces } = instanceMembers;
-    let didEmitField = false;
+    const { instanceMembers, constructors } = this.partitionedMemberMap;
+    const { fields, classes, interfaces, initializers } = instanceMembers;
     const hasClasses = classes.length > 0;
     const hasInterfaces = interfaces.length > 0;
 
@@ -183,25 +198,27 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
         .newline();
     }
 
-    this.emitNodes(
-      fields,
-      field => {
-        if (JavaTranslatorUtils.isEmptyObjectMember(field)) {
-          return false;
-        }
+    this.trackEmits()
+      .emitNodes(
+        fields,
+        field => {
+          if (JavaTranslatorUtils.isEmptyObjectMember(field)) {
+            return false;
+          }
 
-        this.emitField(field, true);
-
-        didEmitField = true;
-      },
-      () => this.newline()
-    ).newlineIf(didEmitField && hasClasses)
+          this.emitField(field, true);
+        },
+        () => this.newline()
+      )
+      .newlineIfDidEmit()
       .emitObjectsWith(JavaClassTranslator, classes, true)
-      .newlineIf(didEmitField || hasClasses && hasInterfaces)
-      .emitObjectsWith(JavaInterfaceTranslator, interfaces, true);
+      .newlineIfDidEmit()
+      .emitObjectsWith(JavaInterfaceTranslator, interfaces, true)
+      .newlineIfDidEmit()
+      .emitInitializers(initializers);
 
     if (constructors.length > 0) {
-      this.newlineIf(didEmitField || hasClasses || hasInterfaces)
+      this.newlineIfDidEmit()
         .emit('switch (overloadIndex) {')
         .enterBlock()
         .emitNodes(
@@ -262,13 +279,15 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
   }
 
   private emitStaticSide (): this {
-    const { fields, methods, classes, interfaces } = this.memberMap.staticMembers;
+    const { fields, methods, classes, interfaces, initializers } = this.partitionedMemberMap.staticMembers;
+    const hasInitializers = initializers.length > 0;
     const hasStaticMethods = methods.length > 0;
     const hasClasses = classes.length > 0;
     const hasInterfaces = interfaces.length > 0;
 
     if (this.hasStaticMembers()) {
       this.newlineIf(fields.length > 0)
+        .trackEmits()
         .emitNodes(
             fields,
             field => {
@@ -280,7 +299,7 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
             },
             () => this.newline()
         )
-        .newlineIf(hasStaticMethods)
+        .newlineIfDidEmit()
         .emitNodes(
           methods,
           method => {
@@ -295,10 +314,19 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
           },
           () => this.newline()
         )
-        .newlineIf(hasClasses)
+        .newlineIfDidEmit()
         .emitObjectsWith(JavaClassTranslator, classes, false)
-        .newlineIf(hasInterfaces)
+        .newlineIfDidEmit()
         .emitObjectsWith(JavaInterfaceTranslator, interfaces, false);
+    }
+
+    if (hasInitializers) {
+      this.newline()
+        .emit(`(function(){`)
+        .enterBlock()
+        .emitInitializers(initializers)
+        .exitBlock()
+        .emit('})();');
     }
 
     return this;
@@ -311,22 +339,23 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
   private getMemberSideMap (member: JavaSyntax.JavaObjectMember): IMemberMap {
     const memberSideKey = this.getMemberSideKey(member);
 
-    return this.memberMap[memberSideKey] as IMemberMap;
+    return this.partitionedMemberMap[memberSideKey] as IMemberMap;
   }
 
   private hasNonMethodInstanceMembers (): boolean {
-    const { instanceMembers } = this.memberMap;
-    const { fields, classes, interfaces } = instanceMembers;
+    const { instanceMembers } = this.partitionedMemberMap;
+    const { fields, classes, interfaces, initializers } = instanceMembers;
 
     return (
       fields.length > 0 ||
       classes.length > 0 ||
-      interfaces.length > 0
+      interfaces.length > 0 ||
+      initializers.length > 0
     );
   }
 
   private hasStaticMembers (): boolean {
-    const { fields, methods, classes, interfaces } = this.memberMap.staticMembers;
+    const { fields, methods, classes, interfaces } = this.partitionedMemberMap.staticMembers;
 
     return (
       fields.length > 0 ||

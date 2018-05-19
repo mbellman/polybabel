@@ -1,6 +1,8 @@
 import AbstractParser from '../common/AbstractParser';
 import JavaAnnotationParser from './JavaAnnotationParser';
+import JavaBlockParser from './JavaBlockParser';
 import JavaClassParser from './JavaClassParser';
+import JavaEnumParser from './JavaEnumParser';
 import JavaInterfaceParser from './JavaInterfaceParser';
 import JavaModifiableParser from './JavaModifiableParser';
 import JavaObjectMethodParser from './JavaObjectMethodParser';
@@ -14,7 +16,6 @@ import { JavaSyntax } from './java-syntax';
 import { JavaUtils } from './java-utils';
 import { Match } from '../common/parser-decorators';
 import { TokenUtils } from '../../tokenizer/token-utils';
-import JavaEnumParser from './JavaEnumParser';
 
 /**
  * @todo @description
@@ -31,7 +32,9 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
     return {
       node: null,
       constructors: [],
-      members: []
+      members: [],
+      instanceInitializers: [],
+      staticInitializers: []
     };
   }
 
@@ -183,6 +186,23 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
 
     this.updateCurrentMember({ node, name, members });
     this.addCurrentMember();
+  }
+
+  @Match('{')
+  protected onInitializerBlock (): void {
+    const block = this.parseNextWith(JavaBlockParser);
+
+    const isStaticInitializer = !!this.currentMember
+      ? this.currentMember.isStatic
+      : false;
+
+    if (isStaticInitializer) {
+      this.parsed.staticInitializers.push(block);
+    } else {
+      this.parsed.instanceInitializers.push(block);
+    }
+
+    this.currentMember = null;
   }
 
   @Match('}')

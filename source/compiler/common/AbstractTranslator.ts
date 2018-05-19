@@ -6,6 +6,7 @@ export default abstract class AbstractTranslator<N extends ISyntaxNode = ISyntax
   private static readonly INDENTATION_AMOUNT = 2;
   protected syntaxNode: N;
   private code: string = '';
+  private didEmitWhileTracking: boolean = false;
   private indentation: number = 0;
 
   protected constructor (syntaxNode: N) {
@@ -20,6 +21,7 @@ export default abstract class AbstractTranslator<N extends ISyntaxNode = ISyntax
 
   protected emit (code: string): this {
     this.code += code;
+    this.didEmitWhileTracking = true;
 
     return this;
   }
@@ -50,7 +52,7 @@ export default abstract class AbstractTranslator<N extends ISyntaxNode = ISyntax
 
     translator.indentation = this.indentation;
 
-    this.code += translator.getTranslation();
+    this.emit(translator.getTranslation());
 
     return this;
   }
@@ -67,6 +69,10 @@ export default abstract class AbstractTranslator<N extends ISyntaxNode = ISyntax
     return this.newline();
   }
 
+  protected didEmit (): boolean {
+    return this.didEmitWhileTracking;
+  }
+
   protected newline (): this {
     this.emit('\n');
 
@@ -81,6 +87,18 @@ export default abstract class AbstractTranslator<N extends ISyntaxNode = ISyntax
     if (condition) {
       this.newline();
     }
+
+    return this;
+  }
+
+  protected newlineIfDidEmit (): this {
+    this.newlineIf(this.didEmit());
+
+    return this.trackEmits();
+  }
+
+  protected trackEmits (): this {
+    this.didEmitWhileTracking = false;
 
     return this;
   }

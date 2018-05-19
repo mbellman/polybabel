@@ -10,6 +10,7 @@ export namespace JavaSyntax {
     CLASS = 'CLASS',
     INTERFACE = 'INTERFACE',
     ENUM = 'ENUM',
+    CLASS_INITIALIZER = 'OBJECT INITIALIZER',
     OBJECT_FIELD = 'OBJECT FIELD',
     OBJECT_METHOD = 'OBJECT METHOD',
     TYPE = 'TYPE',
@@ -165,6 +166,8 @@ export namespace JavaSyntax {
   export interface IJavaObjectBody extends IJavaSyntaxNode {
     constructors?: IJavaObjectMethod[];
     members: JavaObjectMember[];
+    instanceInitializers: IJavaBlock[];
+    staticInitializers: IJavaBlock[];
   }
 
   /**
