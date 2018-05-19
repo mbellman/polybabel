@@ -8,13 +8,14 @@ import { JavaTranslatorUtils } from './java-translator-utils';
 export default class JavaObjectMethodTranslator extends AbstractTranslator<JavaSyntax.IJavaObjectMethod> {
   @Implements protected translate (): void {
     const { isStatic, name, parameters, block } = this.syntaxNode;
+    let hasVariadicParameter = false;
 
-    this.emit(isStatic ? '(' : `${name} (`)
+    this.emit('function (')
       .emitNodes(
         parameters,
         parameter => {
           if (parameter.isVariadic) {
-            this.emit('...');
+            hasVariadicParameter = true;
           }
 
           this.emit(`${parameter.name}`);
@@ -22,9 +23,26 @@ export default class JavaObjectMethodTranslator extends AbstractTranslator<JavaS
         () => this.emit(', ')
       )
       .emit(') {')
-      .enterBlock()
-      .emitNodeWith(JavaBlockTranslator, block)
+      .enterBlock();
+
+    if (hasVariadicParameter) {
+      this.emitVariadicParameterPolyfill();
+    }
+
+    this.emitNodeWith(JavaBlockTranslator, block)
       .exitBlock()
       .emit('}');
+  }
+
+  private emitVariadicParameterPolyfill (): this {
+    const { parameters } = this.syntaxNode;
+
+    parameters.forEach(({ isVariadic, name }, index) => {
+      if (isVariadic) {
+        this.emit(`${name} = Array.prototype.slice.call(arguments, ${index});`);
+      }
+    });
+
+    return this;
   }
 }

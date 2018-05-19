@@ -21,9 +21,6 @@ Polybabel's emphasis on idiomatic programming means the standard libraries and A
 
 ### Java
 #### Remaining items:
-1. Parsing/Translation:
-* * Emit classes in function/prototype form
-* * Overloading
 2. Validation
 * * All items
 

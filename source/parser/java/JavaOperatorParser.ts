@@ -172,7 +172,7 @@ export default class JavaOperatorParser extends AbstractParser<JavaSyntax.IJavaO
       this.skipShorthandAssignmentToken();
     }
 
-    if (!this.isDefaultOperator) {
+    if (!this.isDefaultOperator && !isShorthandAssignment) {
       this.next();
     }
 
@@ -240,6 +240,8 @@ export default class JavaOperatorParser extends AbstractParser<JavaSyntax.IJavaO
       this.next();
     } else {
       this.eatNext(JavaConstants.Operator.EQUAL);
+
+      console.log(this.currentToken.value);
     }
   }
 }
