@@ -240,8 +240,6 @@ export default class JavaOperatorParser extends AbstractParser<JavaSyntax.IJavaO
       this.next();
     } else {
       this.eatNext(JavaConstants.Operator.EQUAL);
-
-      console.log(this.currentToken.value);
     }
   }
 }

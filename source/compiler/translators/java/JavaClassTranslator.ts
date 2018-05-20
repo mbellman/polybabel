@@ -64,9 +64,12 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
     }
 
     this.emit('}')
-      .emitInstanceSide()
-      .emitStaticSide()
       .newline()
+      .trackEmits()
+      .emitInstanceSide()
+      .newlineIfDidEmit()
+      .emitStaticSide()
+      .newlineIfDidEmit()
       .emit(`return ${name};`)
       .exitBlock()
       .emit('})();');
@@ -220,7 +223,8 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
         }
 
         this.emitPrototypeMemberKey(method.name)
-          .emitNodeWith(JavaObjectMethodTranslator, method);
+          .emitNodeWith(JavaObjectMethodTranslator, method)
+          .emit(';');
       },
       () => this.newline()
     );
@@ -231,11 +235,11 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
     const hasDefinedConstructors = this.partitionedMemberMap.constructors.length > 0;
     const hasInstanceMethods = this.partitionedMemberMap.instanceMembers.methods.length > 0;
 
-    this.trackEmits()
-      .newline();
+    this.trackEmits();
 
     if (hasDefinedConstructors) {
-      this.emitConstructors();
+      this.newline()
+        .emitConstructors();
     }
 
     if (hasInstanceMethods) {

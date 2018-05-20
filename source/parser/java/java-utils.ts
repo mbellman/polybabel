@@ -185,6 +185,23 @@ export namespace JavaUtils {
   }
 
   /**
+   * Determines whether a token corresponds to the beginning
+   * of an initializer block inside a class body.
+   *
+   * @example
+   *
+   *  {
+   *  static {
+   */
+  export function isInitializer (token: IToken): boolean {
+    return (
+      token.value === '{' ||
+      token.value === JavaConstants.Keyword.STATIC &&
+      token.nextTextToken.value === '{'
+    );
+  }
+
+  /**
    * Determines whether a token corresponds to an isolated
    * value reference. Uses a potentially large number of
    * lookaheads to distinguish references on the left side
