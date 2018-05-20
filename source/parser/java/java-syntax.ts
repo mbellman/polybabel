@@ -176,6 +176,7 @@ export namespace JavaSyntax {
    * interfaces, and enums.
    */
   export interface IJavaObject extends IJavaModifiable, INamed, IJavaObjectBody {
+    genericParameters?: IJavaReference[];
     extended?: IJavaType[];
     implemented?: IJavaType[];
     annotations?: IJavaAnnotation[];
@@ -186,7 +187,6 @@ export namespace JavaSyntax {
    */
   export interface IJavaClass extends IJavaSyntaxNode, IJavaObject {
     node: JavaSyntaxNode.CLASS;
-    genericTypes?: IJavaType[];
   }
 
   /**
@@ -194,7 +194,6 @@ export namespace JavaSyntax {
    */
   export interface IJavaInterface extends IJavaSyntaxNode, IJavaObject {
     node: JavaSyntaxNode.INTERFACE;
-    genericTypes?: IJavaType[];
   }
 
   /**

@@ -22,10 +22,10 @@ export default class Compiler {
   public add (file: string, syntaxTree: ISyntaxTree): void {
     this.syntaxTreeMap[file] = syntaxTree;
 
-    const { TypeReconciler } = LanguageSpecification[syntaxTree.language];
-    const reconciledTypes = new TypeReconciler().reconcile(syntaxTree);
+    const { TypeResolver } = LanguageSpecification[syntaxTree.language];
+    const resolvedTypes = new TypeResolver().resolve(syntaxTree);
 
-    this.typeDictionary.addTypes(file, reconciledTypes);
+    this.typeDictionary.addTypes(file, resolvedTypes);
   }
 
   public addError (file: string, message: string): void {

@@ -1,6 +1,6 @@
 import AbstractParser from '../parser/common/AbstractParser';
 import AbstractTranslator from '../compiler/common/AbstractTranslator';
-import AbstractTypeReconciler from '../compiler/common/AbstractTypeReconciler';
+import AbstractTypeResolver from '../compiler/common/AbstractTypeResolver';
 import AbstractValidator from '../compiler/common/AbstractValidator';
 import { Callback } from '../system/types';
 import { IConstructable, IHashMap } from 'trampoline-framework';
@@ -14,7 +14,7 @@ import { ISyntaxTree } from '../parser/common/syntax-types';
  */
 export interface ILanguageSpecification {
   Parser: IConstructable<AbstractParser<ISyntaxTree>>;
-  TypeReconciler: IConstructable<AbstractTypeReconciler>;
+  TypeResolver: IConstructable<AbstractTypeResolver>;
   Validator: IConstructable<AbstractValidator>;
   Translator: IConstructable<AbstractTranslator>;
 }

@@ -1,6 +1,7 @@
 import AbstractParser from '../common/AbstractParser';
 import JavaModifiableParser from './JavaModifiableParser';
 import JavaObjectBodyParser from './JavaObjectBodyParser';
+import JavaReferenceParser from './statement-parsers/JavaReferenceParser';
 import JavaTypeParser from './JavaTypeParser';
 import { Allow, Expect } from '../common/parser-decorators';
 import { Implements, Override } from 'trampoline-framework';
@@ -40,8 +41,8 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
   protected onGenericTypes (): void {
     this.next();
 
-    this.parsed.genericTypes = this.parseSequence({
-      ValueParser: JavaTypeParser,
+    this.parsed.genericParameters = this.parseSequence({
+      ValueParser: JavaReferenceParser,
       delimiter: ',',
       terminator: '>'
     });
