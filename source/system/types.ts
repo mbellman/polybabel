@@ -23,3 +23,8 @@ export type BaseOf<T, B> = T extends B
  * union type P.
  */
 export type Without<T, P extends keyof T> = { [K in Exclude<keyof T, P>]: T[K] };
+
+/**
+ * A 2-tuple of a type T;
+ */
+export type Tuple2<T> = [ T, T ];

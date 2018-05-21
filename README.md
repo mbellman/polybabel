@@ -13,11 +13,11 @@ Polybabel's emphasis on idiomatic programming means the standard libraries and A
 * Syntax tree generation ✔
 * Indentation handling ✔
 * Compilation - 30%?
-* * Type Resolution - 25%?
+* * Type Resolution - 30%?
 * * Validation - 5%?
 * * Translation ✔
 * * Line error preview/reporting - 0 %
-* Interoperability between languages - 0%
+* Interoperability between languages - 10%
 
 ### Java
 #### Remaining items:
