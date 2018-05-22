@@ -37,8 +37,9 @@ function getLanguageByExtension (extension: string): Language {
 /**
  * @internal
  */
-async function createCompiler (directory: string, files: string[]): Promise<Compiler> {
+async function createCompiler (inputFolderName: string, files: string[]): Promise<Compiler> {
   const compiler = new Compiler();
+  const cwd = process.cwd();
 
   for (const file of files) {
     const extension = file.split('.').pop();
@@ -46,7 +47,7 @@ async function createCompiler (directory: string, files: string[]): Promise<Comp
     try {
       const language = getLanguageByExtension(extension);
       const { Parser } = LanguageSpecification[language];
-      const fileContents = await getFileContents(`${process.cwd()}/${directory}/${file}`);
+      const fileContents = await getFileContents(`${cwd}/${inputFolderName}/${file}`);
       const firstToken = tokenize(fileContents);
       const syntaxTree = new Parser().parse(firstToken);
 

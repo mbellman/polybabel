@@ -6,12 +6,17 @@ import { TypeResolution } from '../common/compiler-types';
 import { Utils } from '../../system/utils';
 
 export default class JavaTypeResolver extends AbstractTypeResolver {
-  @Implements public resolve (javaSyntaxTree: JavaSyntax.IJavaSyntaxTree): TypeResolution.ResolvedType[] {
+  private imports: JavaSyntax.IJavaImport[] = [];
+
+  @Implements public resolve (file: string, javaSyntaxTree: JavaSyntax.IJavaSyntaxTree): TypeResolution.ResolvedType[] {
     const resolvedTypes: TypeResolution.ResolvedType[] = [];
     const { nodes: syntaxNodes } = javaSyntaxTree;
 
     syntaxNodes.forEach(syntaxNode => {
       switch (syntaxNode.node) {
+        case JavaSyntax.JavaSyntaxNode.IMPORT:
+          this.imports.push(syntaxNode as JavaSyntax.IJavaImport);
+          break;
         case JavaSyntax.JavaSyntaxNode.CLASS:
           const classType = this.resolveClassType(syntaxNode as JavaSyntax.IJavaClass);
 
@@ -28,7 +33,32 @@ export default class JavaTypeResolver extends AbstractTypeResolver {
     return resolvedTypes;
   }
 
-  public resolveClassType (classNode: JavaSyntax.IJavaClass): TypeResolution.IObjectType {
+  private createObjectMemberSidePartition (members: JavaSyntax.JavaObjectMember[]): Tuple2<JavaSyntax.JavaObjectMember[]> {
+    return Utils.partition(members, ({ isStatic }) => isStatic);
+  }
+
+  private getVisibilityByAccess (access: JavaSyntax.JavaAccessModifier): TypeResolution.ObjectMemberVisibility {
+    const { ALL, DERIVED, SELF } = TypeResolution.ObjectMemberVisibility;
+
+    return (
+      access === JavaSyntax.JavaAccessModifier.PUBLIC
+        ? ALL :
+      access === JavaSyntax.JavaAccessModifier.PROTECTED
+        ? DERIVED :
+      access === JavaSyntax.JavaAccessModifier.PRIVATE
+        ? SELF :
+      null
+    );
+  }
+
+  /**
+   * @todo
+   */
+  private resolveAnonymousObjectType (): TypeResolution.IObjectType {
+    return null;
+  }
+
+  private resolveClassType (classNode: JavaSyntax.IJavaClass): TypeResolution.IObjectType {
     const { name, members, access, isFinal, isAbstract, constructors } = classNode;
 
     const [
@@ -47,7 +77,7 @@ export default class JavaTypeResolver extends AbstractTypeResolver {
     };
   }
 
-  public resolveInterfaceType (interfaceNode: JavaSyntax.IJavaInterface): TypeResolution.IObjectType {
+  private resolveInterfaceType (interfaceNode: JavaSyntax.IJavaInterface): TypeResolution.IObjectType {
     const { name } = interfaceNode;
 
     return {
@@ -68,34 +98,22 @@ export default class JavaTypeResolver extends AbstractTypeResolver {
   /**
    * @todo
    */
-  public resolveAnonymousObjectType (): TypeResolution.IObjectType {
-    return null;
-  }
+  private resolveObjectMemberType (objectMemberNode: JavaSyntax.JavaObjectMember): TypeResolution.IObjectMember {
+    const objectMemberType: Partial<TypeResolution.IObjectMember> = {
+      category: TypeResolution.TypeCategory.MEMBER
+    };
 
-  private createObjectMemberSidePartition (members: JavaSyntax.JavaObjectMember[]): Tuple2<JavaSyntax.JavaObjectMember[]> {
-    return Utils.partition(members, ({ isStatic }) => isStatic);
-  }
-
-  private getVisibilityByAccess (access: JavaSyntax.JavaAccessModifier): TypeResolution.ObjectMemberVisibility {
-    const { ALL, SUPERS, SELF } = TypeResolution.ObjectMemberVisibility;
-
-    return (
-      access === JavaSyntax.JavaAccessModifier.PUBLIC
-        ? ALL :
-      access === JavaSyntax.JavaAccessModifier.PROTECTED
-        ? SUPERS :
-      access === JavaSyntax.JavaAccessModifier.PRIVATE
-        ? SELF :
-      null
+    const isJavaObject = (
+      objectMemberNode.node === JavaSyntax.JavaSyntaxNode.CLASS ||
+      objectMemberNode.node === JavaSyntax.JavaSyntaxNode.INTERFACE
     );
-  }
 
-  /**
-   * @todo
-   */
-  private resolveObjectMemberType (objectMember: JavaSyntax.JavaObjectMember): TypeResolution.IObjectMember {
-    switch (objectMember.node) {
+    switch (objectMemberNode.node) {
       case JavaSyntax.JavaSyntaxNode.OBJECT_FIELD:
+        const { type } = objectMemberNode as JavaSyntax.IJavaObjectField;
+        const typeName = type.namespaceChain.join('.');
+
+        this.safelyResolveKeyedType(objectMemberType, 'type', '', typeName);
       case JavaSyntax.JavaSyntaxNode.OBJECT_METHOD:
       case JavaSyntax.JavaSyntaxNode.CLASS:
       case JavaSyntax.JavaSyntaxNode.INTERFACE:

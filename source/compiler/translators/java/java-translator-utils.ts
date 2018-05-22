@@ -23,8 +23,7 @@ export namespace JavaTranslatorUtils {
   export function isObject ({ node }: JavaSyntax.IJavaSyntaxNode): boolean {
     return (
       node === JavaSyntax.JavaSyntaxNode.CLASS ||
-      node === JavaSyntax.JavaSyntaxNode.INTERFACE ||
-      node === JavaSyntax.JavaSyntaxNode.ENUM
+      node === JavaSyntax.JavaSyntaxNode.INTERFACE
     );
   }
 

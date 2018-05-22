@@ -9,8 +9,6 @@ export namespace JavaSyntax {
     IMPORT = 'IMPORT',
     CLASS = 'CLASS',
     INTERFACE = 'INTERFACE',
-    ENUM = 'ENUM',
-    CLASS_INITIALIZER = 'OBJECT INITIALIZER',
     OBJECT_FIELD = 'OBJECT FIELD',
     OBJECT_METHOD = 'OBJECT METHOD',
     TYPE = 'TYPE',

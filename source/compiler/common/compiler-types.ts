@@ -10,18 +10,13 @@ export namespace TypeResolution {
 
   /**
    * Generalizes object member access modifiers in a manner
-   * reconcilable to all languages.
+   * reconcilable by all languages.
    */
   export enum ObjectMemberVisibility {
     ALL = 'ALL',
-    SUPERS = 'SUPERS',
+    DERIVED = 'DERIVED',
     SELF = 'SELF'
   }
-
-  /**
-   * A dynamic type constant.
-   */
-  export type Dynamic = 'DYNAMIC TYPE';
 
   /**
    * Constants for primitive types common to all languages.
@@ -30,7 +25,8 @@ export namespace TypeResolution {
     STRING = 'STRING',
     NUMBER = 'NUMBER',
     BOOLEAN = 'BOOLEAN',
-    REGEX = 'REGEX'
+    REGEX = 'REGEX',
+    OBJECT = 'OBJECT'
   }
 
   /**
@@ -50,32 +46,37 @@ export namespace TypeResolution {
    */
   export interface IType {
     category: TypeCategory;
+    name: string;
   }
 
   /**
    * A dynamic type definition.
    */
-  export interface IDynamicType {
+  export interface IDynamicType extends IType {
     category: TypeCategory.DYNAMIC;
   }
 
   /**
    * A primitive type definition.
    */
-  export interface IPrimitiveType {
+  export interface IPrimitiveType extends IType {
     category: TypeCategory.PRIMITIVE;
     type: Primitive;
   }
 
-  export interface IArrayType {
+  /**
+   * An array type definition, also defining the type of the
+   * elements it contains.
+   */
+  export interface IArrayType extends IType {
     category: TypeCategory.ARRAY;
-    type: IType;
+    type: ResolvedType;
   }
 
   /**
    * An object member type definition.
    */
-  export interface IObjectMember {
+  export interface IObjectMember extends IType {
     category: TypeCategory.MEMBER;
     visibility: ObjectMemberVisibility;
     isConstant: boolean;
@@ -95,13 +96,12 @@ export namespace TypeResolution {
   /**
    * An object type definition.
    */
-  export interface IObjectType {
+  export interface IObjectType extends IType {
     category: TypeCategory.OBJECT;
-    name: string;
     genericParameters?: string[];
     isExtensible: boolean;
     isConstructable: boolean;
-    constructors: IFunctionType[];
+    constructors: IObjectMember[];
     instanceMemberMap: IMemberTypeMap;
     staticMemberMap: IMemberTypeMap;
   }
@@ -109,5 +109,5 @@ export namespace TypeResolution {
   /**
    * Any type resolved from a particular file.
    */
-  export type ResolvedType = IDynamicType | IPrimitiveType | IArrayType | IFunctionType | IObjectType;
+  export type ResolvedType = IDynamicType | IPrimitiveType | IArrayType | IFunctionType | IObjectMember | IObjectType;
 }

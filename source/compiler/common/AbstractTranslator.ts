@@ -9,6 +9,17 @@ export default abstract class AbstractTranslator<N extends ISyntaxNode = ISyntax
   private didEmitWhileTracking: boolean = false;
   private indentation: number = 0;
 
+  /**
+   * We deliberately mark the constructor as protected to ensure
+   * that subclasses cannot be instantiated without deliberately
+   * overriding it. Since the preferred mechanism for recursive
+   * translation is via emitNodeWith(), this helps enforce the
+   * pattern. Ideally, only the root language translator should
+   * override the constructor so it can be instantiated in the
+   * main compilation flow.
+   *
+   * @see emitNodeWith()
+   */
   protected constructor (syntaxNode: N) {
     this.syntaxNode = syntaxNode;
   }

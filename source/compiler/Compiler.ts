@@ -23,9 +23,9 @@ export default class Compiler {
     this.syntaxTreeMap[file] = syntaxTree;
 
     const { TypeResolver } = LanguageSpecification[syntaxTree.language];
-    const resolvedTypes = new TypeResolver().resolve(syntaxTree);
+    const resolvedTypes = new TypeResolver(this.typeDictionary).resolve(file, syntaxTree);
 
-    this.typeDictionary.addTypes(file, resolvedTypes);
+    this.typeDictionary.addResolvedTypes(file, resolvedTypes);
   }
 
   public addError (file: string, message: string): void {
