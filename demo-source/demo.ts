@@ -73,13 +73,15 @@ import { LanguageSpecification } from '../source/language-specifications';
     this.compiler.reset();
     this.saveEditorContent(editorContent);
 
+    let syntaxTree: ISyntaxTree;
+
     // Compilation
     try {
       this.compilationStartTime = Date.now();
 
       const { Parser } = LanguageSpecification[Language.JAVA];
       const firstToken = tokenize(editorContent);
-      const syntaxTree = new Parser().parse(firstToken);
+      syntaxTree = new Parser().parse(firstToken);
 
       this.compiler.add('demo', syntaxTree);
       this.compiler.compileFile('demo');
@@ -94,8 +96,6 @@ import { LanguageSpecification } from '../source/language-specifications';
       this.outputTotalCompilationTime();
 
       if (this.options.showSyntaxTree) {
-        const syntaxTree = this.compiler.getSyntaxTree('demo');
-
         this.preview.setValue(js_beautify(JSON.stringify(syntaxTree)));
       } else {
         const code = this.compiler.getCompiledCode('demo');

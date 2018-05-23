@@ -1,3 +1,6 @@
+import { Callback } from '../../system/types';
+import { IHashMap } from 'trampoline-framework';
+
 export namespace TypeResolution {
   /**
    * A map of object member names to their type definitions.
@@ -107,7 +110,18 @@ export namespace TypeResolution {
   }
 
   /**
-   * Any type resolved from a particular file.
+   * Any type definition resolved from a particular file.
    */
   export type ResolvedType = IDynamicType | IPrimitiveType | IArrayType | IFunctionType | IObjectMember | IObjectType;
+
+  /**
+   * A map of type names to resolved types.
+   */
+  export type ResolvedTypeMap = IHashMap<ResolvedType>;
+
+  /**
+   * A function which receives a string corresponding to a
+   * file name and returns the file's resolved type map.
+   */
+  export type ResolvedTypeMapLoader = Callback<string, ResolvedTypeMap>;
 }

@@ -8,7 +8,7 @@ import { Utils } from '../../system/utils';
 export default class JavaTypeResolver extends AbstractTypeResolver {
   private imports: JavaSyntax.IJavaImport[] = [];
 
-  @Implements public resolve (file: string, javaSyntaxTree: JavaSyntax.IJavaSyntaxTree): TypeResolution.ResolvedType[] {
+  @Implements public resolve (javaSyntaxTree: JavaSyntax.IJavaSyntaxTree): TypeResolution.ResolvedType[] {
     const resolvedTypes: TypeResolution.ResolvedType[] = [];
     const { nodes: syntaxNodes } = javaSyntaxTree;
 
@@ -103,17 +103,8 @@ export default class JavaTypeResolver extends AbstractTypeResolver {
       category: TypeResolution.TypeCategory.MEMBER
     };
 
-    const isJavaObject = (
-      objectMemberNode.node === JavaSyntax.JavaSyntaxNode.CLASS ||
-      objectMemberNode.node === JavaSyntax.JavaSyntaxNode.INTERFACE
-    );
-
     switch (objectMemberNode.node) {
       case JavaSyntax.JavaSyntaxNode.OBJECT_FIELD:
-        const { type } = objectMemberNode as JavaSyntax.IJavaObjectField;
-        const typeName = type.namespaceChain.join('.');
-
-        this.safelyResolveKeyedType(objectMemberType, 'type', '', typeName);
       case JavaSyntax.JavaSyntaxNode.OBJECT_METHOD:
       case JavaSyntax.JavaSyntaxNode.CLASS:
       case JavaSyntax.JavaSyntaxNode.INTERFACE:
