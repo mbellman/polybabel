@@ -1,5 +1,5 @@
 import ScopeManager from '../ScopeManager';
-import TypeDictionary from '../TypeDictionary';
+import SymbolDictionary from '../symbol-resolution/SymbolDictionary';
 import { Autowired, IHashMap, Wired } from 'trampoline-framework';
 import { ISyntaxNode, ISyntaxTree } from '../../parser/common/syntax-types';
 
@@ -10,12 +10,12 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
 
   protected currentNode: ISyntaxNode;
   protected syntaxTreeMap: IHashMap<ISyntaxTree>;
-  protected typeDictionary: TypeDictionary;
+  protected symbolDictionary: SymbolDictionary;
   private errors: string[];
 
-  public constructor (syntaxTreeMap: IHashMap<ISyntaxTree>, typeDictionary: TypeDictionary) {
+  public constructor (syntaxTreeMap: IHashMap<ISyntaxTree>, symbolDictionary: SymbolDictionary) {
     this.syntaxTreeMap = syntaxTreeMap;
-    this.typeDictionary = typeDictionary;
+    this.symbolDictionary = symbolDictionary;
   }
 
   public getErrors (): string[] {

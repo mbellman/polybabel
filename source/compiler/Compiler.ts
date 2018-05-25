@@ -1,8 +1,7 @@
-import TypeDictionary from './TypeDictionary';
+import SymbolDictionary from './symbol-resolution/SymbolDictionary';
 import { IHashMap } from 'trampoline-framework';
 import { ISyntaxTree } from '../parser/common/syntax-types';
 import { LanguageSpecification } from '../language-specifications/index';
-import { TypeResolution } from './common/compiler-types';
 
 /**
  * @internal
@@ -19,10 +18,14 @@ export default class Compiler {
   private entryFile: string;
   private errors: CompilerError[] = [];
   private syntaxTreeMap: IHashMap<ISyntaxTree> = {};
-  private typeDictionary: TypeDictionary = new TypeDictionary();
+  private symbolDictionary: SymbolDictionary = new SymbolDictionary();
 
   public add (file: string, syntaxTree: ISyntaxTree): void {
     this.syntaxTreeMap[file] = syntaxTree;
+
+    const { SymbolResolver } = LanguageSpecification[syntaxTree.language];
+
+    new SymbolResolver(this.symbolDictionary).resolve(syntaxTree);
   }
 
   public addError (file: string, message: string): void {
@@ -67,39 +70,12 @@ export default class Compiler {
     this.syntaxTreeMap = {};
     this.compiledCodeMap = {};
     this.errors.length = 0;
-    this.typeDictionary = new TypeDictionary();
+    this.symbolDictionary = new SymbolDictionary();
   }
 
   public run (): void {
-    // this.buildTypeDictionary();
-
     Object.keys(this.syntaxTreeMap).forEach(file => {
       this.compileFile(file);
     });
-  }
-
-  /**
-   * @todo @description
-   */
-  private buildTypeDictionary (): void {
-    const loadResolvedTypeMap = (file: string): TypeResolution.ResolvedTypeMap => {
-      let resolvedTypeMap: TypeResolution.ResolvedTypeMap;
-
-      resolvedTypeMap = this.typeDictionary.getResolvedTypeMap(file);
-
-      if (resolvedTypeMap) {
-        return resolvedTypeMap;
-      } else {
-        const syntaxTree = this.syntaxTreeMap[file];
-        const { TypeResolver } = LanguageSpecification[syntaxTree.language];
-        const resolvedTypes = new TypeResolver(loadResolvedTypeMap).resolve(syntaxTree);
-
-        this.typeDictionary.addResolvedTypes(file, resolvedTypes);
-
-        return this.typeDictionary.getResolvedTypeMap(file);
-      }
-    };
-
-    loadResolvedTypeMap(this.entryFile);
   }
 }
