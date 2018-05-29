@@ -32,17 +32,22 @@ export default class Compiler {
     this.errors.push([ file, message ]);
   }
 
-  /**
-   * @todo Add validation step
-   */
   public compileFile (file: string): void {
     const syntaxTree = this.syntaxTreeMap[file];
 
     if (syntaxTree) {
-      const { Translator } = LanguageSpecification[syntaxTree.language];
-      const translation = new Translator(syntaxTree).getTranslation();
+      const { Validator, Translator } = LanguageSpecification[syntaxTree.language];
+      const validator = new Validator(this.symbolDictionary);
 
-      this.compiledCodeMap[file] = translation;
+      validator.validate(syntaxTree);
+
+      if (validator.hasErrors()) {
+        validator.forErrors(error => this.addError(file, error));
+      } else {
+        const translation = new Translator(syntaxTree).getTranslation();
+
+        this.compiledCodeMap[file] = translation;
+      }
     } else {
       this.addError(file, 'Missing file');
     }

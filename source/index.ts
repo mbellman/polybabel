@@ -80,7 +80,7 @@ async function main (args: string[]) {
       console.log(message);
     });
 
-    console.log(chalk.red('Failed to compile.'));
+    console.log(chalk.red('\nFailed to compile.'));
   } else {
     console.log(chalk.white.bold(`Done. ${Date.now() - startTime}ms`));
   }

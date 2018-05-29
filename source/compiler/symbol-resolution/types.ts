@@ -1,8 +1,4 @@
-import AbstractType from './AbstractType';
-import ObjectType from './ObjectType';
-import SymbolDictionary from './SymbolDictionary';
-import { Callback } from '../../system/types';
-import { IHashMap } from 'trampoline-framework';
+import AbstractTypeDefinition from './AbstractTypeDefinition';
 
 /**
  * A map of object member names to their type definitions.
@@ -24,17 +20,31 @@ export enum ObjectMemberVisibility {
 }
 
 /**
- * Constants defining the object 'side' a member exists on.
+ * An object member definition.
  */
-export enum ObjectMemberSide {
-  STATIC = 'STATIC',
-  INSTANCE = 'INSTANCE'
+export interface IObjectMember<T extends TypeDefinition = TypeDefinition> {
+  visibility: ObjectMemberVisibility;
+  isStatic: boolean;
+  isConstant: boolean;
+  type: T;
 }
 
 /**
- * A constant representing a dynamic type.
+ * A constant representing a dynamic type. Providing both
+ * a type form and string form allows us to use the constant
+ * as either a type or a value.
  */
 export type Dynamic = 'DYNAMIC';
+export const Dynamic = 'DYNAMIC';
+
+/**
+ * A constant representing a void type (i.e., one without an
+ * actual type signature). Providing both a type form and
+ * string form allows us to use the constant as either a
+ * type or a value.
+ */
+export type Void = 'VOID';
+export const Void = 'VOID';
 
 /**
  * Constants for primitive types common to all languages.
@@ -48,13 +58,11 @@ export enum Primitive {
 }
 
 /**
- * An object member definition.
+ * A non-complex type definition for either a primitive type,
+ * a dynamic type, or a void type.
  */
-export interface IObjectMember<T extends TypeDefinition = TypeDefinition> {
-  visibility: ObjectMemberVisibility;
-  side: ObjectMemberSide;
-  isConstant: boolean;
-  type: T | SymbolIdentifier;
+export interface ISimpleType {
+  type: Primitive | Dynamic | Void;
 }
 
 /**
@@ -69,7 +77,20 @@ export type SymbolIdentifier = string;
 /**
  * A construct representing a type definition.
  */
-export type TypeDefinition = Dynamic | Primitive | AbstractType;
+export type TypeDefinition = SymbolIdentifier | ISimpleType | AbstractTypeDefinition;
+
+/**
+ * An AbstractTypeDefinition which can be constrained by one or
+ * more generic type parameters.
+ */
+export interface IConstrainable {
+  /**
+   * Returns a new AbstractTypeDefinition representing a copy
+   * of the constrainable, constrained to a specific type or
+   * types as denoted by the type's generic parameters.
+   */
+  constrain (genericTypes: TypeDefinition[]): AbstractTypeDefinition;
+}
 
 /**
  * A symbol resolved from a syntax node, providing information

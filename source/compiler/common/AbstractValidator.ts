@@ -1,32 +1,27 @@
 import ScopeManager from '../ScopeManager';
 import SymbolDictionary from '../symbol-resolution/SymbolDictionary';
 import { Autowired, IHashMap, Wired } from 'trampoline-framework';
+import { Callback } from '../../system/types';
 import { ISyntaxNode, ISyntaxTree } from '../../parser/common/syntax-types';
 
-@Wired
 export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxNode> {
-  @Autowired()
-  protected scopeManager: ScopeManager;
-
-  protected currentNode: ISyntaxNode;
-  protected syntaxTreeMap: IHashMap<ISyntaxTree>;
+  protected scopeManager: ScopeManager = new ScopeManager();
   protected symbolDictionary: SymbolDictionary;
-  private errors: string[];
+  private errors: string[] = [];
 
-  public constructor (syntaxTreeMap: IHashMap<ISyntaxTree>, symbolDictionary: SymbolDictionary) {
-    this.syntaxTreeMap = syntaxTreeMap;
+  public constructor (symbolDictionary: SymbolDictionary) {
     this.symbolDictionary = symbolDictionary;
   }
 
-  public getErrors (): string[] {
-    return this.errors;
+  public forErrors (callback: Callback<string>): void {
+    this.errors.forEach(error => callback(error));
   }
 
-  public getSyntaxTree (file: string): ISyntaxTree {
-    return this.syntaxTreeMap[file];
+  public hasErrors (): boolean {
+    return this.errors.length > 0;
   }
 
-  public abstract validate (): void;
+  public abstract validate (syntaxTree: ISyntaxTree): void;
 
   protected error (message: string): void {
     this.errors.push(message);

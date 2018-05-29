@@ -56,8 +56,10 @@ export namespace JavaConstants {
     LONG = 'long',
     FLOAT = 'float',
     DOUBLE = 'double',
-    BOOLEAN = 'boolean',
-    CHAR = 'char'
+    BOOLEAN_UC = 'Boolean',
+    BOOLEAN_LC = 'boolean',
+    CHAR = 'char',
+    VOID = 'void'
   }
 
   export enum Operator {
