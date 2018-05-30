@@ -14,7 +14,7 @@ const tokenizers: Tokenizer[] = [
   createTokenizer(TokenType.NUMBER, /[\d.]/),
   createTokenizer(TokenType.WORD, /\w/),
   createTokenizer(TokenType.NEWLINE, /[\r\n]/),
-  createTokenizer(TokenType.WHITESPACE, /[\s\t]/)
+  createTokenizer(TokenType.WHITESPACE, /[ \t]/)
 ];
 
 /**
@@ -38,6 +38,8 @@ function getEOFToken (): IToken {
 
 /**
  * @todo @description
+ *
+ * @internal
  */
 function setNextTokens (lastToken: IToken): void {
   const eofToken = getEOFToken();

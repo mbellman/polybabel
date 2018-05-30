@@ -1,6 +1,6 @@
 import SymbolDictionary from '../symbol-resolution/SymbolDictionary';
 import { ArrayType } from './array-type';
-import { Dynamic, ISimpleType, ISymbol, Primitive, Void } from '../symbol-resolution/types';
+import { Dynamic, ISimpleType, ISymbol, Primitive, SymbolIdentifier, Void } from '../symbol-resolution/types';
 import { FunctionType } from './function-type';
 import { IConstructable } from 'trampoline-framework';
 import { ISyntaxTree } from '../../parser/common/syntax-types';
@@ -10,6 +10,7 @@ import { ObjectType } from './object-type';
  * @todo @description
  */
 export default abstract class AbstractSymbolResolver {
+  private namespaceStack: string[] = [];
   private symbolDictionary: SymbolDictionary;
 
   public constructor (symbolDictionary: SymbolDictionary) {
@@ -17,6 +18,14 @@ export default abstract class AbstractSymbolResolver {
   }
 
   public abstract resolve (syntaxTree: ISyntaxTree): void;
+
+  /**
+   * Takes the name of a given construct being resolved and returns
+   * a namespaced identifier based on the current namespace stack.
+   */
+  protected createSymbolIdentifier (typeName: string): SymbolIdentifier {
+    return this.namespaceStack.concat(typeName).join('.');
+  }
 
   /**
    * Returns an instance of a provided type definer class,
@@ -29,5 +38,13 @@ export default abstract class AbstractSymbolResolver {
 
   protected defineSymbol (symbol: ISymbol): void {
     this.symbolDictionary.addSymbol(symbol);
+  }
+
+  protected enterNamespace (namespace: string): void {
+    this.namespaceStack.push(namespace);
+  }
+
+  protected exitNamespace (): void {
+    this.namespaceStack.pop();
   }
 }

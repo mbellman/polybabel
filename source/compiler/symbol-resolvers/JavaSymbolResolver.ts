@@ -1,22 +1,15 @@
 import AbstractSymbolResolver from '../symbol-resolution/AbstractSymbolResolver';
 import { FunctionType } from '../symbol-resolution/function-type';
 import { Implements } from 'trampoline-framework';
-import { IObjectMember, ObjectMemberVisibility, Primitive, SymbolIdentifier, TypeDefinition, ISymbol, Void } from '../symbol-resolution/types';
+import { IObjectMember, ObjectMemberVisibility, Primitive, SymbolIdentifier, TypeDefinition, ISymbol, Void, ObjectCategory } from '../symbol-resolution/types';
 import { JavaConstants } from '../../parser/java/java-constants';
 import { JavaSyntax } from '../../parser/java/java-syntax';
 import { ObjectType } from '../symbol-resolution/object-type';
 import { ArrayType } from '../symbol-resolution/array-type';
 
 export default class JavaTypeResolver extends AbstractSymbolResolver {
-  private package: string;
-  private namespaceStack: string[] = [];
-
   @Implements public resolve (javaSyntaxTree: JavaSyntax.IJavaSyntaxTree): void {
-    const { package: syntaxTreePackage, nodes: syntaxNodes } = javaSyntaxTree;
-
-    if (syntaxTreePackage) {
-      this.package = syntaxTreePackage.paths.join('/');
-    }
+    const { nodes: syntaxNodes } = javaSyntaxTree;
 
     syntaxNodes.forEach(syntaxNode => {
       switch (syntaxNode.node) {
@@ -34,14 +27,6 @@ export default class JavaTypeResolver extends AbstractSymbolResolver {
           break;
       }
     });
-  }
-
-  /**
-   * Takes the name of a given construct being resolved and returns
-   * a namespaced identifier based on the current namespace stack.
-   */
-  private createSymbolIdentifier (typeName: string): SymbolIdentifier {
-    return this.namespaceStack.concat(typeName).join('.');
   }
 
   private getObjectMemberVisibility (access: JavaSyntax.JavaAccessModifier): ObjectMemberVisibility {
@@ -128,14 +113,6 @@ export default class JavaTypeResolver extends AbstractSymbolResolver {
     }
   }
 
-  private enterNamespace (namespace: string): void {
-    this.namespaceStack.push(namespace);
-  }
-
-  private exitNamespace (): void {
-    this.namespaceStack.pop();
-  }
-
   private resolveAndAddObjectMembers (members: JavaSyntax.JavaObjectMember[], definer: ObjectType.Definer): void {
     members.forEach(member => {
       const resolvedObjectMember: Partial<IObjectMember> = {};
@@ -189,15 +166,27 @@ export default class JavaTypeResolver extends AbstractSymbolResolver {
   }
 
   private resolveClassSymbol (classNode: JavaSyntax.IJavaClass): ISymbol {
-    const { name, members, access, isFinal, isAbstract, constructors } = classNode;
+    const { name, extended, members, access, isFinal, isAbstract, constructors } = classNode;
     const identifier = this.createSymbolIdentifier(name);
     const objectTypeDefiner = this.createTypeDefiner(ObjectType.Definer);
+
+    objectTypeDefiner.category = ObjectCategory.CLASS;
+    objectTypeDefiner.isExtensible = !isFinal;
+
+    objectTypeDefiner.isConstructable = (
+      access === JavaSyntax.JavaAccessModifier.PUBLIC ||
+      !isAbstract
+    );
 
     this.enterNamespace(name);
 
     constructors.forEach(constructor => {
       // @todo
     });
+
+    if (extended.length === 1) {
+      objectTypeDefiner.defineSuperType(extended[0].namespaceChain.join('.'));
+    }
 
     this.resolveAndAddObjectMembers(members, objectTypeDefiner);
     this.exitNamespace();
@@ -212,6 +201,13 @@ export default class JavaTypeResolver extends AbstractSymbolResolver {
     const { name, members } = interfaceNode;
     const identifier = this.createSymbolIdentifier(name);
     const objectTypeDefiner = this.createTypeDefiner(ObjectType.Definer);
+
+    objectTypeDefiner.category = ObjectCategory.INTERFACE;
+    objectTypeDefiner.isExtensible = false;
+    // Interfaces are only constructable in the case of anonymous
+    // object instantiation, which can only happen inside Java
+    // blocks and will be validated there.
+    objectTypeDefiner.isConstructable = false;
 
     this.enterNamespace(name);
     this.resolveAndAddObjectMembers(members, objectTypeDefiner);

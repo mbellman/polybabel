@@ -3,10 +3,9 @@ import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
 
 export default class JavaImportTranslator extends AbstractTranslator<JavaSyntax.IJavaImport> {
-  private staticImport: string;
-
   @Implements protected translate (): void {
     const { isStaticImport, alias, paths, defaultImport } = this.syntaxNode;
+    let staticImport: string;
 
     if (isStaticImport || alias) {
       const lastPath = paths.length > 1
@@ -14,7 +13,7 @@ export default class JavaImportTranslator extends AbstractTranslator<JavaSyntax.
         : paths[0];
 
       if (isStaticImport) {
-        this.staticImport = lastPath;
+        staticImport = lastPath;
       }
     }
 
@@ -23,9 +22,9 @@ export default class JavaImportTranslator extends AbstractTranslator<JavaSyntax.
 
     this.emit(`import ${imports} from '${path}';`);
 
-    if (this.staticImport) {
+    if (staticImport) {
       this.newline()
-        .emit(`const { ${this.staticImport} } = ${defaultImport};`);
+        .emit(`var ${staticImport} = ${defaultImport}.${staticImport};`);
     }
   }
 

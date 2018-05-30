@@ -1,18 +1,15 @@
 import { IHashMap } from 'trampoline-framework';
 import { INamed, ISyntaxNode } from '../parser/common/syntax-types';
 
-/**
- * @todo @description
- *
- * @internal
- */
-type Scope = IHashMap<ISyntaxNode>;
-
 export default class ScopeManager {
-  private scopes: Scope[] = [];
+  private scopes: IHashMap<any>[] = [];
 
-  public get activeScope (): Scope {
+  public get activeScope (): IHashMap<any> {
     return this.scopes[this.scopes.length - 1];
+  }
+
+  public constructor () {
+    this.enterScope();
   }
 
   public addToScope (name: string, value?: any): void {

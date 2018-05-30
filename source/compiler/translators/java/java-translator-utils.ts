@@ -2,6 +2,9 @@ import { JavaSyntax } from '../../../parser/java/java-syntax';
 
 export namespace JavaTranslatorUtils {
   /**
+   * The set of statements syntax node types which should be
+   * terminated with a ; character.
+   *
    * @internal
    */
   const TerminableStatementNodes: JavaSyntax.JavaSyntaxNode[] = [

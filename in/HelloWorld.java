@@ -10,7 +10,7 @@ protected interface ITest {
   Thing getThing (String things[], final Number id) throws Exception;
 }
 
-public final class HelloWorld extends What implements ITest {
+public final class HelloWorld implements ITest {
   public static void main (String[] args) {
     if (this instanceof HelloWorld) {
       console.log('Hello, world!');

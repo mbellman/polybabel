@@ -1,6 +1,6 @@
 import AbstractTypeDefinition from './AbstractTypeDefinition';
 import { FunctionType } from './function-type';
-import { IConstrainable, IObjectMember, SymbolIdentifier, TypeDefinition } from './types';
+import { IConstrainable, IObjectMember, ObjectCategory, SymbolIdentifier, TypeDefinition } from './types';
 import { IHashMap, Implements } from 'trampoline-framework';
 
 export namespace ObjectType {
@@ -10,6 +10,7 @@ export namespace ObjectType {
    * categorized as 'complex types'.
    */
   export class Definition extends AbstractTypeDefinition implements IConstrainable {
+    public readonly category: ObjectCategory;
     public readonly isConstructable: boolean;
     public readonly isExtensible: boolean;
     protected constructors: IObjectMember<FunctionType.Definition>[];
@@ -76,6 +77,7 @@ export namespace ObjectType {
    * An ObjectType.Definition's definer subclass.
    */
   export class Definer extends Definition {
+    public category: ObjectCategory;
     public isConstructable: boolean;
     public isExtensible: boolean;
 

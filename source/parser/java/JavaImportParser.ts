@@ -59,11 +59,30 @@ export default class JavaImportParser extends AbstractParser<JavaSyntax.IJavaImp
   @Match('.')
   protected onDot (): void {
     this.assert(
+      !this.parsed.defaultImport &&
       !ParserUtils.tokenMatches(this.previousToken, '.') &&
       !ParserUtils.tokenMatches(this.nextToken, '.')
     );
 
     this.saveCurrentPathPart();
+  }
+
+  @Match('(')
+  protected onDefaultImportAlias (): void {
+    this.assert(
+      !this.parsed.isStaticImport && (
+        this.parsed.paths.length > 0 ||
+        !!this.currentPathPart
+      )
+    );
+
+    this.next();
+
+    this.parsed.defaultImport = this.eat(TokenUtils.isWord);
+
+    this.eat(')');
+    this.assertCurrentTokenMatch(';');
+    this.onEnd();
   }
 
   @Match('{')
@@ -104,7 +123,12 @@ export default class JavaImportParser extends AbstractParser<JavaSyntax.IJavaImp
   protected onEnd (): void {
     this.saveCurrentPathPart();
 
-    if (this.parsed.nonDefaultImports.length === 0) {
+    const shouldSetDefaultImport = (
+      this.parsed.nonDefaultImports.length === 0 &&
+      !this.parsed.defaultImport
+    );
+
+    if (shouldSetDefaultImport) {
       const { paths } = this.parsed;
 
       this.parsed.defaultImport = this.parsed.isStaticImport

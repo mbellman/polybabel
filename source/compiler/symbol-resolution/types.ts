@@ -20,6 +20,26 @@ export enum ObjectMemberVisibility {
 }
 
 /**
+ * Constants representing the category of object an object
+ * type definition corresponds to.
+ *
+ * While type definitions are designed to be as agnostic as
+ * possible to language-specific constructs, some object type
+ * validations simply wouldn't be possible without information
+ * regarding object categories. Languages with classes and
+ * interfaces may have particular rules about which categories
+ * of objects can be extended or implemented, languages with
+ * traits or mixins might impose similar restrictions, and so
+ * on. This list represents the set of all object variants
+ * which need to be differentiated for validation.
+ */
+export enum ObjectCategory {
+  CLASS = 'CLASS',
+  INTERFACE = 'INTERFACE',
+  TRAIT = 'TRAIT'
+}
+
+/**
  * An object member definition.
  */
 export interface IObjectMember<T extends TypeDefinition = TypeDefinition> {
