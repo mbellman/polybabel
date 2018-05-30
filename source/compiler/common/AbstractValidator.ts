@@ -24,17 +24,6 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
 
   public abstract validate (syntaxNode: S): void;
 
-  /**
-   * Attempts to resolve a symbol from the symbol dictionary
-   * by its identifier, and adds it to the active scope if
-   * it exists.
-   */
-  protected addSymbolToScope (symbolIdentifier: SymbolIdentifier): void {
-    const symbol = this.symbolDictionary.getSymbol(symbolIdentifier);
-
-    this.scopeManager.addToScope(symbolIdentifier, symbol);
-  }
-
   protected assert (condition: boolean, message: string, shouldHalt: boolean = true): void {
     if (!condition) {
       this.errors.push(message);

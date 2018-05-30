@@ -8,11 +8,11 @@ export default class JavaImportValidator extends AbstractValidator<JavaSyntax.IJ
 
     if (defaultImport) {
       this.validateImportName(defaultImport);
-      this.addSymbolToScope(defaultImport);
+      this.scopeManager.addToScope(defaultImport);
     } else if (nonDefaultImports) {
       nonDefaultImports.forEach(nonDefaultImport => {
         this.validateImportName(nonDefaultImport);
-        this.addSymbolToScope(nonDefaultImport);
+        this.scopeManager.addToScope(nonDefaultImport);
       });
     }
   }

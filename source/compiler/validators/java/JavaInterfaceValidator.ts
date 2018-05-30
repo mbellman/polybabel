@@ -6,6 +6,6 @@ export default class JavaInterfaceValidator extends AbstractValidator<JavaSyntax
   @Implements public validate (javaInterface: JavaSyntax.IJavaInterface): void {
     const { name } = javaInterface;
 
-    this.addSymbolToScope(name);
+    this.scopeManager.addToScope(name);
   }
 }
