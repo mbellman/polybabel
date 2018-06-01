@@ -18,7 +18,13 @@ export default class SymbolDictionary {
 
   /**
    * Returns the type of a symbol based on its identifier,
-   * or Dynamic if the symbol isn't defined.
+   * or a Dynamic type definition if the symbol isn't defined.
+   * Since files outside of the main project workspace don't
+   * undergo symbol resolution, returning a dynamic type
+   * definition as a fallback for unknown symbol identifiers
+   * allows project-external imports to still be used without
+   * validation failures. Validators should, however, affirm
+   * that the searched identifier is in scope.
    */
   public getSymbolType (symbolIdentifier: SymbolIdentifier): TypeDefinition {
     const symbol = this.getSymbol(symbolIdentifier);

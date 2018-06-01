@@ -19,60 +19,41 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
     }
   }
 
-  /**
-   * @todo Refactor this ASAP.
-   */
   private validateSuperclassType ({ namespaceChain }: JavaSyntax.IJavaType): void {
-    if (namespaceChain.length === 1) {
-      const superclassName = namespaceChain[0];
-      const isSuperclassInScope = this.scopeManager.isInScope(superclassName);
+    const outerNamespace = namespaceChain[0];
+    const symbolIdentifier = namespaceChain.join('.');
+    const isNamespaceInScope = this.scopeManager.isInScope(outerNamespace);
 
+    this.assert(
+      isNamespaceInScope,
+      `Unidentified superclass '${symbolIdentifier}'`
+    );
+
+    const typeDefinition = this.symbolDictionary.getSymbolType(outerNamespace);
+
+    if (!this.isDynamic(typeDefinition)) {
       this.assert(
-        isSuperclassInScope,
-        `Unidentified superclass '${superclassName}'`
+        typeDefinition instanceof ObjectType.Definition,
+        `Class '${this.className}' cannot extend non-object type '${outerNamespace}'`
       );
 
-      if (isSuperclassInScope) {
-        const typeDefinition = this.symbolDictionary.getSymbolType(superclassName);
-
+      if (namespaceChain.length === 1) {
         this.assertIsValidSuperclass(typeDefinition);
-      }
-    } else {
-      const outerNamespace = namespaceChain[0];
-      const symbolIdentifier = namespaceChain.join('.');
-      const isNamespaceInScope = this.scopeManager.isInScope(outerNamespace);
+      } else {
+        const objectMember = (typeDefinition as ObjectType.Definition).findNestedObjectMember(namespaceChain.slice(1));
 
-      this.assert(
-        isNamespaceInScope,
-        `Unidentified superclass '${symbolIdentifier}'`
-      );
+        this.assert(
+          !!objectMember,
+          `Invalid member '${symbolIdentifier}'`
+        );
 
-      if (isNamespaceInScope) {
-        let typeDefinition = this.symbolDictionary.getSymbolType(outerNamespace);
-        let namespaceIndex = 0;
-
-        while ((typeDefinition instanceof ObjectType.Definition) && namespaceIndex < namespaceChain.length - 1) {
-          const memberName = namespaceChain[++namespaceIndex];
-          const objectMember = typeDefinition.getObjectMember(memberName);
-
-          this.assert(
-            !!objectMember,
-            `Could not find member '${namespaceChain.slice(0, namespaceIndex + 1).join('.')}'`
-          );
-
-          const { type } = objectMember;
-
-          typeDefinition = type;
-        }
-
-        this.assertIsValidSuperclass(typeDefinition);
+        this.assertIsValidSuperclass(objectMember.type);
       }
     }
   }
 
   private assertIsValidSuperclass (typeDefinition: TypeDefinition): void {
     this.assert(
-      this.isDynamic(typeDefinition) ||
       typeDefinition instanceof ObjectType.Definition &&
       typeDefinition.category === ObjectCategory.CLASS,
       `Class '${this.className}' can only extend other classes`
