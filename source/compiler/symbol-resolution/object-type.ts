@@ -47,33 +47,6 @@ export namespace ObjectType {
     }
 
     /**
-     * Finds the object member definition of the last member in a member
-     * chain, assuming each previous member is also an object type definition.
-     * If at any point in the chain a member lookup fails, or a non-object
-     * member is encountered before the end of the chain, we return null.
-     *
-     * @todo Allow optional visibility restrictions
-     */
-    public findNestedObjectMember (memberChain: string[]): IObjectMember {
-      let searchTarget: ObjectType.Definition = this;
-
-      while (searchTarget) {
-        const nextMemberName = memberChain.shift();
-        const objectMember = searchTarget.getObjectMember(nextMemberName);
-
-        if (memberChain.length === 0 || !objectMember) {
-          return objectMember;
-        }
-
-        searchTarget = objectMember.type instanceof ObjectType.Definition
-          ? objectMember.type
-          : null;
-      }
-
-      return null;
-    }
-
-    /**
      * Retrieves an object member definition from the object's supertype
      * as a fallback for failing to retrieve the object's own member.
      */
