@@ -1,5 +1,5 @@
 import AbstractParser from '../parser/common/AbstractParser';
-import AbstractSymbolResolver from '../compiler/symbol-resolution/AbstractSymbolResolver';
+import AbstractSymbolResolver from '../compiler/symbol-resolvers/common/AbstractSymbolResolver';
 import AbstractTranslator from '../compiler/translators/common/AbstractTranslator';
 import AbstractValidator from '../compiler/validators/common/AbstractValidator';
 import { Callback } from '../system/types';

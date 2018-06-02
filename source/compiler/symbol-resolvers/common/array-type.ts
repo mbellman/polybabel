@@ -1,6 +1,6 @@
-import AbstractTypeDefinition from "./AbstractTypeDefinition";
-import { Implements } from "trampoline-framework";
-import { TypeDefinition } from "./types";
+import AbstractTypeDefinition from './AbstractTypeDefinition';
+import { Implements } from 'trampoline-framework';
+import { TypeDefinition } from './types';
 
 export namespace ArrayType {
   /**

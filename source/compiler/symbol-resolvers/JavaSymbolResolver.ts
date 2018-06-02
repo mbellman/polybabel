@@ -1,11 +1,11 @@
-import AbstractSymbolResolver from '../symbol-resolution/AbstractSymbolResolver';
-import { FunctionType } from '../symbol-resolution/function-type';
+import AbstractSymbolResolver from './common/AbstractSymbolResolver';
+import { ArrayType } from './common/array-type';
+import { FunctionType } from './common/function-type';
 import { Implements } from 'trampoline-framework';
-import { IObjectMember, ObjectMemberVisibility, Primitive, SymbolIdentifier, TypeDefinition, ISymbol, Void, ObjectCategory } from '../symbol-resolution/types';
+import { IObjectMember, ISymbol, ObjectCategory, ObjectMemberVisibility, Primitive, TypeDefinition, Void } from './common/types';
 import { JavaConstants } from '../../parser/java/java-constants';
 import { JavaSyntax } from '../../parser/java/java-syntax';
-import { ObjectType } from '../symbol-resolution/object-type';
-import { ArrayType } from '../symbol-resolution/array-type';
+import { ObjectType } from './common/object-type';
 
 export default class JavaTypeResolver extends AbstractSymbolResolver {
   @Implements public resolve (javaSyntaxTree: JavaSyntax.IJavaSyntaxTree): void {

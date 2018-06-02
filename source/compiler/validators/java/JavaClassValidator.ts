@@ -1,10 +1,10 @@
 import AbstractValidator from '../common/AbstractValidator';
 import { Bound, Implements } from 'trampoline-framework';
 import { Callback } from '../../../system/types';
-import { ISymbol, ObjectCategory, TypeDefinition } from '../../symbol-resolution/types';
+import { ISymbol, ObjectCategory, TypeDefinition } from '../../symbol-resolvers/common/types';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
-import { ObjectType } from '../../symbol-resolution/object-type';
-import { TypeUtils } from '../../symbol-resolution/type-utils';
+import { ObjectType } from '../../symbol-resolvers/common/object-type';
+import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
 
 /**
  * @internal

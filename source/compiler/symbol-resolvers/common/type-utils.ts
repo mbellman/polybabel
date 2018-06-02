@@ -1,4 +1,4 @@
-import { Dynamic, IObjectMember, ISimpleType, ObjectMemberVisibility, TypeDefinition } from '../symbol-resolution/types';
+import { Dynamic, IObjectMember, ISimpleType, ObjectMemberVisibility, TypeDefinition } from './types';
 
 export namespace TypeUtils {
   export function isDynamic (typeDefinition: TypeDefinition): boolean {

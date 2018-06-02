@@ -1,9 +1,9 @@
-import SymbolDictionary from '../symbol-resolution/SymbolDictionary';
+import SymbolDictionary from './SymbolDictionary';
 import { ArrayType } from './array-type';
-import { Dynamic, ISimpleType, ISymbol, Primitive, SymbolIdentifier, Void } from '../symbol-resolution/types';
 import { FunctionType } from './function-type';
 import { IConstructable } from 'trampoline-framework';
-import { ISyntaxTree } from '../../parser/common/syntax-types';
+import { ISymbol, SymbolIdentifier } from './types';
+import { ISyntaxTree } from '../../../parser/common/syntax-types';
 import { ObjectType } from './object-type';
 
 /**

@@ -1,11 +1,11 @@
 import ScopeManager from '../../ScopeManager';
-import SymbolDictionary from '../../symbol-resolution/SymbolDictionary';
+import SymbolDictionary from '../../symbol-resolvers/common/SymbolDictionary';
 import { Callback } from '../../../system/types';
 import { Constructor, IConstructable } from 'trampoline-framework';
-import { IObjectMember, ISymbol } from '../../symbol-resolution/types';
+import { IObjectMember, ISymbol } from '../../symbol-resolvers/common/types';
 import { ISyntaxNode } from '../../../parser/common/syntax-types';
-import { ObjectType } from '../../symbol-resolution/object-type';
-import { TypeUtils } from '../../symbol-resolution/type-utils';
+import { ObjectType } from '../../symbol-resolvers/common/object-type';
+import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
 
 export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxNode> {
   protected scopeManager: ScopeManager = new ScopeManager();

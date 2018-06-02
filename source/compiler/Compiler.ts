@@ -1,4 +1,4 @@
-import SymbolDictionary from './symbol-resolution/SymbolDictionary';
+import SymbolDictionary from './symbol-resolvers/common/SymbolDictionary';
 import { IHashMap } from 'trampoline-framework';
 import { ISyntaxTree } from '../parser/common/syntax-types';
 import { LanguageSpecification } from '../language-specifications/index';
