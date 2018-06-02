@@ -44,9 +44,10 @@ export enum ObjectCategory {
  */
 export interface IObjectMember<T extends TypeDefinition = TypeDefinition> {
   visibility: ObjectMemberVisibility;
-  isStatic: boolean;
-  isConstant: boolean;
   type: T;
+  isConstant?: boolean;
+  isStatic?: boolean;
+  requiresImplementation?: boolean;
 }
 
 /**

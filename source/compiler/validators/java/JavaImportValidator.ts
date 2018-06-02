@@ -3,8 +3,8 @@ import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
 
 export default class JavaImportValidator extends AbstractValidator<JavaSyntax.IJavaImport> {
-  @Implements public validate (javaImport: JavaSyntax.IJavaImport): void {
-    const { isStaticImport, defaultImport, nonDefaultImports } = javaImport;
+  @Implements public validate (): void {
+    const { isStaticImport, defaultImport, nonDefaultImports } = this.syntaxNode;
 
     if (defaultImport) {
       this.validateImportName(defaultImport);
@@ -18,7 +18,7 @@ export default class JavaImportValidator extends AbstractValidator<JavaSyntax.IJ
   }
 
   private validateImportName (importName: string): void {
-    this.assert(
+    this.assertAndContinue(
       !/[^\w]/.test(importName),
       `Invalid import name: '${importName}'`
     );

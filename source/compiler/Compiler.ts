@@ -37,9 +37,9 @@ export default class Compiler {
 
     if (syntaxTree) {
       const { Validator, Translator } = LanguageSpecification[syntaxTree.language];
-      const validator = new Validator(this.symbolDictionary);
+      const validator = new Validator(this.symbolDictionary, syntaxTree);
 
-      validator.validate(syntaxTree);
+      validator.validate();
 
       if (validator.hasErrors()) {
         validator.forErrors(error => this.addError(file, error));

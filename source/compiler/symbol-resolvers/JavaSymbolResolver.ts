@@ -119,17 +119,18 @@ export default class JavaTypeResolver extends AbstractSymbolResolver {
 
       switch (member.node) {
         case JavaSyntax.JavaSyntaxNode.OBJECT_FIELD: {
-          const { access, type, isStatic, isFinal } = member as JavaSyntax.IJavaObjectField;
+          const { access, type, isStatic, isFinal, isAbstract } = member as JavaSyntax.IJavaObjectField;
 
           resolvedObjectMember.visibility = this.getObjectMemberVisibility(access);
           resolvedObjectMember.isStatic = !!isStatic;
           resolvedObjectMember.isConstant = !!isFinal;
+          resolvedObjectMember.requiresImplementation = !!isAbstract;
           resolvedObjectMember.type = this.createTypeDefinition(type);
 
           break;
         }
         case JavaSyntax.JavaSyntaxNode.OBJECT_METHOD: {
-          const { access, isFinal, isStatic, genericTypes, type: returnType, parameters } = member as JavaSyntax.IJavaObjectMethod;
+          const { access, isFinal, isStatic, isAbstract, genericTypes, type: returnType, parameters } = member as JavaSyntax.IJavaObjectMethod;
           const functionTypeDefiner = this.createTypeDefiner(FunctionType.Definer);
           const parameterTypeSymbolIdentifiers = parameters.map(({ type }) => this.createTypeDefinition(type));
           const returnTypeSymbolIdentifier = this.createTypeDefinition(returnType);
@@ -137,8 +138,9 @@ export default class JavaTypeResolver extends AbstractSymbolResolver {
           functionTypeDefiner.defineReturnType(returnTypeSymbolIdentifier);
 
           resolvedObjectMember.visibility = this.getObjectMemberVisibility(access);
-          resolvedObjectMember.isStatic = !!isStatic;
           resolvedObjectMember.isConstant = !!isFinal;
+          resolvedObjectMember.isStatic = !!isStatic;
+          resolvedObjectMember.requiresImplementation = !!isAbstract;
           resolvedObjectMember.type = functionTypeDefiner;
 
           break;
@@ -172,6 +174,7 @@ export default class JavaTypeResolver extends AbstractSymbolResolver {
 
     objectTypeDefiner.category = ObjectCategory.CLASS;
     objectTypeDefiner.isExtensible = !isFinal;
+    objectTypeDefiner.requiresImplementation = isAbstract;
 
     objectTypeDefiner.isConstructable = (
       access === JavaSyntax.JavaAccessModifier.PUBLIC ||

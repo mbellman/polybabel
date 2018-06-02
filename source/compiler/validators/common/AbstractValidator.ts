@@ -16,10 +16,13 @@ type TypeValidator = (typeDefinition: TypeDefinition, identifier: string) => voi
 export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxNode> {
   protected scopeManager: ScopeManager = new ScopeManager();
   protected symbolDictionary: SymbolDictionary;
+  protected syntaxNode: S;
+  private namespaceStack: string[] = [];
   private errors: string[] = [];
 
-  public constructor (symbolDictionary: SymbolDictionary) {
+  public constructor (symbolDictionary: SymbolDictionary, syntaxNode: S) {
     this.symbolDictionary = symbolDictionary;
+    this.syntaxNode = syntaxNode;
   }
 
   public forErrors (callback: Callback<string>): void {
@@ -30,7 +33,7 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     return this.errors.length > 0;
   }
 
-  public abstract validate (syntaxNode: S): void;
+  public abstract validate (): void;
 
   protected assert (condition: boolean, message: string, shouldHalt: boolean = true): void {
     if (!condition) {
@@ -50,16 +53,39 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     this.assert(condition, message, false);
   }
 
+  protected enterNamespace (namespace: string): void {
+    this.namespaceStack.push(namespace);
+  }
+
+  protected exitNamespace (): void {
+    this.namespaceStack.pop();
+  }
+
+  protected getTypeDefinitionInCurrentNamespace (typeName: string): TypeDefinition {
+    const symbolIdentifier = this.namespaceStack.length > 0
+      ? `${this.namespaceStack.join('.')}.${typeName}`
+      : typeName;
+
+    return this.symbolDictionary.getSymbolType(symbolIdentifier);
+  }
+
   /**
-   * Provides a means for retrieving a deeply-nested object member
-   * off an object symbol, given a provided member chain. If at
-   * any point in the chain a member isn't found, we log the error
-   * and return null.
+   * Retrieves a deeply-nested object member using a provided member
+   * chain, starting with the top-level object. If the object itself
+   * is not in scope, or if at any point in the chain a member isn't
+   * found, we log the error and return null.
    *
    * @todo Allow optional visibility restrictions
    */
   protected findDeepObjectMember (memberChain: string[]): IObjectMember {
     const objectName = memberChain.shift();
+
+    if (!this.scopeManager.isInScope(objectName)) {
+      this.reportUnknownIdentifier(objectName);
+
+      return null;
+    }
+
     const { type, identifier } = this.symbolDictionary.getSymbol(objectName);
 
     if (ValidationUtils.isDynamicType(type)) {
@@ -74,20 +100,18 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
 
     while (searchTarget) {
       if (!(searchTarget instanceof ObjectType.Definition)) {
-        this.report(`Identifier '${identifier}.${currentChain.join('.')}' does not have additional members`);
+        this.reportNonObjectType(`${identifier}.${currentChain.join('.')}'`);
 
-        return;
+        return null;
       }
 
       const nextMemberName = memberChain.shift();
       const objectMember = searchTarget.getObjectMember(nextMemberName);
 
-      currentChain.push(nextMemberName);
-
       if (!objectMember) {
-        this.report(`Could not find object member '${identifier}.${currentChain.join('.')}'`);
+        this.reportUnknownMember(`${identifier}.${currentChain.join('.')}`, nextMemberName);
 
-        return;
+        return null;
       }
 
       if (memberChain.length === 0) {
@@ -101,10 +125,12 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
         return TypeUtils.createDynamicObjectMember();
       }
 
+      currentChain.push(nextMemberName);
+
       searchTarget = objectMember.type;
     }
 
-    return;
+    return null;
   }
 
   protected report (message: string): void {
@@ -117,37 +143,51 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
    * errors list so both can be used and manipulated by reference.
    */
   protected validateNodeWith <T extends ISyntaxNode>(Validator: Constructor<AbstractValidator<T>>, syntaxNode: T): void {
-    const validator = new (Validator as IConstructable<AbstractValidator>)(this.symbolDictionary);
+    const validator = new (Validator as IConstructable<AbstractValidator>)(this.symbolDictionary, syntaxNode);
 
     validator.scopeManager = this.scopeManager;
     validator.errors = this.errors;
 
     try {
-      validator.validate(syntaxNode);
-    } catch (e) { }
+      validator.validate();
+    } catch (e) {
+      this.report(e.toString());
+    }
   }
 
-  protected validateDeepObjectMemberType (memberChain: string[], validator: TypeValidator): void {
-    const objectName = memberChain[0];
-    const symbolIdentifier = memberChain.join('.');
-    const isObjectNameInScope = this.scopeManager.isInScope(objectName);
+  protected validateType (namespaceChain: string[], validator: TypeValidator): void {
+    const outerName = namespaceChain[0];
+    const symbolIdentifier = namespaceChain.join('.');
 
-    this.assertAndContinue(
-      isObjectNameInScope,
-      `Unknown identifier '${objectName}'`
-    );
+    if (!this.scopeManager.isInScope(outerName)) {
+      this.reportUnknownIdentifier(outerName);
 
-    if (memberChain.length === 1) {
-      const objectSymbol = this.symbolDictionary.getSymbol(objectName);
+      return;
+    }
+
+    if (namespaceChain.length === 1) {
+      const objectSymbol = this.symbolDictionary.getSymbol(outerName);
       const { type, identifier } = objectSymbol;
 
       validator(type, identifier);
     } else {
-      const objectMember = this.findDeepObjectMember(memberChain);
+      const objectMember = this.findDeepObjectMember(namespaceChain);
 
       if (objectMember) {
         validator(objectMember.type, symbolIdentifier);
       }
     }
+  }
+
+  private reportNonObjectType (name: string): void {
+    this.report(`Identifier '${name}' does not have any members`);
+  }
+
+  private reportUnknownIdentifier (name: string): void {
+    this.report(`Unknown identifier '${name}'`);
+  }
+
+  private reportUnknownMember (source: string, member: string): void {
+    this.report(`Member '${member}' not found on '${source}'`);
   }
 }

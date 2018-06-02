@@ -9,8 +9,6 @@ export namespace TypeUtils {
 
   export function createDynamicObjectMember (): IObjectMember<ISimpleType> {
     return {
-      isConstant: false,
-      isStatic: false,
       visibility: ObjectMemberVisibility.ALL,
       type: createDynamicType()
     };

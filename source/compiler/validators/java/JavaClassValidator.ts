@@ -1,4 +1,5 @@
 import AbstractValidator from '../common/AbstractValidator';
+import JavaObjectBodyValidator from './JavaObjectBodyValidator';
 import { Bound, Implements } from 'trampoline-framework';
 import { Callback } from '../../../system/types';
 import { ISymbol, ObjectCategory, TypeDefinition } from '../../symbol-resolvers/common/types';
@@ -7,51 +8,82 @@ import { ObjectType } from '../../symbol-resolvers/common/object-type';
 import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
 import { ValidationUtils } from '../common/validation-utils';
 
-/**
- * @internal
- */
-type TypeValidator = (typeDefinition: TypeDefinition, identifier: string) => void;
-
 export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJavaClass> {
-  private className: string;
+  private ownTypeDefinition: ObjectType.Definition;
 
-  @Implements public validate (javaClass: JavaSyntax.IJavaClass): void {
-    const { name, extended, implemented } = javaClass;
+  @Implements public validate (): void {
+    const { name, extended, implemented, members } = this.syntaxNode;
 
-    this.className = name;
+    this.ownTypeDefinition = this.getTypeDefinitionInCurrentNamespace(name) as ObjectType.Definition;
 
     this.scopeManager.addToScope(name);
 
     if (extended.length !== 0) {
-      this.validateDeepObjectMemberType(extended[0].namespaceChain, this.validateSuperclass);
+      this.validateSupertypeExtension(extended[0]);
     }
 
     if (implemented.length > 0) {
-      for (const implementedType of implemented) {
-        this.validateDeepObjectMemberType(implementedType.namespaceChain, this.validateImplementedInterface);
-      }
+      this.validateImplementations(implemented);
+    }
+
+    this.validateNodeWith(JavaObjectBodyValidator, this.syntaxNode);
+  }
+
+  private getOwnName (): string {
+    return this.syntaxNode.name;
+  }
+
+  private isAbstractClass (): boolean {
+    return this.ownTypeDefinition.requiresImplementation;
+  }
+
+  private validateImplementations (implementations: JavaSyntax.IJavaType[]): void {
+    const validateImplementation = (typeDefinition: TypeDefinition, interfaceName: string) => {
+      this.assertAndContinue(
+        ValidationUtils.isDynamicType(typeDefinition) ||
+        ValidationUtils.isInterfaceType(typeDefinition),
+        `Class '${this.syntaxNode.name}' cannot implement non-interface '${interfaceName}'`
+      );
+    };
+
+    for (const implementation of implementations) {
+      this.validateType(implementation.namespaceChain, validateImplementation);
     }
   }
 
-  @Bound private validateImplementedInterface (typeDefinition: TypeDefinition, interfaceName: string): void {
-    this.assertAndContinue(
-      ValidationUtils.isDynamicType(typeDefinition) ||
-      ValidationUtils.isInterfaceType(typeDefinition),
-      `Class '${this.className}' cannot implement non-interface '${interfaceName}'`
-    );
-  }
+  private validateSupertypeExtension (supertype: JavaSyntax.IJavaType): void {
+    this.validateType(supertype.namespaceChain, (supertypeDefinition, superclassName) => {
+      const supertypeIsClass = ValidationUtils.isClassType(supertypeDefinition);
 
-  @Bound private validateSuperclass (typeDefinition: TypeDefinition, superclassName: string): void {
-    const isClassType = ValidationUtils.isClassType(typeDefinition);
+      this.assertAndContinue(
+        ValidationUtils.isDynamicType(supertypeDefinition) || supertypeIsClass,
+        `Class '${this.getOwnName()}' cannot extend non-class '${superclassName}'`
+      );
 
-    this.assertAndContinue(
-      ValidationUtils.isDynamicType(typeDefinition) || isClassType,
-      `Class '${this.className}' cannot extend non-class '${superclassName}'`
-    );
+      this.assertAndContinue(
+        supertypeIsClass
+          ? (supertypeDefinition as ObjectType.Definition).isExtensible
+          : true,
+        `Class '${superclassName}' is not extensible`
+      );
 
-    this.assertAndContinue(
-      isClassType ? (typeDefinition as ObjectType.Definition).isExtensible : true,
-      `Class '${superclassName}' cannot be extended by class '${this.className}'`
-    );
+      if (supertypeIsClass) {
+        (supertypeDefinition as ObjectType.Definition).forEachMember((memberName, objectMember) => {
+          if (objectMember.requiresImplementation && !this.isAbstractClass()) {
+            this.assertAndContinue(
+              this.ownTypeDefinition.hasOwnObjectMember(memberName),
+              `Class '${this.getOwnName()}' must implement abstract member '${superclassName}.${memberName}'`
+            );
+          }
+
+          if (objectMember.isConstant) {
+            this.assertAndContinue(
+              !this.ownTypeDefinition.hasOwnObjectMember(memberName),
+              `Class '${this.getOwnName()}' cannot override final member '${superclassName}.${memberName}'`
+            );
+          }
+        });
+      }
+    });
   }
 }

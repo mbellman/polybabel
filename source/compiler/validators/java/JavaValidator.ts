@@ -6,8 +6,8 @@ import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
 
 export default class JavaValidator extends AbstractValidator<JavaSyntax.IJavaSyntaxTree> {
-  @Implements public validate (javaSyntaxTree: JavaSyntax.IJavaSyntaxTree): void {
-    const { package: javaPackage, nodes } = javaSyntaxTree;
+  @Implements public validate (): void {
+    const { package: javaPackage, nodes } = this.syntaxNode;
 
     this.assertAndContinue(
       javaPackage !== null,
