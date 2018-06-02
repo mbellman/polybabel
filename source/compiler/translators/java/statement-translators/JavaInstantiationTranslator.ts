@@ -1,4 +1,4 @@
-import AbstractTranslator from '../../../common/AbstractTranslator';
+import AbstractTranslator from '../../common/AbstractTranslator';
 import JavaBlockTranslator from '../JavaBlockTranslator';
 import JavaClassTranslator from '../JavaClassTranslator';
 import JavaInterfaceTranslator from '../JavaInterfaceTranslator';

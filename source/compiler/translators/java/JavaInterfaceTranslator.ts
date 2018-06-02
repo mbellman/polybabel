@@ -1,4 +1,4 @@
-import AbstractTranslator from '../../common/AbstractTranslator';
+import AbstractTranslator from '../common/AbstractTranslator';
 import JavaObjectMethodTranslator from './JavaObjectMethodTranslator';
 import JavaStatementTranslator from './JavaStatementTranslator';
 import { Implements } from 'trampoline-framework';

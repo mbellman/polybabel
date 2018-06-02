@@ -1,7 +1,7 @@
 import AbstractParser from '../parser/common/AbstractParser';
 import AbstractSymbolResolver from '../compiler/symbol-resolution/AbstractSymbolResolver';
-import AbstractTranslator from '../compiler/common/AbstractTranslator';
-import AbstractValidator from '../compiler/common/AbstractValidator';
+import AbstractTranslator from '../compiler/translators/common/AbstractTranslator';
+import AbstractValidator from '../compiler/validators/common/AbstractValidator';
 import { Callback } from '../system/types';
 import { IConstructable, IHashMap } from 'trampoline-framework';
 import { ISyntaxTree } from '../parser/common/syntax-types';

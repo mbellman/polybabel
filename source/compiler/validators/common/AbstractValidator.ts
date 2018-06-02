@@ -1,11 +1,11 @@
-import ScopeManager from '../ScopeManager';
-import SymbolDictionary from '../symbol-resolution/SymbolDictionary';
-import { Callback } from '../../system/types';
+import ScopeManager from '../../ScopeManager';
+import SymbolDictionary from '../../symbol-resolution/SymbolDictionary';
+import { Callback } from '../../../system/types';
 import { Constructor, IConstructable } from 'trampoline-framework';
-import { Dynamic, IObjectMember, ISimpleType, ISymbol, ObjectMemberVisibility, SymbolIdentifier, TypeDefinition } from '../symbol-resolution/types';
-import { ISyntaxNode } from '../../parser/common/syntax-types';
-import { ObjectType } from '../symbol-resolution/object-type';
-import { TypeUtils } from '../symbol-resolution/type-utils';
+import { IObjectMember, ISymbol } from '../../symbol-resolution/types';
+import { ISyntaxNode } from '../../../parser/common/syntax-types';
+import { ObjectType } from '../../symbol-resolution/object-type';
+import { TypeUtils } from '../../symbol-resolution/type-utils';
 
 export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxNode> {
   protected scopeManager: ScopeManager = new ScopeManager();
@@ -46,7 +46,7 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
 
   /**
    * Provides a means for retrieving a deeply-nested object member
-   * off an object symbool, given a provided member chain. If at
+   * off an object symbol, given a provided member chain. If at
    * any point in the chain a member isn't found, we log the error
    * and return null.
    *
@@ -56,7 +56,7 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     if (TypeUtils.isDynamic(type)) {
       // If the symbol being searched is already dynamic,
       // simply return a new dynamic object member, since
-      // dynamic types permit arbitrary deep member chains.
+      // dynamic types permit arbitrary deep member chains
       return TypeUtils.createDynamicObjectMember();
     }
 
@@ -82,7 +82,7 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
       if (TypeUtils.isDynamic(objectMember.type)) {
         // If one of the members in the chain is dynamic, return
         // a new dynamic object member immediately, since dynamic
-        // types can have any of the remaining deep members.
+        // types can have any of the remaining deep members
         return TypeUtils.createDynamicObjectMember();
       }
 

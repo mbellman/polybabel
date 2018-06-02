@@ -1,9 +1,9 @@
-import AbstractTranslator from '../../common/AbstractTranslator';
+import AbstractTranslator from '../common/AbstractTranslator';
+import JavaClassTranslator from './JavaClassTranslator';
 import JavaImportTranslator from './JavaImportTranslator';
 import JavaInterfaceTranslator from './JavaInterfaceTranslator';
 import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
-import JavaClassTranslator from './JavaClassTranslator';
 
 export default class JavaTranslator extends AbstractTranslator<JavaSyntax.IJavaSyntaxTree> {
   public constructor (syntaxTree: JavaSyntax.IJavaSyntaxTree) {

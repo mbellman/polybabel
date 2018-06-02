@@ -1,4 +1,4 @@
-import AbstractValidator from '../../common/AbstractValidator';
+import AbstractValidator from '../common/AbstractValidator';
 import JavaClassValidator from './JavaClassValidator';
 import JavaImportValidator from './JavaImportValidator';
 import JavaInterfaceValidator from './JavaInterfaceValidator';
@@ -9,10 +9,9 @@ export default class JavaValidator extends AbstractValidator<JavaSyntax.IJavaSyn
   @Implements public validate (javaSyntaxTree: JavaSyntax.IJavaSyntaxTree): void {
     const { package: javaPackage, nodes } = javaSyntaxTree;
 
-    this.assert(
+    this.assertAndContinue(
       javaPackage !== null,
-      'Java files must contain a package',
-      false
+      'Java files must contain a package'
     );
 
     nodes.forEach(syntaxNode => {

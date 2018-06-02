@@ -1,4 +1,4 @@
-import AbstractValidator from '../../common/AbstractValidator';
+import AbstractValidator from '../common/AbstractValidator';
 import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
 

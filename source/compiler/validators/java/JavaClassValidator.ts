@@ -1,6 +1,6 @@
-import AbstractValidator from '../../common/AbstractValidator';
+import AbstractValidator from '../common/AbstractValidator';
+import { Bound, Implements } from 'trampoline-framework';
 import { Callback } from '../../../system/types';
-import { Implements, Bound } from 'trampoline-framework';
 import { ISymbol, ObjectCategory, TypeDefinition } from '../../symbol-resolution/types';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
 import { ObjectType } from '../../symbol-resolution/object-type';

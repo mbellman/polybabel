@@ -1,6 +1,6 @@
-import { Callback } from '../../system/types';
+import { Callback } from '../../../system/types';
 import { Constructor, IConstructable } from 'trampoline-framework';
-import { ISyntaxNode } from '../../parser/common/syntax-types';
+import { ISyntaxNode } from '../../../parser/common/syntax-types';
 
 export default abstract class AbstractTranslator<N extends ISyntaxNode = ISyntaxNode> {
   private static readonly INDENTATION_AMOUNT = 2;
