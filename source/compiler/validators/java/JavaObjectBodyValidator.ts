@@ -56,22 +56,31 @@ export default class JavaObjectBodyValidator extends AbstractValidator<JavaSynta
         `Abstract method '${this.getObjectName()}.${name}' cannot have an implementation`
       );
     } else {
-      block.nodes.forEach(syntaxNode => {
-        const { leftSide } = syntaxNode;
-
-        switch (leftSide.node) {
-          case JavaSyntax.JavaSyntaxNode.INSTRUCTION:
-            const { type: instructionType, value: returnValue } = leftSide as JavaSyntax.IJavaInstruction;
-
-            if (instructionType === JavaSyntax.JavaInstructionType.RETURN && returnValue) {
-              this.assertAndContinue(
-                !ValidationUtils.isSimpleTypeOf(returnType, Void),
-                `Void method '${this.getObjectName()}.${name}' cannot return a value`
-              );
-            }
-            break;
-        }
-      });
+      this.assertAndContinue(
+        block !== null,
+        `Non-abstract method '${this.getObjectName()}.${name}' must have an implementation`
+      );
     }
+
+    if (!block) {
+      return;
+    }
+
+    block.nodes.forEach(syntaxNode => {
+      const { leftSide } = syntaxNode;
+
+      switch (leftSide.node) {
+        case JavaSyntax.JavaSyntaxNode.INSTRUCTION:
+          const { type: instructionType, value: returnValue } = leftSide as JavaSyntax.IJavaInstruction;
+
+          if (instructionType === JavaSyntax.JavaInstructionType.RETURN && returnValue) {
+            this.assertAndContinue(
+              !ValidationUtils.isSimpleTypeOf(returnType, Void),
+              `Void method '${this.getObjectName()}.${name}' cannot return a value`
+            );
+          }
+          break;
+      }
+    });
   }
 }
