@@ -4,7 +4,7 @@ import { Implements } from 'trampoline-framework';
 
 export namespace FunctionType {
   export class Definition extends AbstractTypeDefinition implements IConstrainable {
-    protected argumentTypes: TypeDefinition[];
+    protected argumentTypes: TypeDefinition[] = [];
     protected genericParameters: string[] = [];
     protected returnType: TypeDefinition;
     private didResolveArgumentTypes: boolean = false;

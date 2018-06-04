@@ -36,8 +36,8 @@ public final class HelloWorld implements ITest {
         int number = 5;
         break;
     }
-
-    return getSomething().value;
+    
+    return;
   }
 
   private interface IHello {
