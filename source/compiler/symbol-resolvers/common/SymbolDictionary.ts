@@ -22,7 +22,7 @@ export default class SymbolDictionary {
     return (
       this.symbolMap[symbolIdentifier] || {
         identifier: symbolIdentifier,
-        type: TypeUtils.createDynamicType()
+        type: TypeUtils.createSimpleType(Dynamic)
       }
     );
   }

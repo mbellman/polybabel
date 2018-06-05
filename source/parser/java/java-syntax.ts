@@ -49,7 +49,7 @@ export namespace JavaSyntax {
     ARRAY = 'ARRAY'
   }
 
-  export enum JavaOperator {
+  export enum JavaOperation {
     ASSIGN,
     ADD,
     SUBTRACT,
@@ -243,7 +243,7 @@ export namespace JavaSyntax {
    */
   export interface IJavaOperator extends IJavaSyntaxNode {
     node: JavaSyntaxNode.OPERATOR;
-    operation: JavaOperator;
+    operation: JavaOperation;
     isShorthandAssignment?: boolean;
   }
 

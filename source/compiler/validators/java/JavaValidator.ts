@@ -9,7 +9,7 @@ export default class JavaValidator extends AbstractValidator<JavaSyntax.IJavaSyn
   @Implements public validate (): void {
     const { package: javaPackage, nodes } = this.syntaxNode;
 
-    this.assertAndContinue(
+    this.check(
       javaPackage !== null,
       'Java files must contain a package'
     );

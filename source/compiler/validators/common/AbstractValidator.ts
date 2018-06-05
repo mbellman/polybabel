@@ -2,16 +2,16 @@ import ScopeManager from '../../ScopeManager';
 import SymbolDictionary from '../../symbol-resolvers/common/SymbolDictionary';
 import { Callback } from '../../../system/types';
 import { Constructor, IConstructable } from 'trampoline-framework';
-import { IObjectMember, TypeDefinition } from '../../symbol-resolvers/common/types';
+import { IObjectMember, TypeDefinition, Dynamic } from '../../symbol-resolvers/common/types';
 import { ISyntaxNode } from '../../../parser/common/syntax-types';
 import { ObjectType } from '../../symbol-resolvers/common/object-type';
 import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
-import { ValidationUtils } from './validation-utils';
+import { ValidatorUtils } from './validator-utils';
 
 /**
  * @internal
  */
-interface IFoundType {
+interface IResolvedConstruct {
   type: TypeDefinition;
   name: string;
 }
@@ -20,8 +20,9 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
   protected scopeManager: ScopeManager = new ScopeManager();
   protected symbolDictionary: SymbolDictionary;
   protected syntaxNode: S;
-  private namespaceStack: string[] = [];
   private errors: string[] = [];
+  private namespaceStack: string[] = [];
+  private parentValidator: AbstractValidator;
 
   public constructor (symbolDictionary: SymbolDictionary, syntaxNode: S) {
     this.symbolDictionary = symbolDictionary;
@@ -50,9 +51,9 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
   }
 
   /**
-   * Asserts without halting the validator even on a failure.
+   * Asserts without halting the validator, even on failure.
    */
-  protected assertAndContinue (condition: boolean, message: string): void {
+  protected check (condition: boolean, message: string): void {
     this.assert(condition, message, false);
   }
 
@@ -62,13 +63,6 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
 
   protected exitNamespace (): void {
     this.namespaceStack.pop();
-  }
-
-  protected getTypeDefinitionInCurrentNamespace (typeName: string): TypeDefinition {
-    const namespaceChain = this.namespaceStack.concat(typeName);
-    const { type } = this.findType(namespaceChain);
-
-    return type;
   }
 
   /**
@@ -93,7 +87,7 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
 
     const { type, identifier } = this.symbolDictionary.getSymbol(objectName);
 
-    if (ValidationUtils.isDynamicType(type)) {
+    if (ValidatorUtils.isDynamicType(type)) {
       // If the symbol being searched is already dynamic,
       // simply return a new dynamic object member, since
       // dynamic types permit arbitrary deep member chains
@@ -123,7 +117,7 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
         return objectMember;
       }
 
-      if (ValidationUtils.isDynamicType(objectMember.type)) {
+      if (ValidatorUtils.isDynamicType(objectMember.type)) {
         // If one of the members in the chain is dynamic, return
         // a new dynamic object member immediately, since dynamic
         // types can have any of the remaining deep members
@@ -138,30 +132,22 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     return TypeUtils.createDynamicObjectMember();
   }
 
-  protected report (message: string): void {
-    this.errors.push(message);
-  }
-
   /**
-   * Validates a provided syntax node using an AbstractValidator
-   * subclass. Hands off both the instance's ScopeManager and its
-   * errors list so both can be used and manipulated by reference.
+   * @todo @description
    */
-  protected validateNodeWith <T extends ISyntaxNode>(Validator: Constructor<AbstractValidator<T>>, syntaxNode: T): void {
-    const validator = new (Validator as IConstructable<AbstractValidator>)(this.symbolDictionary, syntaxNode);
-
-    validator.namespaceStack = this.namespaceStack;
-    validator.scopeManager = this.scopeManager;
-    validator.errors = this.errors;
-
-    try {
-      validator.validate();
-    } catch (e) {
-      this.report(e.toString());
+  protected findParentNode (node: any): ISyntaxNode {
+    if (this.syntaxNode.node === node) {
+      return this.syntaxNode;
     }
+
+    if (this.parentValidator) {
+      return this.parentValidator.findParentNode(node);
+    }
+
+    return null;
   }
 
-  protected findType (namespaceChain: string[]): IFoundType {
+  protected findResolvedConstruct (namespaceChain: string[]): IResolvedConstruct {
     const outerName = namespaceChain[0];
 
     if (!this.scopeManager.isInScope(outerName)) {
@@ -182,9 +168,43 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
 
       const type = objectMember
         ? objectMember.type
-        : TypeUtils.createDynamicType();
+        : TypeUtils.createSimpleType(Dynamic);
 
       return { type, name };
+    }
+  }
+
+  protected findResolvedConstructInCurrentNamespace (identifier: string): IResolvedConstruct {
+    const namespaceChain = this.namespaceStack.concat(identifier);
+
+    return this.findResolvedConstruct(namespaceChain);
+  }
+
+  protected getNamespacedIdentifier (identifier: string): string {
+    return this.namespaceStack.concat(identifier).join('.');
+  }
+
+  protected report (message: string): void {
+    this.errors.push(message);
+  }
+
+  /**
+   * Validates a provided syntax node using an AbstractValidator
+   * subclass. Hands off both the instance's ScopeManager and its
+   * errors list so both can be used and manipulated by reference.
+   */
+  protected validateNodeWith <T extends ISyntaxNode>(Validator: Constructor<AbstractValidator<T>>, syntaxNode: T): void {
+    const validator = new (Validator as IConstructable<AbstractValidator>)(this.symbolDictionary, syntaxNode);
+
+    validator.parentValidator = this;
+    validator.namespaceStack = this.namespaceStack;
+    validator.scopeManager = this.scopeManager;
+    validator.errors = this.errors;
+
+    try {
+      validator.validate();
+    } catch (e) {
+      this.report(e.toString());
     }
   }
 

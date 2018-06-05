@@ -1,12 +1,12 @@
 import AbstractValidator from '../common/AbstractValidator';
-import JavaObjectBodyValidator from './JavaObjectBodyValidator';
+import JavaObjectValidator from './JavaObjectValidator';
 import { Bound, Implements } from 'trampoline-framework';
 import { Callback } from '../../../system/types';
 import { ISymbol, ObjectCategory, TypeDefinition } from '../../symbol-resolvers/common/types';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
 import { ObjectType } from '../../symbol-resolvers/common/object-type';
 import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
-import { ValidationUtils } from '../common/validation-utils';
+import { ValidatorUtils } from '../common/validator-utils';
 
 export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJavaClass> {
   private ownTypeDefinition: ObjectType.Definition;
@@ -16,7 +16,7 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
 
     this.scopeManager.addToScope(name);
 
-    this.ownTypeDefinition = this.getTypeDefinitionInCurrentNamespace(name) as ObjectType.Definition;
+    this.ownTypeDefinition = this.findResolvedConstructInCurrentNamespace(name).type as ObjectType.Definition;
 
     if (extended.length !== 0) {
       this.validateSupertypeExtension(extended[0]);
@@ -27,12 +27,12 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
     }
 
     this.enterNamespace(name);
-    this.validateNodeWith(JavaObjectBodyValidator, this.syntaxNode);
+    this.validateNodeWith(JavaObjectValidator, this.syntaxNode);
     this.exitNamespace();
   }
 
-  private getOwnName (): string {
-    return this.syntaxNode.name;
+  private getClassIdentifier (): string {
+    return this.getNamespacedIdentifier(this.syntaxNode.name);
   }
 
   private isAbstractClass (): boolean {
@@ -41,26 +41,26 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
 
   private validateImplementations (implementations: JavaSyntax.IJavaType[]): void {
     for (const implementation of implementations) {
-      const { type, name } = this.findType(implementation.namespaceChain);
+      const { type, name } = this.findResolvedConstruct(implementation.namespaceChain);
 
-      this.assertAndContinue(
-        ValidationUtils.isDynamicType(type) ||
-        ValidationUtils.isInterfaceType(type),
-        `Class '${this.getOwnName()}' cannot implement non-interface '${name}'`
+      this.check(
+        ValidatorUtils.isDynamicType(type) ||
+        ValidatorUtils.isInterfaceType(type),
+        `Class '${this.getClassIdentifier()}' cannot implement non-interface '${name}'`
       );
     }
   }
 
   private validateSupertypeExtension (supertype: JavaSyntax.IJavaType): void {
-    const { type, name } = this.findType(supertype.namespaceChain);
-    const supertypeIsClass = ValidationUtils.isClassType(type);
+    const { type, name } = this.findResolvedConstruct(supertype.namespaceChain);
+    const supertypeIsClass = ValidatorUtils.isClassType(type);
 
-    this.assertAndContinue(
-      ValidationUtils.isDynamicType(type) || supertypeIsClass,
-      `Class '${this.getOwnName()}' cannot extend non-class '${name}'`
+    this.check(
+      ValidatorUtils.isDynamicType(type) || supertypeIsClass,
+      `Class '${this.getClassIdentifier()}' cannot extend non-class '${name}'`
     );
 
-    this.assertAndContinue(
+    this.check(
       supertypeIsClass
         ? (type as ObjectType.Definition).isExtensible
         : true,
@@ -68,18 +68,18 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
     );
 
     if (supertypeIsClass) {
-      (type as ObjectType.Definition).forEachMember((memberName, objectMember) => {
-        if (objectMember.requiresImplementation && !this.isAbstractClass()) {
-          this.assertAndContinue(
+      (type as ObjectType.Definition).forEachMember((memberName, superObjectMember) => {
+        if (superObjectMember.requiresImplementation && !this.isAbstractClass()) {
+          this.check(
             this.ownTypeDefinition.hasOwnObjectMember(memberName),
-            `Class '${this.getOwnName()}' must implement abstract member '${name}.${memberName}'`
+            `Class '${this.getClassIdentifier()}' must implement abstract member '${name}.${memberName}'`
           );
         }
 
-        if (objectMember.isConstant) {
-          this.assertAndContinue(
+        if (superObjectMember.isConstant) {
+          this.check(
             !this.ownTypeDefinition.hasOwnObjectMember(memberName),
-            `Class '${this.getOwnName()}' cannot override final member '${name}.${memberName}'`
+            `Class '${this.getClassIdentifier()}' cannot override final member '${name}.${memberName}'`
           );
         }
       });

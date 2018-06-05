@@ -18,7 +18,7 @@ export default class JavaImportValidator extends AbstractValidator<JavaSyntax.IJ
   }
 
   private validateImportName (importName: string): void {
-    this.assertAndContinue(
+    this.check(
       !/[^\w]/.test(importName),
       `Invalid import name: '${importName}'`
     );

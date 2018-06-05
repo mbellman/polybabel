@@ -1,16 +1,14 @@
-import { Dynamic, IObjectMember, ISimpleType, ObjectMemberVisibility, TypeDefinition } from './types';
+import { Dynamic, IObjectMember, ISimpleType, ObjectMemberVisibility, Primitive, TypeDefinition, Void } from './types';
 
 export namespace TypeUtils {
-  export function createDynamicType (): ISimpleType {
-    return {
-      type: Dynamic
-    };
-  }
-
   export function createDynamicObjectMember (): IObjectMember<ISimpleType> {
     return {
       visibility: ObjectMemberVisibility.ALL,
-      type: createDynamicType()
+      type: createSimpleType(Dynamic)
     };
+  }
+
+  export function createSimpleType (type: Primitive | Dynamic | Void): ISimpleType {
+    return { type };
   }
 }

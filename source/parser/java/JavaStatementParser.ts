@@ -222,10 +222,10 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
         // aren't operable
         ? leftSide.node !== JavaSyntax.JavaSyntaxNode.LAMBDA_EXPRESSION
         // If we haven't parsed a left side yet, ensure
-        // that this operator is only !, +, or -, which
+        // that this operator is only !, +, -, or ~, which
         // represent the only valid operator tokens for
         // an absent left-side statement
-        : /[!+-]/.test(this.currentToken.value)
+        : /[!+-~]/.test(this.currentToken.value)
     );
 
     if (this.currentTokenMatches(JavaUtils.isTernary)) {

@@ -7,7 +7,7 @@ import { JavaConstants } from '../../parser/java/java-constants';
 import { JavaSyntax } from '../../parser/java/java-syntax';
 import { ObjectType } from './common/object-type';
 
-export default class JavaTypeResolver extends AbstractSymbolResolver {
+export default class JavaSymbolResolver extends AbstractSymbolResolver {
   @Implements public resolve (javaSyntaxTree: JavaSyntax.IJavaSyntaxTree): void {
     const { nodes: syntaxNodes } = javaSyntaxTree;
 
