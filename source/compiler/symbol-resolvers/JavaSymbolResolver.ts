@@ -168,7 +168,7 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
   }
 
   private resolveClassSymbol (classNode: JavaSyntax.IJavaClass): ISymbol {
-    const { name, extended, members, access, isFinal, isAbstract, constructors } = classNode;
+    const { name, extended, implemented, members, access, isFinal, isAbstract, constructors } = classNode;
     const identifier = this.createSymbolIdentifier(name);
     const objectTypeDefiner = this.createTypeDefiner(ObjectType.Definer);
 
@@ -188,7 +188,13 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
     });
 
     if (extended.length === 1) {
-      objectTypeDefiner.defineSuperType(extended[0].namespaceChain.join('.'));
+      objectTypeDefiner.addSupertype(extended[0].namespaceChain.join('.'));
+    }
+
+    if (implemented.length > 0) {
+      for (const implementation of implemented) {
+        objectTypeDefiner.addSupertype(implementation.namespaceChain.join('.'));
+      }
     }
 
     this.resolveAndAddObjectMembers(members, objectTypeDefiner);

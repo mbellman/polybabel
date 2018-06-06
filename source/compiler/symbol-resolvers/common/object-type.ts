@@ -14,10 +14,10 @@ export namespace ObjectType {
     public readonly isConstructable: boolean;
     public readonly isExtensible: boolean;
     public readonly requiresImplementation: boolean;
-    protected constructors: IObjectMember<FunctionType.Definition>[];
+    protected constructors: IObjectMember<FunctionType.Definition>[] = [];
     protected genericParameters: string[] = [];
     protected objectMemberMap: IHashMap<IObjectMember> = {};
-    protected supertype: TypeDefinition;
+    protected supertypes: TypeDefinition[] = [];
 
     /**
      * @todo
@@ -36,31 +36,38 @@ export namespace ObjectType {
      * contain members already defined and iterated over on subtypes,
      * the supertype members are skipped.
      */
-    public forEachMember (callback: (memberName: string, objectMember: IObjectMember) => void): void {
+    public forEachMember (callback: (objectMember: IObjectMember, memberName: string) => void): void {
       const iteratedMembers: IHashMap<boolean> = {};
 
-      // Wrap the provided callback in a method which prevents
+      // Wraps the provided callback in a method which prevents
       // duplicate iteration over both subtype and supertype
       // members, e.g. in the case of overrides
-      const handleMember = (memberName: string, objectMember: IObjectMember) => {
+      const handleMember = (objectMember: IObjectMember, memberName: string) => {
         if (memberName in iteratedMembers) {
           return;
         }
 
-        callback(memberName, objectMember);
+        callback(objectMember, memberName);
 
         iteratedMembers[memberName] = true;
       };
 
       Object.keys(this.objectMemberMap).forEach(key => {
-        handleMember(key, this.objectMemberMap[key]);
+        handleMember(this.objectMemberMap[key], key);
       });
 
-      if (this.supertype) {
-        this.ensureSupertypeHasDefinition();
+      if (this.supertypes.length > 0) {
+        // Iterate backward over the supertypes so that last-added
+        // supertype members take precedence over earlier ones, e.g.
+        // in the case of identically-named members
+        for (let i = this.supertypes.length - 1; i >= 0; i--) {
+          this.ensureSupertypeHasDefinition(i);
 
-        if (this.supertype instanceof ObjectType.Definition) {
-          this.supertype.forEachMember(handleMember);
+          const supertype = this.supertypes[i];
+
+          if (supertype instanceof ObjectType.Definition) {
+            supertype.forEachMember(handleMember);
+          }
         }
       }
     }
@@ -75,7 +82,7 @@ export namespace ObjectType {
         this.ensureObjectMemberHasDefinition(objectMember);
 
         return objectMember;
-      } else if (this.supertype) {
+      } else if (this.supertypes.length > 0) {
         return this.getSuperObjectMember(memberName);
       }
 
@@ -86,32 +93,64 @@ export namespace ObjectType {
       return memberName in this.objectMemberMap;
     }
 
+    /**
+     * Determines whether this object type definition contains a
+     * provided target supertype in its inheritance hierarchy.
+     */
+    public isSubtypeOf (targetSupertype: ObjectType.Definition): boolean {
+      for (let i = 0; i < this.supertypes.length; i++) {
+        this.ensureSupertypeHasDefinition(i);
+
+        const supertype = this.supertypes[i];
+
+        if (supertype === targetSupertype) {
+          return true;
+        }
+
+        if (supertype instanceof ObjectType.Definition && supertype.isSubtypeOf(targetSupertype)) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
     private ensureObjectMemberHasDefinition (objectMember: IObjectMember): void {
       if (typeof objectMember.type === 'string') {
         objectMember.type = this.symbolDictionary.getSymbolType(objectMember.type);
       }
     }
 
-    private ensureSupertypeHasDefinition (): void {
-      if (typeof this.supertype === 'string') {
-        this.supertype = this.symbolDictionary.getSymbolType(this.supertype);
+    private ensureSupertypeHasDefinition (index: number): void {
+      const supertype = this.supertypes[index];
+
+      if (typeof supertype === 'string') {
+        this.supertypes[index] = this.symbolDictionary.getSymbolType(supertype);
       }
     }
 
     /**
-     * Retrieves an object member definition from the object's supertype
-     * as a fallback for failing to retrieve the object's own member.
+     * Retrieves an object member definition from one of the object's
+     * supertypes as a fallback if the given member does not exist in
+     * the object's own members.
+     *
+     * Supertypes are iterated over backwards so later-added supertypes
+     * are searched first.
      */
     private getSuperObjectMember (memberName: string): IObjectMember {
-      this.ensureSupertypeHasDefinition();
+      for (let i = this.supertypes.length - 1; i >= 0; i--) {
+        this.ensureSupertypeHasDefinition(i);
 
-      if (this.supertype instanceof ObjectType.Definition) {
-        const objectMember = this.supertype.getObjectMember(memberName);
+        const supertype = this.supertypes[i];
 
-        if (objectMember) {
-          this.ensureObjectMemberHasDefinition(objectMember);
+        if (supertype instanceof ObjectType.Definition) {
+          const objectMember = supertype.getObjectMember(memberName);
 
-          return objectMember;
+          if (objectMember) {
+            this.ensureObjectMemberHasDefinition(objectMember);
+
+            return objectMember;
+          }
         }
       }
 
@@ -140,8 +179,8 @@ export namespace ObjectType {
       this.objectMemberMap[memberName] = objectMember;
     }
 
-    public defineSuperType (supertype: TypeDefinition): void {
-      this.supertype = supertype;
+    public addSupertype (supertype: TypeDefinition): void {
+      this.supertypes.push(supertype);
     }
   }
 }

@@ -1,10 +1,11 @@
 import AbstractValidator from '../common/AbstractValidator';
+import { FunctionType } from '../../symbol-resolvers/common/function-type';
 import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
 import { JavaValidatorUtils } from './java-validator-utils';
 import { TypeDefinition, Void } from '../../symbol-resolvers/common/types';
+import { TypeValidation } from '../common/type-validation';
 import { ValidatorUtils } from '../common/validator-utils';
-import { FunctionType } from '../../symbol-resolvers/common/function-type';
 
 export default class JavaBlockValidator extends AbstractValidator<JavaSyntax.IJavaBlock> {
   private parentMethod: JavaSyntax.IJavaObjectMethod;
@@ -56,8 +57,9 @@ export default class JavaBlockValidator extends AbstractValidator<JavaSyntax.IJa
       } else {
         const returnStatementType = JavaValidatorUtils.getStatementType(returnStatement, this.symbolDictionary, this.scopeManager);
 
+        // TODO: Generate a more meaningful message describing the mismatched types
         this.check(
-          ValidatorUtils.typeMatches(returnStatementType, parentMethodReturnType),
+          TypeValidation.typeMatches(returnStatementType, parentMethodReturnType),
           `Method '${this.getParentMethodIdentifier()}' cannot return a type different from its return type`
         );
       }

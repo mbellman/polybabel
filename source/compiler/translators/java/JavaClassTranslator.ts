@@ -117,7 +117,8 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
         const transformedName = `${constructor.name}_${index}`;
 
         this.emitPrototypeMemberKey(transformedName)
-          .emitNodeWith(JavaObjectMethodTranslator, constructor);
+          .emitNodeWith(JavaObjectMethodTranslator, constructor)
+          .emit(';');
       },
       () => this.newline()
     );

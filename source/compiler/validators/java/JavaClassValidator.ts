@@ -48,6 +48,8 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
         ValidatorUtils.isInterfaceType(type),
         `Class '${this.getClassIdentifier()}' cannot implement non-interface '${name}'`
       );
+
+      // TODO: Verify that non-default interface members have implementations
     }
   }
 
@@ -68,7 +70,7 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
     );
 
     if (supertypeIsClass) {
-      (type as ObjectType.Definition).forEachMember((memberName, superObjectMember) => {
+      (type as ObjectType.Definition).forEachMember((superObjectMember, memberName) => {
         if (superObjectMember.requiresImplementation && !this.isAbstractClass()) {
           this.check(
             this.ownTypeDefinition.hasOwnObjectMember(memberName),

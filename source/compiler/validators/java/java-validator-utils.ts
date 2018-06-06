@@ -85,6 +85,24 @@ export namespace JavaValidatorUtils {
         } else {
           return getSimpleLiteralType(literal);
         }
+      case JavaSyntax.JavaSyntaxNode.INSTANTIATION:
+        const instantiation = leftSide as JavaSyntax.IJavaInstantiation;
+        const { constructor } = instantiation;
+        const isAnonymousObjectInstantiation = !!instantiation.anonymousObjectBody;
+        const isArrayInstantiation = !!instantiation.arrayAllocationSize || !!instantiation.arrayLiteral;
+
+        if (!isAnonymousObjectInstantiation && !isArrayInstantiation) {
+          const symbolIdentifier = constructor.namespaceChain.join('.');
+
+          // TODO: Constrain generic types
+          return symbolDictionary.getSymbolType(symbolIdentifier);
+        } else {
+          const arrayTypeDefiner = new ArrayType.Definer(symbolDictionary);
+
+          arrayTypeDefiner.defineElementType(constructor.namespaceChain.join('.'));
+
+          return arrayTypeDefiner;
+        }
       default:
         return TypeUtils.createSimpleType(Dynamic);
     }

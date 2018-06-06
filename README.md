@@ -12,23 +12,25 @@ Polybabel's emphasis on idiomatic programming means the standard libraries and A
 * Parsing ✔
 * Syntax tree generation ✔
 * Indentation handling ✔
-* Compilation - 85%?
+* Compilation - 90%?
 * * Symbol Resolution ✔
-* * Validation - 65%?
+* * Validation - 80%?
 * * Translation ✔
-* * Line error preview/reporting - 0 %
+* * Line error preview/reporting - 0%
 * Interoperability between languages - 10%
 
 ### Java
 #### Supported features:
 * Parsing ✔
 * Translation ✔
-* Validation - 7%?
+* Validation - 10%?
 * * Package validation ✔
 * * Import validation ✔
 * * Class extension validation - 50%?
 * * Class implementation validation - 25%?
-* * Class method validation - 5%?
+* * Class method validation - 20%?
+* * Statement type verification - 10%?
+* * Statement validation - 0%
 #### Remaining items:
 * Bugs
 * * Inline else with an assignment break parser
