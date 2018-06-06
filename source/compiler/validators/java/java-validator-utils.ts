@@ -1,18 +1,19 @@
-import AbstractValidator from '../common/AbstractValidator';
 import ScopeManager from '../../ScopeManager';
 import SymbolDictionary from '../../symbol-resolvers/common/SymbolDictionary';
+import { ArrayType } from '../../symbol-resolvers/common/array-type';
+import { Dynamic, ISimpleType, Primitive, TypeDefinition } from '../../symbol-resolvers/common/types';
+import { JavaConstants } from '../../../parser/java/java-constants';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
-import { Primitive, TypeDefinition } from '../../symbol-resolvers/common/types';
 import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
 
 export namespace JavaValidatorUtils {
   /**
    * Determines the type of a right side-only statement as implied
-   * by the operation on its left.
+   * by the operation to its left.
    *
    * @internal
    */
-  function inferTypeFromOperation (operation: JavaSyntax.JavaOperation): TypeDefinition {
+  function inferTypeFromLeftOperation (operation: JavaSyntax.JavaOperation): TypeDefinition {
     switch (operation) {
       case JavaSyntax.JavaOperation.NEGATE:
       case JavaSyntax.JavaOperation.DOUBLE_NOT:
@@ -24,31 +25,40 @@ export namespace JavaValidatorUtils {
     }
   }
 
-  function getLiteralType (literal: JavaSyntax.IJavaLiteral): TypeDefinition {
+  /**
+   * @internal
+   */
+  function getSimpleLiteralType (literal: JavaSyntax.IJavaLiteral): ISimpleType {
     switch (literal.type) {
       case JavaSyntax.JavaLiteralType.NUMBER:
         return TypeUtils.createSimpleType(Primitive.NUMBER);
       case JavaSyntax.JavaLiteralType.STRING:
         return TypeUtils.createSimpleType(Primitive.STRING);
       case JavaSyntax.JavaLiteralType.KEYWORD:
-        // TODO
-        break;
+        const isBooleanKeyword = (
+          literal.value === JavaConstants.Keyword.TRUE ||
+          literal.value === JavaConstants.Keyword.FALSE
+        );
+
+        // The only valid keyword literals are 'true', 'false', and 'null'
+        return isBooleanKeyword
+          ? TypeUtils.createSimpleType(Primitive.BOOLEAN)
+          : TypeUtils.createSimpleType(Primitive.NULL);
     }
   }
 
   /**
    * Resolves the type definition of a Java statement node using
    * its left side. Alternatively, in the case of a right side-only
-   * statement with an operator on the left, we return either a
-   * simple boolean type (!, !!) or a simple number type (++, --,
-   * ~).
+   * statement with an operator on its left, we return either a
+   * simple boolean type (e.g. !, !!) or a simple number type (e.g.
+   * ++, --, ~).
    *
-   * In the context of this utility, we take for granted that the
-   * statement is type-consistent and does not improperly mix or
-   * operate on sides with incompatible types. In order to ensure
-   * statement type consistency, JavaStatementValidator is used
-   * separately. This utility should only be used if statement
-   * nodes are determined to be valid.
+   * We take for granted that the statement is type-consistent and
+   * does not improperly mix or operate on sides with incompatible
+   * types. In order to ensure statement type consistency, we use
+   * a JavaStatementValidator separately. This utility should only
+   * be used if statement nodes are determined to be valid.
    *
    * @see JavaStatementValidator
    */
@@ -58,12 +68,25 @@ export namespace JavaValidatorUtils {
     if (statement.isParenthetical) {
       return getStatementType(leftSide as JavaSyntax.IJavaStatement, symbolDictionary, scopeManager);
     } else if (!leftSide && operator) {
-      return inferTypeFromOperation(operator.operation);
+      return inferTypeFromLeftOperation(operator.operation);
     }
 
     switch (leftSide.node) {
       case JavaSyntax.JavaSyntaxNode.LITERAL:
-        return getLiteralType(leftSide as JavaSyntax.IJavaLiteral);
+        const literal = leftSide as JavaSyntax.IJavaLiteral;
+
+        if (literal.type === JavaSyntax.JavaLiteralType.ARRAY) {
+          const arrayTypeDefiner = new ArrayType.Definer(symbolDictionary);
+          const firstElementType = getStatementType(literal.value[0] as JavaSyntax.IJavaStatement, symbolDictionary, scopeManager);
+
+          arrayTypeDefiner.defineElementType(firstElementType);
+
+          return arrayTypeDefiner;
+        } else {
+          return getSimpleLiteralType(literal);
+        }
+      default:
+        return TypeUtils.createSimpleType(Dynamic);
     }
   }
 }

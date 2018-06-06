@@ -206,10 +206,10 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
     const objectTypeDefiner = this.createTypeDefiner(ObjectType.Definer);
 
     objectTypeDefiner.category = ObjectCategory.INTERFACE;
-    objectTypeDefiner.isExtensible = false;
+    objectTypeDefiner.isExtensible = true;
     // Interfaces are only constructable in the case of anonymous
-    // object instantiation, which can only happen inside Java
-    // blocks and will be validated there.
+    // object instantiation, which can only happen in Java code;
+    // they are not constructable anywhere else
     objectTypeDefiner.isConstructable = false;
 
     this.enterNamespace(name);

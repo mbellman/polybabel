@@ -75,7 +75,8 @@ export enum Primitive {
   NUMBER = 'NUMBER',
   BOOLEAN = 'BOOLEAN',
   REGEX = 'REGEX',
-  OBJECT = 'OBJECT'
+  OBJECT = 'OBJECT',
+  NULL = 'NULL'
 }
 
 /**

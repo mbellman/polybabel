@@ -4,6 +4,7 @@ import { JavaSyntax } from '../../../parser/java/java-syntax';
 import { JavaValidatorUtils } from './java-validator-utils';
 import { TypeDefinition, Void } from '../../symbol-resolvers/common/types';
 import { ValidatorUtils } from '../common/validator-utils';
+import { FunctionType } from '../../symbol-resolvers/common/function-type';
 
 export default class JavaBlockValidator extends AbstractValidator<JavaSyntax.IJavaBlock> {
   private parentMethod: JavaSyntax.IJavaObjectMethod;
@@ -11,6 +12,8 @@ export default class JavaBlockValidator extends AbstractValidator<JavaSyntax.IJa
   @Implements public validate (): void {
     const { nodes } = this.syntaxNode;
 
+    // TODO: Improve accuracy, e.g. in the case of initializers
+    // of anonymous classes within object method blocks
     this.parentMethod = this.findParentNode(JavaSyntax.JavaSyntaxNode.OBJECT_METHOD) as JavaSyntax.IJavaObjectMethod;
 
     nodes.forEach(statementNode => {
@@ -34,7 +37,9 @@ export default class JavaBlockValidator extends AbstractValidator<JavaSyntax.IJa
   }
 
   private getParentMethodReturnType (): TypeDefinition {
-    return this.findResolvedConstructInCurrentNamespace(this.parentMethod.name).type;
+    const parentMethodFunctionType = this.findResolvedConstructInCurrentNamespace(this.parentMethod.name).type as FunctionType.Definition;
+
+    return parentMethodFunctionType.getReturnType();
   }
 
   private validateReturnStatement (returnStatement: JavaSyntax.IJavaStatement): void {
@@ -49,7 +54,12 @@ export default class JavaBlockValidator extends AbstractValidator<JavaSyntax.IJa
       if (isVoidMethod) {
         this.report(`Void method '${this.getParentMethodIdentifier()}' cannot return a value`);
       } else {
-        const type = JavaValidatorUtils.getStatementType(returnStatement, this.symbolDictionary, this.scopeManager);
+        const returnStatementType = JavaValidatorUtils.getStatementType(returnStatement, this.symbolDictionary, this.scopeManager);
+
+        this.check(
+          ValidatorUtils.typeMatches(returnStatementType, parentMethodReturnType),
+          `Method '${this.getParentMethodIdentifier()}' cannot return a type different from its return type`
+        );
       }
     }
   }

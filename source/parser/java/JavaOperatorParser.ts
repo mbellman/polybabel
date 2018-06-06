@@ -185,8 +185,7 @@ export default class JavaOperatorParser extends AbstractParser<JavaSyntax.IJavaO
       // to the token after the operation
       ? this.currentToken
       // Non-default operators will have stopped at the
-      // final token in the operator matcher prior to
-      // continuing
+      // final token in the operator matcher
       : this.nextToken;
 
     return (
