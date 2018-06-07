@@ -21,11 +21,11 @@ export namespace TypeValidation {
    * comparison type. Matching is not determined by equivalence,
    * but by a condition of one-way substitutability. For example,
    * a source type might be a subtype of the comparison type, and
-   * would thus satisfy the comparison's type constraints, though
+   * would thus satisfy the comparison's type constraint, though
    * the inverse would not apply.
    *
    * Matches are qualified if any of the following conditions are
-   * true, given a source type S and a comparison type C:
+   * met, given a source type S and a comparison type C:
    *
    *  1. S and C are identical
    *  2. C is a dynamic type

@@ -53,24 +53,24 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
     }
   }
 
-  private validateSupertypeExtension (supertype: JavaSyntax.IJavaType): void {
-    const { type, name } = this.findResolvedConstruct(supertype.namespaceChain);
-    const supertypeIsClass = ValidatorUtils.isClassType(type);
+  private validateSupertypeExtension (superJavaType: JavaSyntax.IJavaType): void {
+    const { type: supertype, name } = this.findResolvedConstruct(superJavaType.namespaceChain);
+    const supertypeIsClass = ValidatorUtils.isClassType(supertype);
 
     this.check(
-      ValidatorUtils.isDynamicType(type) || supertypeIsClass,
+      ValidatorUtils.isDynamicType(supertype) || supertypeIsClass,
       `Class '${this.getClassIdentifier()}' cannot extend non-class '${name}'`
     );
 
     this.check(
       supertypeIsClass
-        ? (type as ObjectType.Definition).isExtensible
+        ? (supertype as ObjectType.Definition).isExtensible
         : true,
       `Class '${name}' is not extensible`
     );
 
     if (supertypeIsClass) {
-      (type as ObjectType.Definition).forEachMember((superObjectMember, memberName) => {
+      (supertype as ObjectType.Definition).forEachMember((superObjectMember, memberName) => {
         if (superObjectMember.requiresImplementation && !this.isAbstractClass()) {
           this.check(
             this.ownTypeDefinition.hasOwnObjectMember(memberName),
