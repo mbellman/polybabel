@@ -28,10 +28,6 @@ import { ObjectType } from '../../symbol-resolvers/common/object-type';
 export default class ObjectVisitor {
   private visitedObjectStack: ObjectType.Definition[] = [];
 
-  public getCurrentVisitedObject (): ObjectType.Definition {
-    return this.visitedObjectStack[this.visitedObjectStack.length - 1];
-  }
-
   public findParentObjectMember (memberName: string): IObjectMember {
     for (let i = this.visitedObjectStack.length - 1; i >= 0; i--) {
       const objectTypeDefinition = this.visitedObjectStack[i];
@@ -43,6 +39,10 @@ export default class ObjectVisitor {
     }
 
     return null;
+  }
+
+  public getCurrentVisitedObject (): ObjectType.Definition {
+    return this.visitedObjectStack[this.visitedObjectStack.length - 1];
   }
 
   public leaveObject (): void {

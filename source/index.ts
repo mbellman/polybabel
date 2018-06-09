@@ -52,8 +52,8 @@ async function createCompiler (inputFolderName: string, files: string[]): Promis
       const syntaxTree = new Parser().parse(firstToken);
 
       compiler.add(file, syntaxTree);
-    } catch (e) {
-      compiler.addError(file, e.message);
+    } catch ({ message }) {
+      compiler.addError(file, { message });
     }
   }
 
@@ -64,7 +64,7 @@ async function createCompiler (inputFolderName: string, files: string[]): Promis
  * Polybabel entry point.
  */
 async function main (args: string[]) {
-  console.log(chalk.white.bold(`\nStarting...\n`));
+  console.log(chalk.white.bold(`\nStarting...`));
 
   const startTime = Date.now();
   const flags = getFlags(args);
@@ -75,14 +75,17 @@ async function main (args: string[]) {
   compiler.run();
 
   if (compiler.hasErrors()) {
-    compiler.forEachError((file, message) => {
-      console.log(`${file}:`);
-      console.log(message);
+    compiler.forEachError((file, message, linePreview) => {
+      console.log(`\n${chalk.bgRed.white(` ${file}: `)} ${chalk.redBright(message)}`);
+
+      if (linePreview) {
+        console.log(` -> ${linePreview}`);
+      }
     });
 
     console.log(chalk.red('\nFailed to compile.'));
   } else {
-    console.log(chalk.white.bold(`Done. ${Date.now() - startTime}ms`));
+    console.log(chalk.white.bold(`\nDone. ${Date.now() - startTime}ms`));
   }
 }
 

@@ -2,17 +2,19 @@ import SymbolDictionary from './symbol-resolvers/common/SymbolDictionary';
 import ValidatorContext from './validators/common/ValidatorContext';
 import { IHashMap } from 'trampoline-framework';
 import { ISyntaxTree } from '../parser/common/syntax-types';
+import { IValidationError } from './validators/common/types';
 import { LanguageSpecification } from '../language-specifications/index';
+import { TokenUtils } from '../tokenizer/token-utils';
 
 /**
  * @internal
  */
-type CompilerError = [ string, string ];
+type CompilerError = [ string, IValidationError ];
 
 /**
  * @internal
  */
-type CompilerErrorHandler = (file: string, message: string) => void;
+type CompilerErrorHandler = (file: string, message: string, linePreview?: string) => void;
 
 export default class Compiler {
   private compiledCodeMap: IHashMap<string> = {};
@@ -26,11 +28,11 @@ export default class Compiler {
 
     const { SymbolResolver } = LanguageSpecification[syntaxTree.language];
 
-    new SymbolResolver(file, this.symbolDictionary).resolve(syntaxTree);
+    new SymbolResolver(this.formatFilename(file), this.symbolDictionary).resolve(syntaxTree);
   }
 
-  public addError (file: string, message: string): void {
-    this.errors.push([ file, message ]);
+  public addError (file: string, reportedError: IValidationError): void {
+    this.errors.push([ file, reportedError ]);
   }
 
   public compileFile (file: string): void {
@@ -38,20 +40,22 @@ export default class Compiler {
 
     if (syntaxTree) {
       const { Validator, Translator } = LanguageSpecification[syntaxTree.language];
-      const validationContext = new ValidatorContext(file, this.symbolDictionary);
+      const validationContext = new ValidatorContext(this.formatFilename(file), this.symbolDictionary);
       const validator = new Validator(validationContext, syntaxTree);
 
       validator.validate();
 
       if (validator.hasErrors()) {
-        validator.forErrors(error => this.addError(file, error));
+        validator.forErrors(reportedError => this.addError(file, reportedError));
       } else {
         const translation = new Translator(syntaxTree).getTranslation();
 
         this.compiledCodeMap[file] = translation;
       }
     } else {
-      this.addError(file, 'Missing file');
+      this.addError(file, {
+        message: 'Missing file'
+      });
     }
   }
 
@@ -60,8 +64,12 @@ export default class Compiler {
   }
 
   public forEachError (handler: CompilerErrorHandler): void {
-    this.errors.forEach(([ file, message ]) => {
-      handler(file, message);
+    this.errors.forEach(([ file, { message, token } ]) => {
+      const linePreview = token
+        ? TokenUtils.createLinePreview(token)
+        : null;
+
+      handler(file, message, linePreview);
     });
   }
 
@@ -84,5 +92,12 @@ export default class Compiler {
     Object.keys(this.syntaxTreeMap).forEach(file => {
       this.compileFile(file);
     });
+  }
+
+  /**
+   * @todo @description
+   */
+  private formatFilename (filename: string): string {
+    return filename.split('.').slice(0, -1).join('.');
   }
 }

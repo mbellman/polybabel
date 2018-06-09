@@ -1,3 +1,4 @@
+import { IToken } from '../../tokenizer/types';
 import { Language } from '../../system/constants';
 
 /**
@@ -6,6 +7,7 @@ import { Language } from '../../system/constants';
  */
 export interface ISyntaxNode<N = any> {
   node: N;
+  token?: IToken;
 }
 
 /**

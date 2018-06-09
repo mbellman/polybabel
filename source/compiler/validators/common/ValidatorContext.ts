@@ -3,6 +3,7 @@ import ScopeManager from '../../ScopeManager';
 import SymbolDictionary from '../../symbol-resolvers/common/SymbolDictionary';
 import { IHashMap } from 'trampoline-framework';
 import { ISymbol, TypeDefinition } from '../../symbol-resolvers/common/types';
+import { IValidationError } from './types';
 
 /**
  * A container providing access to essential validation APIs
@@ -14,7 +15,7 @@ export default class ValidatorContext {
   public objectVisitor: ObjectVisitor = new ObjectVisitor();
   public scopeManager: ScopeManager<TypeDefinition> = new ScopeManager();
   public symbolDictionary: SymbolDictionary;
-  public errors: string[] = [];
+  public errors: IValidationError[] = [];
   public namespaceStack: string[] = [];
   public importToSourceFileMap: IHashMap<string> = {};
 

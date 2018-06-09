@@ -1,3 +1,4 @@
+import chalk from 'chalk';
 import { Callback } from '../system/types';
 import { IToken, TokenType } from './types';
 import { TokenPredicate } from '../parser/common/parser-types';
@@ -86,5 +87,46 @@ export namespace TokenUtils {
 
       return false;
     };
+  }
+
+  /**
+   * Generates a preview of the portion of a line of code
+   * surrounding a provided token. End of line or EOF tokens
+   * automatically terminate the start or end of the preview.
+   */
+  export function createLinePreview (token: IToken, range: number = 10): string {
+    const DOUBLE_RANGE = 2 * range;
+    let linePreview = '';
+    let currentToken = token;
+    let tokenCounter = 0;
+
+    while (tokenCounter++ < range) {
+      const { previousToken } = currentToken;
+
+      if (!previousToken || isNewline(previousToken)) {
+        break;
+      }
+
+      currentToken = currentToken.previousToken;
+    }
+
+    tokenCounter = 0;
+
+    while (tokenCounter++ < DOUBLE_RANGE) {
+      const isFocusedToken = currentToken === token;
+      const { value } = currentToken;
+
+      linePreview += isFocusedToken
+        ? `${chalk.red(value)}`
+        : value;
+
+      currentToken = currentToken.nextToken;
+
+      if (isEOF(currentToken) || isNewline(currentToken)) {
+        break;
+      }
+    }
+
+    return linePreview.trim();
   }
 }

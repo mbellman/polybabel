@@ -60,6 +60,8 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
       throw new Error(message);
     }
 
+    this.parsed.token = token;
+
     return this.parsed;
   }
 
@@ -293,39 +295,6 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
   }
 
   /**
-   * Returns a preview of the current line, centered on the current
-   * token and extending to {range} tokens on either side.
-   */
-  private getColorizedLinePreview (range: number = 10): string {
-    let n = range;
-    let localToken = this.currentToken;
-    const localTokenValues: string[] = [];
-
-    // Walk backward to the start of the range,
-    // or the beginning of the current line, or
-    // the indentation at the beginning of the
-    // current line
-    while (--n >= 0 && !TokenUtils.isStartOfLine(localToken)) {
-      localToken = localToken.previousToken;
-    }
-
-    // Walk forward to the end of the range, or the
-    // end of the current line, adding each token
-    // to the list of local token values
-    while (n++ < (2 * range) && !TokenUtils.isNewline(localToken) && !TokenUtils.isEOF(localToken)) {
-      const colorize = localToken === this.currentToken
-        ? chalk.bold.red
-        : chalk.gray;
-
-      localTokenValues.push(colorize(localToken.value));
-
-      localToken = localToken.nextToken;
-    }
-
-    return `...${localTokenValues.join('')}...`;
-  }
-
-  /**
    * @todo @description
    */
   private getDecoratedField <K extends keyof IDecoratedParser>(field: K): IDecoratedParser[K] {
@@ -333,15 +302,16 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
   }
 
   /**
-   * Returns a colorized, formatted, and source-attributed error message
-   * from an arbitrary original error message.
+   * Returns a formatted and source-attributed error message from an
+   * arbitrary original error message. The formatting mimics that of
+   * a validation-time error as closely as possible.
    */
   private getNormalizedErrorMessage (message: string): string {
     const messageIsAlreadyNormalized = message.indexOf('->') > -1;
 
     return messageIsAlreadyNormalized
       ? message
-      : `${chalk.blueBright(`Line ${this.currentToken.line}: ${message}`)} (${this.constructor.name}) -> ${this.getColorizedLinePreview()}`;
+      : `Line ${this.currentToken.line}: ${message} (${this.constructor.name})\n${chalk.white(` -> ${TokenUtils.createLinePreview(this.currentToken)}`)}`;
   }
 
   private handleSanitizers (): void {

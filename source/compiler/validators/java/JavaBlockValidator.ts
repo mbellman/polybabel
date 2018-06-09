@@ -53,6 +53,8 @@ export default class JavaBlockValidator extends AbstractValidator<JavaSyntax.IJa
   private validateReturnStatement (returnStatement: JavaSyntax.IJavaStatement): void {
     const isInsideInitializer = this.parentMethodNode === null;
 
+    this.focus(returnStatement);
+
     if (isInsideInitializer) {
       this.report(`Initializer blocks cannot return values.`);
     } else {

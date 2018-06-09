@@ -84,6 +84,12 @@ export namespace JavaValidatorUtils {
         } else {
           return getSimpleLiteralType(literal);
         }
+      case JavaSyntax.JavaSyntaxNode.REFERENCE:
+        const reference = leftSide as JavaSyntax.IJavaReference;
+        const { value } = reference;
+        const referenceType = validationHelper.findTypeDefinition([ value ]);
+
+        return referenceType;
       case JavaSyntax.JavaSyntaxNode.INSTANTIATION:
         const instantiation = leftSide as JavaSyntax.IJavaInstantiation;
         const { constructor } = instantiation;

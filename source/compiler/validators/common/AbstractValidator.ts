@@ -1,37 +1,26 @@
-import ObjectVisitor from './ObjectVisitor';
-import ScopeManager from '../../ScopeManager';
-import SymbolDictionary from '../../symbol-resolvers/common/SymbolDictionary';
 import ValidatorContext from './ValidatorContext';
 import { Callback } from '../../../system/types';
-import { Constructor, IConstructable, IHashMap } from 'trampoline-framework';
-import { Dynamic, IObjectMember, TypeDefinition, ISymbol } from '../../symbol-resolvers/common/types';
+import { Constructor, IConstructable } from 'trampoline-framework';
+import { Dynamic, TypeDefinition } from '../../symbol-resolvers/common/types';
 import { ISyntaxNode } from '../../../parser/common/syntax-types';
+import { IValidationError, IValidationHelper } from './types';
 import { ObjectType } from '../../symbol-resolvers/common/object-type';
 import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
 import { ValidatorUtils } from './validator-utils';
-import { IValidationHelper } from './types';
-
-/**
- * @todo @description
- *
- * @internal
- */
-interface IResolvedConstruct {
-  type: TypeDefinition;
-  name: string;
-}
 
 export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxNode> {
   protected context: ValidatorContext;
   protected syntaxNode: S;
+  private focusedSyntaxNode: ISyntaxNode;
   private parentValidator: AbstractValidator;
 
   public constructor (context: ValidatorContext, syntaxNode: S) {
     this.context = context;
     this.syntaxNode = syntaxNode;
+    this.focusedSyntaxNode = syntaxNode;
   }
 
-  public forErrors (callback: Callback<string>): void {
+  public forErrors (callback: Callback<IValidationError>): void {
     this.context.errors.forEach(callback);
   }
 
@@ -43,7 +32,7 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
 
   protected assert (condition: boolean, message: string, shouldHalt: boolean = true): void {
     if (!condition) {
-      this.context.errors.push(message);
+      this.report(message);
 
       if (shouldHalt) {
         // Halt on negative assertions by default
@@ -159,6 +148,10 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     }
   }
 
+  protected focus (syntaxNode: ISyntaxNode): void {
+    this.focusedSyntaxNode = syntaxNode;
+  }
+
   protected getImmediateNamespacedIdentifier (identifier: string): string {
     const { namespaceStack } = this.context;
 
@@ -182,7 +175,12 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
   }
 
   protected report (message: string): void {
-    this.context.errors.push(message);
+    const { token } = this.focusedSyntaxNode;
+
+    this.context.errors.push({
+      message: `Line ${token.line}: ${message}`,
+      token
+    });
   }
 
   /**
@@ -194,7 +192,6 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     const validator = new (Validator as IConstructable<AbstractValidator>)(this.context, syntaxNode);
 
     validator.parentValidator = this;
-    validator.context = this.context;
 
     try {
       validator.validate();

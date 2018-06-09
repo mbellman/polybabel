@@ -54,12 +54,7 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
     this.assert(this.parsed.extended.length === 0);
     this.next();
 
-    const extended = this.getClauseTypeSequence();
-
-    this.assert(
-      extended.length === 1,
-      `Derived class '${this.parsed.name}' cannot extend ${extended.length} base classes`
-    );
+    const extended = [ this.parseNextWith(JavaTypeParser) ];
 
     this.parsed.extended = extended;
   }
@@ -69,7 +64,11 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
     this.assert(this.parsed.implemented.length === 0);
     this.next();
 
-    this.parsed.implemented = this.getClauseTypeSequence();
+    this.parsed.implemented = this.parseSequence({
+      ValueParser: JavaTypeParser,
+      delimiter: ',',
+      terminator: '{'
+    });
   }
 
   @Expect('{')
@@ -77,13 +76,5 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
     this.next();
     this.emulate(JavaObjectBodyParser);
     this.stop();
-  }
-
-  private getClauseTypeSequence (): JavaSyntax.IJavaType[] {
-    return this.parseSequence({
-      ValueParser: JavaTypeParser,
-      delimiter: ',',
-      terminator: [ JavaConstants.Keyword.IMPLEMENTS, '{' ]
-    });
   }
 }

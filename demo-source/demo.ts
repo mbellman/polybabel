@@ -81,12 +81,13 @@ import { LanguageSpecification } from '../source/language-specifications';
 
       const { Parser } = LanguageSpecification[Language.JAVA];
       const firstToken = tokenize(editorContent);
+
       syntaxTree = new Parser().parse(firstToken);
 
       this.compiler.add('demo', syntaxTree);
       this.compiler.compileFile('demo');
-    } catch (e) {
-      this.compiler.addError('demo', e.message);
+    } catch ({ message }) {
+      this.compiler.addError('demo', { message });
     }
 
     // Post-compilation output
@@ -138,8 +139,8 @@ import { LanguageSpecification } from '../source/language-specifications';
   private showCompilerErrors (): void {
     const errors: string[] = [];
 
-    this.compiler.forEachError((file, message) => {
-      errors.push(`Compilation Error: ${message}`);
+    this.compiler.forEachError((file, message, linePreview) => {
+      errors.push(`Compilation Error: ${message}${linePreview ? ` -> ${linePreview}` : ''}`);
     });
 
     this.showOutput(errors.join('<br />'));

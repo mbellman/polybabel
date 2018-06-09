@@ -339,8 +339,10 @@ export namespace JavaSyntax {
   /**
    * A Java do-while loop statement.
    */
-  export interface IJavaDoWhileLoop extends IJavaSyntaxNode, Without<IJavaWhileLoop, 'node'> {
+  export interface IJavaDoWhileLoop extends IJavaSyntaxNode {
     node: JavaSyntaxNode.DO_WHILE_LOOP;
+    condition: IJavaStatement;
+    block: IJavaBlock;
   }
 
   /**
