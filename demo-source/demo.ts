@@ -97,7 +97,7 @@ import { LanguageSpecification } from '../source/language-specifications';
       this.outputTotalCompilationTime();
 
       if (this.options.showSyntaxTree) {
-        this.preview.setValue(js_beautify(JSON.stringify(syntaxTree)));
+        this.showSyntaxTree(syntaxTree);
       } else {
         const code = this.compiler.getCompiledCode('demo');
 
@@ -140,7 +140,7 @@ import { LanguageSpecification } from '../source/language-specifications';
     const errors: string[] = [];
 
     this.compiler.forEachError((file, message, linePreview) => {
-      errors.push(`Compilation Error: ${message}${linePreview ? ` -> ${linePreview}` : ''}`);
+      errors.push(`Compilation Error: ${message}${linePreview ? ` --> <b>${linePreview}</b>` : ''}`);
     });
 
     this.showOutput(errors.join('<br />'));
@@ -148,6 +148,19 @@ import { LanguageSpecification } from '../source/language-specifications';
 
   private showOutput (output: string): void {
     this.outputBlock.innerHTML = output;
+  }
+
+  private showSyntaxTree (syntaxTree: ISyntaxTree): void {
+    // Token keys on syntax nodes may contain circular
+    // references, so we need to ignore these while
+    // stringifying the syntax tree
+    const tokenKeyFilter = (key: string, value: any) => {
+      if (key !== 'token') {
+        return value;
+      }
+    };
+
+    this.preview.setValue(js_beautify(JSON.stringify(syntaxTree, tokenKeyFilter)));
   }
 }
 

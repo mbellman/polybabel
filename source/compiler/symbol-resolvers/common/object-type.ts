@@ -13,6 +13,7 @@ export namespace ObjectType {
     public readonly category: ObjectCategory;
     public readonly isConstructable: boolean;
     public readonly isExtensible: boolean;
+    public readonly name: string;
     public readonly requiresImplementation: boolean;
     protected constructors: IObjectMember<FunctionType.Definition>[] = [];
     protected genericParameters: string[] = [];
@@ -165,6 +166,7 @@ export namespace ObjectType {
     public category: ObjectCategory;
     public isConstructable: boolean;
     public isExtensible: boolean;
+    public name: string;
     public requiresImplementation: boolean;
 
     public addConstructor (constructor: IObjectMember<FunctionType.Definition>): void {

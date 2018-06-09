@@ -66,11 +66,12 @@ export default class JavaBlockValidator extends AbstractValidator<JavaSyntax.IJa
       } else {
         const returnStatementType = JavaValidatorUtils.getStatementType(returnStatement, this.createValidationHelper());
 
-        // TODO: Generate a more meaningful message describing the mismatched types
-        this.check(
-          TypeValidation.typeMatches(returnStatementType, parentMethodReturnType),
-          `Method '${this.getParentMethodIdentifier()}' cannot return a type different from its return type`
-        );
+        if (!TypeValidation.typeMatches(returnStatementType, parentMethodReturnType)) {
+          const returnStatementTypeDescription = ValidatorUtils.getTypeDescription(returnStatementType);
+          const parentMethodReturnTypeDescription = ValidatorUtils.getTypeDescription(parentMethodReturnType);
+
+          this.report(`Expected method '${this.getParentMethodIdentifier()}' to return '${parentMethodReturnTypeDescription}'; returned '${returnStatementTypeDescription}' instead`);
+        }
       }
     }
   }

@@ -1,7 +1,7 @@
 import ScopeManager from '../../ScopeManager';
 import SymbolDictionary from '../../symbol-resolvers/common/SymbolDictionary';
 import { ArrayType } from '../../symbol-resolvers/common/array-type';
-import { Dynamic, ISimpleType, Primitive, TypeDefinition } from '../../symbol-resolvers/common/types';
+import { Dynamic, ISimpleType, Primitive, TypeDefinition, Void } from '../../symbol-resolvers/common/types';
 import { IValidationHelper } from '../common/types';
 import { JavaConstants } from '../../../parser/java/java-constants';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
@@ -92,9 +92,13 @@ export namespace JavaValidatorUtils {
         return referenceType;
       case JavaSyntax.JavaSyntaxNode.INSTANTIATION:
         const instantiation = leftSide as JavaSyntax.IJavaInstantiation;
-        const { constructor } = instantiation;
-        const constructorType = validationHelper.findTypeDefinition(constructor.namespaceChain);
+        const { namespaceChain } = instantiation.constructor;
         const isArrayInstantiation = !!instantiation.arrayAllocationSize || !!instantiation.arrayLiteral;
+
+        const constructorType = (
+          getNativeType(namespaceChain.join('.')) ||
+          validationHelper.findTypeDefinition(namespaceChain)
+        );
 
         if (isArrayInstantiation) {
           const arrayTypeDefiner = new ArrayType.Definer(validationHelper.symbolDictionary);
@@ -111,6 +115,36 @@ export namespace JavaValidatorUtils {
         }
       default:
         return TypeUtils.createSimpleType(Dynamic);
+    }
+  }
+
+  /**
+   * Returns a native Java type definition for a given type name,
+   * or null if the name does not correspond to any known native
+   * types.
+   */
+  export function getNativeType (typeName: string): TypeDefinition {
+    switch (typeName) {
+      case JavaConstants.Type.STRING:
+      case JavaConstants.Type.CHAR:
+        return TypeUtils.createSimpleType(Primitive.STRING);
+      case JavaConstants.Type.INT:
+      case JavaConstants.Type.INTEGER:
+      case JavaConstants.Type.NUMBER:
+      case JavaConstants.Type.FLOAT:
+      case JavaConstants.Type.DOUBLE:
+      case JavaConstants.Type.LONG:
+      case JavaConstants.Type.SHORT:
+        return TypeUtils.createSimpleType(Primitive.NUMBER);
+      case JavaConstants.Type.VOID:
+        return TypeUtils.createSimpleType(Void);
+      case JavaConstants.Type.BOOLEAN_UC:
+      case JavaConstants.Type.BOOLEAN_LC:
+        return TypeUtils.createSimpleType(Primitive.BOOLEAN);
+      case JavaConstants.Type.OBJECT:
+        return TypeUtils.createSimpleType(Primitive.OBJECT);
+      default:
+        return null;
     }
   }
 }

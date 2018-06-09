@@ -31,15 +31,15 @@ export namespace TypeValidation {
    *  2. C is a dynamic type
    *  3. S and C are equivalent simple types
    *  4. S and C are both objects, and S subtypes C (e.g. has a supertype identical to C)
+   *  5. S and C are both array types, and the element type of S matches the element type of C
    *
    * @todo individual object member comparison as a fallback for nominally non-matching types
    * @todo function type matching
-   * @todo array type matching
    */
   export function typeMatches (sourceType: TypeDefinition, comparisonType: TypeDefinition): boolean {
     if (sourceType === comparisonType) {
       // If the source and compared types are equal, the
-      // source type trivially matches (#1).
+      // source type trivially matches (#1)
       return true;
     }
 
@@ -48,21 +48,21 @@ export namespace TypeValidation {
 
     if (comparisonAsSimpleType.type === Dynamic) {
       // If the comparison type is dynamic, the source type
-      // automatically matches (#2).
+      // automatically matches (#2)
       return true;
     }
 
     if (sourceAsSimpleType.type && comparisonAsSimpleType.type) {
       // If the source and comparison types are both simple
       // types with the same 'type' property value, they
-      // are equivalent simple types (#3).
+      // are equivalent simple types (#3)
       return sourceAsSimpleType.type === comparisonAsSimpleType.type;
     }
 
     if (!typesHaveSameTypeDefinitionClass(sourceType as AbstractTypeDefinition, comparisonType as AbstractTypeDefinition)) {
       // If the source and comparison types are not of the
       // same class of type definition, the source cannot
-      // match the comparison type.
+      // match the comparison type
       return false;
     }
 
@@ -72,8 +72,15 @@ export namespace TypeValidation {
     ) {
       // If the source type subtypes the comparison type, the
       // comparison type may be substituted with the source
-      // type; thus the source type matches (#4).
+      // type; thus the source type matches (#4)
       return true;
+    }
+
+    if (sourceType instanceof ArrayType.Definition) {
+      // If the source type is an array of a given type which
+      // matches the element type of the comparison array type,
+      // the source type matches (#5)
+      return typeMatches(sourceType.getElementType(), (comparisonType as ArrayType.Definition).getElementType());
     }
 
     return false;

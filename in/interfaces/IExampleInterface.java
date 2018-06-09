@@ -1,4 +1,4 @@
-package interfacees.IExampleInterface;
+package interfaces.IExampleInterface;
 
 public interface IExampleInterface {
   String example;

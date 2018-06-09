@@ -7,6 +7,7 @@ import { JavaConstants } from '../../parser/java/java-constants';
 import { JavaSyntax } from '../../parser/java/java-syntax';
 import { ObjectType } from './common/object-type';
 import { TypeUtils } from './common/type-utils';
+import { JavaValidatorUtils } from '../validators/java/java-validator-utils';
 
 export default class JavaSymbolResolver extends AbstractSymbolResolver {
   @Implements public resolve (javaSyntaxTree: JavaSyntax.IJavaSyntaxTree): void {
@@ -89,28 +90,10 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
       return this.createArrayTypeDefinition(type);
     }
 
-    switch (typeName) {
-      case JavaConstants.Type.STRING:
-      case JavaConstants.Type.CHAR:
-        return TypeUtils.createSimpleType(Primitive.STRING);
-      case JavaConstants.Type.INT:
-      case JavaConstants.Type.INTEGER:
-      case JavaConstants.Type.NUMBER:
-      case JavaConstants.Type.FLOAT:
-      case JavaConstants.Type.DOUBLE:
-      case JavaConstants.Type.LONG:
-      case JavaConstants.Type.SHORT:
-        return TypeUtils.createSimpleType(Primitive.NUMBER);
-      case JavaConstants.Type.VOID:
-        return TypeUtils.createSimpleType(Void);
-      case JavaConstants.Type.BOOLEAN_UC:
-      case JavaConstants.Type.BOOLEAN_LC:
-        return TypeUtils.createSimpleType(Primitive.BOOLEAN);
-      case JavaConstants.Type.OBJECT:
-        return TypeUtils.createSimpleType(Primitive.OBJECT);
-      default:
-        return this.getPossibleSymbolIdentifiers(typeName);
-    }
+    return (
+      JavaValidatorUtils.getNativeType(typeName) ||
+      this.getPossibleSymbolIdentifiers(typeName)
+    );
   }
 
   private resolveAndAddObjectMembers (members: JavaSyntax.JavaObjectMember[], definer: ObjectType.Definer): void {
@@ -177,6 +160,7 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
     const objectTypeDefiner = this.createTypeDefiner(ObjectType.Definer);
 
     // TODO: Add generic parameters
+    objectTypeDefiner.name = name;
     objectTypeDefiner.category = ObjectCategory.CLASS;
     objectTypeDefiner.isExtensible = !isFinal;
     objectTypeDefiner.requiresImplementation = isAbstract;
@@ -224,6 +208,7 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
     const objectTypeDefiner = this.createTypeDefiner(ObjectType.Definer);
 
     // TODO: Add generic parameters
+    objectTypeDefiner.name = name;
     objectTypeDefiner.category = ObjectCategory.INTERFACE;
     objectTypeDefiner.isExtensible = true;
     objectTypeDefiner.isConstructable = false;

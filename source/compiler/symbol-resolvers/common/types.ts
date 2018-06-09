@@ -55,8 +55,8 @@ export interface IObjectMember<T extends TypeDefinition = TypeDefinition> {
  * a type form and string form allows us to use the constant
  * as either a type or a value.
  */
-export type Dynamic = 'DYNAMIC';
-export const Dynamic = 'DYNAMIC';
+export type Dynamic = 'dynamic';
+export const Dynamic = 'dynamic';
 
 /**
  * A constant representing a void type (i.e., one without an
@@ -64,19 +64,19 @@ export const Dynamic = 'DYNAMIC';
  * string form allows us to use the constant as either a
  * type or a value.
  */
-export type Void = 'VOID';
-export const Void = 'VOID';
+export type Void = 'void';
+export const Void = 'void';
 
 /**
- * Constants for primitive types common to all languages.
+ * Constants for primitive types common between languages.
  */
 export enum Primitive {
-  STRING = 'STRING',
-  NUMBER = 'NUMBER',
-  BOOLEAN = 'BOOLEAN',
-  REGEX = 'REGEX',
-  OBJECT = 'OBJECT',
-  NULL = 'NULL'
+  STRING = 'string',
+  NUMBER = 'number',
+  BOOLEAN = 'boolean',
+  REGEX = 'regex',
+  OBJECT = 'object literal',
+  NULL = 'null'
 }
 
 /**

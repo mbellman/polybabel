@@ -70,6 +70,21 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     return null;
   }
 
+  /**
+   * Attempts to find and return the type definition for a given
+   * symbol or construct identified by namespace chain. The outer
+   * name in the chain represents the top-level object or namespace
+   * within which the desired symbol or construct can be found.
+   * If the namespace chain contains only one value, the type of
+   * that top-level object or namespace is returned. Otherwise, the
+   * chain is traversed until either an invalid lookup terminates
+   * the search, or the desired symbol or construct is found.
+   *
+   * When the outer name is an unknown identifier, or if invalid
+   * lookups occur, we report the error and return a dynamic type
+   * to gracefully recover and accommodate checks dependent on the
+   * found type definition.
+   */
   public findTypeDefinition (namespaceChain: string[]): TypeDefinition {
     const { importToSourceFileMap, objectVisitor, symbolDictionary, scopeManager, file } = this.context;
     const outerName = namespaceChain[0];
@@ -96,7 +111,7 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     }
 
     if (shouldSearchDeep) {
-      if (ValidatorUtils.isDynamicType(outerType)) {
+      if (ValidatorUtils.isSimpleTypeOf(Dynamic, outerType)) {
         // If the outer type of the namespace chain is already
         // dynamic, simply return a new dynamic type, since
         // dynamic types permit arbitrarily deep member chains
@@ -130,7 +145,7 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
           return nextObjectMember.type;
         }
 
-        if (ValidatorUtils.isDynamicType(nextObjectMember.type)) {
+        if (ValidatorUtils.isSimpleTypeOf(Dynamic, nextObjectMember.type)) {
           // If the next member in the chain is dynamic, return
           // a new dynamic type immediately, since dynamic types
           // can have any of the remaining deep members

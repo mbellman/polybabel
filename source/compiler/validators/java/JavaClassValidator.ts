@@ -2,7 +2,7 @@ import AbstractValidator from '../common/AbstractValidator';
 import JavaObjectValidator from './JavaObjectValidator';
 import { Bound, Implements } from 'trampoline-framework';
 import { Callback } from '../../../system/types';
-import { ISymbol, ObjectCategory, TypeDefinition } from '../../symbol-resolvers/common/types';
+import { ISymbol, ObjectCategory, TypeDefinition, Dynamic } from '../../symbol-resolvers/common/types';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
 import { ObjectType } from '../../symbol-resolvers/common/object-type';
 import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
@@ -48,7 +48,7 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
       const name = implementation.namespaceChain.join('.');
 
       this.check(
-        ValidatorUtils.isDynamicType(type) ||
+        ValidatorUtils.isSimpleTypeOf(Dynamic, type) ||
         ValidatorUtils.isInterfaceType(type),
         `Class '${this.syntaxNode.name}' cannot implement non-interface '${name}'`
       );
@@ -65,7 +65,7 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
     const supertypeIsClass = ValidatorUtils.isClassType(supertype);
 
     this.check(
-      ValidatorUtils.isDynamicType(supertype) || supertypeIsClass,
+      ValidatorUtils.isSimpleTypeOf(Dynamic, supertype) || supertypeIsClass,
       `Class '${this.syntaxNode.name}' cannot extend non-class '${name}'`
     );
 
