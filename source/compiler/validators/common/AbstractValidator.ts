@@ -1,14 +1,19 @@
+import ObjectVisitor from './ObjectVisitor';
 import ScopeManager from '../../ScopeManager';
 import SymbolDictionary from '../../symbol-resolvers/common/SymbolDictionary';
+import ValidatorContext from './ValidatorContext';
 import { Callback } from '../../../system/types';
-import { Constructor, IConstructable } from 'trampoline-framework';
-import { IObjectMember, TypeDefinition, Dynamic } from '../../symbol-resolvers/common/types';
+import { Constructor, IConstructable, IHashMap } from 'trampoline-framework';
+import { Dynamic, IObjectMember, TypeDefinition, ISymbol } from '../../symbol-resolvers/common/types';
 import { ISyntaxNode } from '../../../parser/common/syntax-types';
 import { ObjectType } from '../../symbol-resolvers/common/object-type';
 import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
 import { ValidatorUtils } from './validator-utils';
+import { IValidationHelper } from './types';
 
 /**
+ * @todo @description
+ *
  * @internal
  */
 interface IResolvedConstruct {
@@ -17,31 +22,28 @@ interface IResolvedConstruct {
 }
 
 export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxNode> {
-  protected scopeManager: ScopeManager = new ScopeManager();
-  protected symbolDictionary: SymbolDictionary;
+  protected context: ValidatorContext;
   protected syntaxNode: S;
-  private errors: string[] = [];
-  private namespaceStack: string[] = [];
   private parentValidator: AbstractValidator;
 
-  public constructor (symbolDictionary: SymbolDictionary, syntaxNode: S) {
-    this.symbolDictionary = symbolDictionary;
+  public constructor (context: ValidatorContext, syntaxNode: S) {
+    this.context = context;
     this.syntaxNode = syntaxNode;
   }
 
   public forErrors (callback: Callback<string>): void {
-    this.errors.forEach(error => callback(error));
+    this.context.errors.forEach(callback);
   }
 
   public hasErrors (): boolean {
-    return this.errors.length > 0;
+    return this.context.errors.length > 0;
   }
 
   public abstract validate (): void;
 
   protected assert (condition: boolean, message: string, shouldHalt: boolean = true): void {
     if (!condition) {
-      this.errors.push(message);
+      this.context.errors.push(message);
 
       if (shouldHalt) {
         // Halt on negative assertions by default
@@ -57,79 +59,11 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     this.assert(condition, message, false);
   }
 
-  protected enterNamespace (namespace: string): void {
-    this.namespaceStack.push(namespace);
-  }
-
-  protected exitNamespace (): void {
-    this.namespaceStack.pop();
-  }
-
-  /**
-   * Retrieves a deeply-nested object member using a provided member
-   * chain, starting with the top-level object. If the object itself
-   * is not in scope, or if at any point in the chain a member isn't
-   * found, we log the error and return a dynamically-typed object
-   * member. In this case validation can proceed without explicitly
-   * invalidating any checks on the member type, though compilation
-   * will nevertheless fail.
-   *
-   * @todo Allow optional visibility restrictions
-   */
-  protected findDeepObjectMember (memberChain: string[]): IObjectMember {
-    const objectName = memberChain.shift();
-
-    if (!this.scopeManager.isInScope(objectName)) {
-      this.reportUnknownIdentifier(objectName);
-
-      return TypeUtils.createDynamicObjectMember();
-    }
-
-    const { type, identifier } = this.symbolDictionary.getSymbol(objectName);
-
-    if (ValidatorUtils.isDynamicType(type)) {
-      // If the symbol being searched is already dynamic,
-      // simply return a new dynamic object member, since
-      // dynamic types permit arbitrary deep member chains
-      return TypeUtils.createDynamicObjectMember();
-    }
-
-    const currentChain: string[] = [];
-    let searchTarget = type;
-
-    while (searchTarget) {
-      if (!(searchTarget instanceof ObjectType.Definition)) {
-        this.reportNonObjectType(`${identifier}.${currentChain.join('.')}'`);
-
-        return TypeUtils.createDynamicObjectMember();
-      }
-
-      const nextMemberName = memberChain.shift();
-      const objectMember = searchTarget.getObjectMember(nextMemberName);
-
-      if (!objectMember) {
-        this.reportUnknownMember(`${identifier}.${currentChain.join('.')}`, nextMemberName);
-
-        return TypeUtils.createDynamicObjectMember();
-      }
-
-      if (memberChain.length === 0) {
-        return objectMember;
-      }
-
-      if (ValidatorUtils.isDynamicType(objectMember.type)) {
-        // If one of the members in the chain is dynamic, return
-        // a new dynamic object member immediately, since dynamic
-        // types can have any of the remaining deep members
-        return TypeUtils.createDynamicObjectMember();
-      }
-
-      currentChain.push(nextMemberName);
-
-      searchTarget = objectMember.type;
-    }
-
-    return TypeUtils.createDynamicObjectMember();
+  protected createValidationHelper (): IValidationHelper {
+    return {
+      symbolDictionary: this.context.symbolDictionary,
+      findTypeDefinition: (namespaceChain: string[]) => this.findTypeDefinition(namespaceChain)
+    };
   }
 
   /**
@@ -147,45 +81,108 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     return null;
   }
 
-  protected findResolvedConstruct (namespaceChain: string[]): IResolvedConstruct {
+  public findTypeDefinition (namespaceChain: string[]): TypeDefinition {
+    const { importToSourceFileMap, objectVisitor, symbolDictionary, scopeManager, file } = this.context;
     const outerName = namespaceChain[0];
+    const isImportedSymbol = outerName in importToSourceFileMap;
+    const foundParentObjectMember = objectVisitor.findParentObjectMember(outerName);
+    const shouldSearchDeep = namespaceChain.length > 1;
+    let outerType: TypeDefinition;
 
-    if (!this.scopeManager.isInScope(outerName)) {
-      this.reportUnknownIdentifier(outerName);
+    if (foundParentObjectMember) {
+      outerType = foundParentObjectMember.type;
+    } else if (isImportedSymbol) {
+      const sourceFile = importToSourceFileMap[outerName];
+
+      outerType = symbolDictionary.getSymbol(sourceFile + outerName).type;
+    } else {
+      outerType = scopeManager.getScopedValue(outerName);
+
+      if (!outerType) {
+        // If the outer name isn't in scope, stop here
+        this.reportUnknownIdentifier(outerName);
+
+        return TypeUtils.createSimpleType(Dynamic);
+      }
     }
 
-    if (namespaceChain.length === 1) {
-      const objectSymbol = this.symbolDictionary.getSymbol(outerName);
-      const { type, identifier } = objectSymbol;
+    if (shouldSearchDeep) {
+      if (ValidatorUtils.isDynamicType(outerType)) {
+        // If the outer type of the namespace chain is already
+        // dynamic, simply return a new dynamic type, since
+        // dynamic types permit arbitrarily deep member chains
+        return TypeUtils.createSimpleType(Dynamic);
+      }
 
-      return {
-        type,
-        name: identifier
-      };
+      const currentNamespaceChain = [ outerName ];
+      let nextType = outerType;
+      let chainIndex = 0;
+
+      while (nextType) {
+        if (!(nextType instanceof ObjectType.Definition)) {
+          // If the next type in the deep search isn't an object
+          // type, we can't go any further in the chain.
+          this.reportNonObjectMemberAccess(`${currentNamespaceChain.join('.')}'`);
+
+          return TypeUtils.createSimpleType(Dynamic);
+        }
+
+        const nextMemberName = namespaceChain[++chainIndex];
+        const nextObjectMember = nextType.getObjectMember(nextMemberName);
+
+        if (!nextObjectMember) {
+          this.reportUnknownMember(`${currentNamespaceChain.join('.')}`, nextMemberName);
+
+          return TypeUtils.createSimpleType(Dynamic);
+        }
+
+        if (chainIndex === namespaceChain.length - 1) {
+          // End of namespace chain reached; return the type definition
+          return nextObjectMember.type;
+        }
+
+        if (ValidatorUtils.isDynamicType(nextObjectMember.type)) {
+          // If the next member in the chain is dynamic, return
+          // a new dynamic type immediately, since dynamic types
+          // can have any of the remaining deep members
+          return TypeUtils.createSimpleType(Dynamic);
+        }
+
+        currentNamespaceChain.push(nextMemberName);
+
+        nextType = nextObjectMember.type;
+      }
+
+      return TypeUtils.createSimpleType(Dynamic);
     } else {
-      const objectMember = this.findDeepObjectMember(namespaceChain);
-      const name = namespaceChain.join('.');
-
-      const type = objectMember
-        ? objectMember.type
-        : TypeUtils.createSimpleType(Dynamic);
-
-      return { type, name };
+      return outerType;
     }
   }
 
-  protected findResolvedConstructInCurrentNamespace (identifier: string): IResolvedConstruct {
-    const namespaceChain = this.namespaceStack.concat(identifier);
+  protected getImmediateNamespacedIdentifier (identifier: string): string {
+    const { namespaceStack } = this.context;
 
-    return this.findResolvedConstruct(namespaceChain);
+    return `${namespaceStack[namespaceStack.length - 1]}.${identifier}`;
   }
 
   protected getNamespacedIdentifier (identifier: string): string {
-    return this.namespaceStack.concat(identifier).join('.');
+    return this.context.namespaceStack.concat(identifier).join('.');
+  }
+
+  protected getTypeInCurrentNamespace (name: string): TypeDefinition {
+    const parentObjectMember = this.context.objectVisitor.findParentObjectMember(name);
+
+    if (parentObjectMember) {
+      return parentObjectMember.type;
+    } else {
+      const { symbolDictionary, file } = this.context;
+
+      return symbolDictionary.getSymbol(file + name).type;
+    }
   }
 
   protected report (message: string): void {
-    this.errors.push(message);
+    this.context.errors.push(message);
   }
 
   /**
@@ -194,12 +191,10 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
    * errors list so both can be used and manipulated by reference.
    */
   protected validateNodeWith <T extends ISyntaxNode>(Validator: Constructor<AbstractValidator<T>>, syntaxNode: T): void {
-    const validator = new (Validator as IConstructable<AbstractValidator>)(this.symbolDictionary, syntaxNode);
+    const validator = new (Validator as IConstructable<AbstractValidator>)(this.context, syntaxNode);
 
     validator.parentValidator = this;
-    validator.namespaceStack = this.namespaceStack;
-    validator.scopeManager = this.scopeManager;
-    validator.errors = this.errors;
+    validator.context = this.context;
 
     try {
       validator.validate();
@@ -208,7 +203,7 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     }
   }
 
-  private reportNonObjectType (name: string): void {
+  private reportNonObjectMemberAccess (name: string): void {
     this.report(`Identifier '${name}' does not have any members`);
   }
 

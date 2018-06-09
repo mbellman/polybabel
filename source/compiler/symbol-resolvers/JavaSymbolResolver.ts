@@ -6,6 +6,7 @@ import { IObjectMember, ISymbol, ObjectCategory, ObjectMemberVisibility, Primiti
 import { JavaConstants } from '../../parser/java/java-constants';
 import { JavaSyntax } from '../../parser/java/java-syntax';
 import { ObjectType } from './common/object-type';
+import { TypeUtils } from './common/type-utils';
 
 export default class JavaSymbolResolver extends AbstractSymbolResolver {
   @Implements public resolve (javaSyntaxTree: JavaSyntax.IJavaSyntaxTree): void {
@@ -13,17 +14,29 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
 
     syntaxNodes.forEach(syntaxNode => {
       switch (syntaxNode.node) {
+        case JavaSyntax.JavaSyntaxNode.IMPORT:
+          const { paths, defaultImport, nonDefaultImports } = syntaxNode as JavaSyntax.IJavaImport;
+          const sourceFile = paths.join('/');
+
+          if (defaultImport) {
+            this.mapImportToSourceFile(defaultImport, sourceFile);
+          }
+
+          nonDefaultImports.forEach(nonDefaultImport => {
+            this.mapImportToSourceFile(nonDefaultImport, sourceFile);
+          });
+          break;
         case JavaSyntax.JavaSyntaxNode.CLASS:
           const classNode = syntaxNode as JavaSyntax.IJavaClass;
           const classSymbol = this.resolveClassSymbol(classNode);
 
-          this.defineSymbol(classSymbol);
+          this.symbolDictionary.addSymbol(classSymbol);
           break;
         case JavaSyntax.JavaSyntaxNode.INTERFACE:
           const interfaceNode = syntaxNode as JavaSyntax.IJavaInterface;
           const interfaceSymbol = this.resolveInterfaceSymbol(syntaxNode as JavaSyntax.IJavaInterface);
 
-          this.defineSymbol(interfaceSymbol);
+          this.symbolDictionary.addSymbol(interfaceSymbol);
           break;
       }
     });
@@ -79,37 +92,24 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
     switch (typeName) {
       case JavaConstants.Type.STRING:
       case JavaConstants.Type.CHAR:
-        return {
-          type: Primitive.STRING
-        };
+        return TypeUtils.createSimpleType(Primitive.STRING);
+      case JavaConstants.Type.INT:
       case JavaConstants.Type.INTEGER:
       case JavaConstants.Type.NUMBER:
-      case JavaConstants.Type.INT:
       case JavaConstants.Type.FLOAT:
       case JavaConstants.Type.DOUBLE:
       case JavaConstants.Type.LONG:
       case JavaConstants.Type.SHORT:
-        return {
-          type: Primitive.NUMBER
-        };
+        return TypeUtils.createSimpleType(Primitive.NUMBER);
       case JavaConstants.Type.VOID:
-        return {
-          type: Void
-        };
+        return TypeUtils.createSimpleType(Void);
       case JavaConstants.Type.BOOLEAN_UC:
       case JavaConstants.Type.BOOLEAN_LC:
-        return {
-          type: Primitive.BOOLEAN
-        };
+        return TypeUtils.createSimpleType(Primitive.BOOLEAN);
       case JavaConstants.Type.OBJECT:
-        return {
-          type: Primitive.OBJECT
-        };
+        return TypeUtils.createSimpleType(Primitive.OBJECT);
       default:
-        // Where types are not native Java types, we return the name
-        // as a symbol identifier so it can be looked up in the symbol
-        // dictionary at validation time
-        return typeName;
+        return this.getPossibleSymbolIdentifiers(typeName);
     }
   }
 
@@ -119,13 +119,13 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
 
       switch (member.node) {
         case JavaSyntax.JavaSyntaxNode.OBJECT_FIELD: {
-          const { access, type, isStatic, isFinal, isAbstract } = member as JavaSyntax.IJavaObjectField;
+          const { access, type: fieldType, isStatic, isFinal, isAbstract } = member as JavaSyntax.IJavaObjectField;
 
           resolvedObjectMember.visibility = this.getObjectMemberVisibility(access);
           resolvedObjectMember.isStatic = !!isStatic;
           resolvedObjectMember.isConstant = !!isFinal;
           resolvedObjectMember.requiresImplementation = !!isAbstract;
-          resolvedObjectMember.type = this.createTypeDefinition(type);
+          resolvedObjectMember.type = this.createTypeDefinition(fieldType);
 
           break;
         }
@@ -135,6 +135,7 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
           const parameterTypeSymbolIdentifiers = parameters.map(({ type }) => this.createTypeDefinition(type));
           const returnTypeSymbolIdentifier = this.createTypeDefinition(returnType);
 
+          // TODO: Add generic parameters
           functionTypeDefiner.defineReturnType(returnTypeSymbolIdentifier);
 
           resolvedObjectMember.visibility = this.getObjectMemberVisibility(access);
@@ -150,19 +151,22 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
           const { node, access, isFinal, isStatic } = member;
           const isClass = node === JavaSyntax.JavaSyntaxNode.CLASS;
 
-          const { type } = isClass
+          const nestedObjectSymbol = isClass
               ? this.resolveClassSymbol(member as JavaSyntax.IJavaClass)
               : this.resolveInterfaceSymbol(member as JavaSyntax.IJavaInterface);
 
           resolvedObjectMember.visibility = this.getObjectMemberVisibility(access);
           resolvedObjectMember.isStatic = isStatic;
           resolvedObjectMember.isConstant = isFinal;
-          resolvedObjectMember.type = type;
+          resolvedObjectMember.type = nestedObjectSymbol.type;
+
+          this.symbolDictionary.addSymbol(nestedObjectSymbol);
 
           break;
         }
       }
 
+      // TODO: Differentiate method overloads
       definer.addMember(member.name, resolvedObjectMember as IObjectMember);
     });
   }
@@ -172,6 +176,7 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
     const identifier = this.createSymbolIdentifier(name);
     const objectTypeDefiner = this.createTypeDefiner(ObjectType.Definer);
 
+    // TODO: Add generic parameters
     objectTypeDefiner.category = ObjectCategory.CLASS;
     objectTypeDefiner.isExtensible = !isFinal;
     objectTypeDefiner.requiresImplementation = isAbstract;
@@ -181,27 +186,34 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
       !isAbstract
     );
 
-    this.enterNamespace(name);
-
-    constructors.forEach(constructor => {
-      // @todo
-    });
-
     if (extended.length === 1) {
-      objectTypeDefiner.addSupertype(extended[0].namespaceChain.join('.'));
+      const superclassName = extended[0].namespaceChain.join('.');
+      const possibleSuperclassSymbolIdentifiers = this.getPossibleSymbolIdentifiers(superclassName);
+
+      objectTypeDefiner.addSupertype(possibleSuperclassSymbolIdentifiers);
     }
 
     if (implemented.length > 0) {
       for (const implementation of implemented) {
-        objectTypeDefiner.addSupertype(implementation.namespaceChain.join('.'));
+        const interfaceName = implementation.namespaceChain.join('.');
+        const possibleInterfaceSymbolIdentifiers = this.getPossibleSymbolIdentifiers(interfaceName);
+
+        objectTypeDefiner.addSupertype(possibleInterfaceSymbolIdentifiers);
       }
     }
 
+    constructors.forEach(constructor => {
+      // TODO: Define constructor members
+      // TODO: Differentiate constructor overloads
+    });
+
+    this.enterNamespace(name);
     this.resolveAndAddObjectMembers(members, objectTypeDefiner);
     this.exitNamespace();
 
     return {
       identifier,
+      name,
       type: objectTypeDefiner
     };
   }
@@ -211,11 +223,9 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
     const identifier = this.createSymbolIdentifier(name);
     const objectTypeDefiner = this.createTypeDefiner(ObjectType.Definer);
 
+    // TODO: Add generic parameters
     objectTypeDefiner.category = ObjectCategory.INTERFACE;
     objectTypeDefiner.isExtensible = true;
-    // Interfaces are only constructable in the case of anonymous
-    // object instantiation, which can only happen in Java code;
-    // they are not constructable anywhere else
     objectTypeDefiner.isConstructable = false;
 
     this.enterNamespace(name);
@@ -224,6 +234,7 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
 
     return {
       identifier,
+      name,
       type: objectTypeDefiner
     };
   }

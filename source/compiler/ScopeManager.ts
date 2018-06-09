@@ -1,8 +1,8 @@
 import { IHashMap } from 'trampoline-framework';
 import { INamed, ISyntaxNode } from '../parser/common/syntax-types';
 
-export default class ScopeManager {
-  private scopes: IHashMap<any>[] = [];
+export default class ScopeManager<V extends any = any> {
+  private scopes: IHashMap<V>[] = [];
 
   public get activeScope (): IHashMap<any> {
     return this.scopes[this.scopes.length - 1];
@@ -12,7 +12,7 @@ export default class ScopeManager {
     this.enterScope();
   }
 
-  public addToScope (name: string, value?: any): void {
+  public addToScope (name: string, value?: V): void {
     this.activeScope[name] = value;
   }
 
@@ -20,17 +20,19 @@ export default class ScopeManager {
     this.scopes.push({});
   }
 
-  public isInScope (name: string): boolean {
+  public exitScope (): void {
+    this.scopes.pop();
+  }
+
+  public getScopedValue (name: string): V {
     for (let i = this.scopes.length - 1; i >= 0; i--) {
-      if (name in this.scopes[i]) {
-        return true;
+      const value = this.scopes[i][name];
+
+      if (value) {
+        return value;
       }
     }
 
-    return false;
-  }
-
-  public leaveScope (): void {
-    this.scopes.pop();
+    return null;
   }
 }

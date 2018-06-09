@@ -4,23 +4,23 @@ import { JavaSyntax } from '../../../parser/java/java-syntax';
 
 export default class JavaImportValidator extends AbstractValidator<JavaSyntax.IJavaImport> {
   @Implements public validate (): void {
-    const { isStaticImport, defaultImport, nonDefaultImports } = this.syntaxNode;
+    const { defaultImport, nonDefaultImports, paths } = this.syntaxNode;
+    const sourceFile = paths.join('/');
 
     if (defaultImport) {
-      this.validateImportName(defaultImport);
-      this.scopeManager.addToScope(defaultImport);
-    } else if (nonDefaultImports) {
-      nonDefaultImports.forEach(nonDefaultImport => {
-        this.validateImportName(nonDefaultImport);
-        this.scopeManager.addToScope(nonDefaultImport);
-      });
+      this.handleImport(defaultImport, sourceFile);
+    } else if (nonDefaultImports.length > 1) {
+      nonDefaultImports.forEach(nonDefaultImport => this.handleImport(nonDefaultImport, sourceFile));
     }
   }
 
-  private validateImportName (importName: string): void {
+  private handleImport (importName: string, sourceFile: string): void {
     this.check(
       !/[^\w]/.test(importName),
       `Invalid import name: '${importName}'`
     );
+
+    this.context.mapImportToSourceFile(importName, sourceFile);
+    this.context.scopeManager.addToScope(importName);
   }
 }

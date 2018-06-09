@@ -1,4 +1,5 @@
 import SymbolDictionary from './symbol-resolvers/common/SymbolDictionary';
+import ValidatorContext from './validators/common/ValidatorContext';
 import { IHashMap } from 'trampoline-framework';
 import { ISyntaxTree } from '../parser/common/syntax-types';
 import { LanguageSpecification } from '../language-specifications/index';
@@ -25,7 +26,7 @@ export default class Compiler {
 
     const { SymbolResolver } = LanguageSpecification[syntaxTree.language];
 
-    new SymbolResolver(this.symbolDictionary).resolve(syntaxTree);
+    new SymbolResolver(file, this.symbolDictionary).resolve(syntaxTree);
   }
 
   public addError (file: string, message: string): void {
@@ -37,7 +38,8 @@ export default class Compiler {
 
     if (syntaxTree) {
       const { Validator, Translator } = LanguageSpecification[syntaxTree.language];
-      const validator = new Validator(this.symbolDictionary, syntaxTree);
+      const validationContext = new ValidatorContext(file, this.symbolDictionary);
+      const validator = new Validator(validationContext, syntaxTree);
 
       validator.validate();
 

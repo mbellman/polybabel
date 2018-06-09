@@ -4,10 +4,18 @@ import JavaInterfaceValidator from './JavaInterfaceValidator';
 import JavaObjectMethodValidator from './JavaObjectMethodValidator';
 import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
+import { ObjectType } from '../../symbol-resolvers/common/object-type';
 
 export default class JavaObjectValidator extends AbstractValidator<JavaSyntax.IJavaObject> {
   @Implements public validate (): void {
-    const { members } = this.syntaxNode;
+    const { name, members } = this.syntaxNode;
+    const { scopeManager, objectVisitor } = this.context;
+    const ownType = this.getTypeInCurrentNamespace(name) as ObjectType.Definition;
+
+    objectVisitor.visitObject(ownType);
+    scopeManager.addToScope(name, ownType);
+    scopeManager.enterScope();
+    this.context.enterNamespace(name);
 
     members.forEach(member => {
       switch (member.node) {
@@ -25,6 +33,14 @@ export default class JavaObjectValidator extends AbstractValidator<JavaSyntax.IJ
           break;
       }
     });
+
+    scopeManager.exitScope();
+    objectVisitor.leaveObject();
+    this.context.exitNamespace();
+  }
+
+  private getIdentifier (): string {
+    return this.getNamespacedIdentifier(this.syntaxNode.name);
   }
 
   private validateObjectField (objectField: JavaSyntax.IJavaObjectField): void {

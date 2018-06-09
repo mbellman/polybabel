@@ -97,9 +97,14 @@ export interface ISimpleType {
 export type SymbolIdentifier = string;
 
 /**
- * A construct representing a type definition.
+ * A type definition object. Alternatively, type definitions
+ * can be tentative symbol identifier lists which represent
+ * potential symbol names to look up and resolve the actual
+ * type definition for retroactively. The first identifier
+ * in the list with a symbol definition determines the type
+ * definition ultimately resolved.
  */
-export type TypeDefinition = SymbolIdentifier | ISimpleType | AbstractTypeDefinition;
+export type TypeDefinition = ISimpleType | AbstractTypeDefinition | SymbolIdentifier[];
 
 /**
  * An AbstractTypeDefinition which can be constrained by one or
@@ -116,10 +121,11 @@ export interface IConstrainable {
 
 /**
  * A symbol resolved from a syntax node, providing information
- * about its identifier and type structure (or an identifier
- * for an object-type symbol pending resolution).
+ * about its original name and its type definition (or a symbol
+ * identifier for a symbol pending resolution).
  */
 export interface ISymbol<T extends TypeDefinition = TypeDefinition> {
   identifier: SymbolIdentifier;
+  name: string;
   type: T;
 }

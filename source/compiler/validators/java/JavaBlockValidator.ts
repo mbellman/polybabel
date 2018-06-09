@@ -8,16 +8,20 @@ import { TypeValidation } from '../common/type-validation';
 import { ValidatorUtils } from '../common/validator-utils';
 
 export default class JavaBlockValidator extends AbstractValidator<JavaSyntax.IJavaBlock> {
-  private parentMethod: JavaSyntax.IJavaObjectMethod;
+  private parentMethodNode: JavaSyntax.IJavaObjectMethod;
 
   @Implements public validate (): void {
     const { nodes } = this.syntaxNode;
 
     // TODO: Improve accuracy, e.g. in the case of initializers
     // of anonymous classes within object method blocks
-    this.parentMethod = this.findParentNode(JavaSyntax.JavaSyntaxNode.OBJECT_METHOD) as JavaSyntax.IJavaObjectMethod;
+    this.parentMethodNode = this.findParentNode(JavaSyntax.JavaSyntaxNode.OBJECT_METHOD) as JavaSyntax.IJavaObjectMethod;
+
+    this.context.scopeManager.enterScope();
 
     nodes.forEach(statementNode => {
+      // TODO: Validate statement node
+
       const { leftSide } = statementNode;
 
       switch (leftSide.node) {
@@ -31,20 +35,23 @@ export default class JavaBlockValidator extends AbstractValidator<JavaSyntax.IJa
           break;
       }
     });
+
+    this.context.scopeManager.exitScope();
   }
 
   private getParentMethodIdentifier (): string {
-    return this.getNamespacedIdentifier(this.parentMethod.name);
+    return this.getNamespacedIdentifier(this.parentMethodNode.name);
   }
 
   private getParentMethodReturnType (): TypeDefinition {
-    const parentMethodFunctionType = this.findResolvedConstructInCurrentNamespace(this.parentMethod.name).type as FunctionType.Definition;
+    const { objectVisitor } = this.context;
+    const parentMethodFunctionType = objectVisitor.findParentObjectMember(this.parentMethodNode.name).type as FunctionType.Definition;
 
     return parentMethodFunctionType.getReturnType();
   }
 
   private validateReturnStatement (returnStatement: JavaSyntax.IJavaStatement): void {
-    const isInsideInitializer = this.parentMethod === null;
+    const isInsideInitializer = this.parentMethodNode === null;
 
     if (isInsideInitializer) {
       this.report(`Initializer blocks cannot return values.`);
@@ -55,7 +62,7 @@ export default class JavaBlockValidator extends AbstractValidator<JavaSyntax.IJa
       if (isVoidMethod) {
         this.report(`Void method '${this.getParentMethodIdentifier()}' cannot return a value`);
       } else {
-        const returnStatementType = JavaValidatorUtils.getStatementType(returnStatement, this.symbolDictionary, this.scopeManager);
+        const returnStatementType = JavaValidatorUtils.getStatementType(returnStatement, this.createValidationHelper());
 
         // TODO: Generate a more meaningful message describing the mismatched types
         this.check(

@@ -14,17 +14,38 @@ export default class SymbolDictionary {
   }
 
   /**
+   * Returns a symbol based on its identifier, without any safeguard
+   * against undefined symbools.
+   */
+  public getDefinedSymbol (symbolIdentifier: SymbolIdentifier): ISymbol {
+    return this.symbolMap[symbolIdentifier];
+  }
+
+  /**
    * Returns a symbol based on its identifier, or a dynamically
    * typed symbol created on the fly for identifiers without
    * dictionary entries.
    */
   public getSymbol (symbolIdentifier: SymbolIdentifier): ISymbol {
-    return (
-      this.symbolMap[symbolIdentifier] || {
-        identifier: symbolIdentifier,
-        type: TypeUtils.createSimpleType(Dynamic)
+    return this.getDefinedSymbol(symbolIdentifier) || this.createDynamicSymbol(symbolIdentifier);
+  }
+
+  /**
+   * Attempts to look up a symbol from a list of symbol identifiers,
+   * some of which may correspond to undefined entries. If none of
+   * the provided identifiers match a defined symbol, we return a
+   * dynamically typed symbol instead.
+   */
+  public getFirstDefinedSymbol (symbolIdentifiers: SymbolIdentifier[]): ISymbol {
+    for (const symbolIdentifier of symbolIdentifiers) {
+      const symbol = this.getDefinedSymbol(symbolIdentifier);
+
+      if (symbol) {
+        return symbol;
       }
-    );
+    }
+
+    return this.createDynamicSymbol();
   }
 
   /**
@@ -34,12 +55,18 @@ export default class SymbolDictionary {
    * undergo symbol resolution, returning a dynamic type
    * definition as a fallback for unknown symbol identifiers
    * allows project-external imports to still be used without
-   * validation failures. Validators should, however, affirm
+   * validation failures. Validators should, however, verify
    * that the searched identifier is in scope.
    */
   public getSymbolType (symbolIdentifier: SymbolIdentifier): TypeDefinition {
-    const { type } = this.getSymbol(symbolIdentifier);
+    return this.getSymbol(symbolIdentifier).type;
+  }
 
-    return type;
+  private createDynamicSymbol (name?: string): ISymbol {
+    return {
+      identifier: name,
+      name,
+      type: TypeUtils.createSimpleType(Dynamic)
+    };
   }
 }

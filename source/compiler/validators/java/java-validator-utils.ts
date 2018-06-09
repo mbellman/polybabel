@@ -2,6 +2,7 @@ import ScopeManager from '../../ScopeManager';
 import SymbolDictionary from '../../symbol-resolvers/common/SymbolDictionary';
 import { ArrayType } from '../../symbol-resolvers/common/array-type';
 import { Dynamic, ISimpleType, Primitive, TypeDefinition } from '../../symbol-resolvers/common/types';
+import { IValidationHelper } from '../common/types';
 import { JavaConstants } from '../../../parser/java/java-constants';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
 import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
@@ -59,14 +60,12 @@ export namespace JavaValidatorUtils {
    * types. In order to ensure statement type consistency, we use
    * a JavaStatementValidator separately. This utility should only
    * be used if statement nodes are determined to be valid.
-   *
-   * @see JavaStatementValidator
    */
-  export function getStatementType (statement: JavaSyntax.IJavaStatement, symbolDictionary: SymbolDictionary, scopeManager: ScopeManager): TypeDefinition {
+  export function getStatementType (statement: JavaSyntax.IJavaStatement, validationHelper: IValidationHelper): TypeDefinition {
     const { leftSide, operator, rightSide } = statement;
 
     if (statement.isParenthetical) {
-      return getStatementType(leftSide as JavaSyntax.IJavaStatement, symbolDictionary, scopeManager);
+      return getStatementType(leftSide as JavaSyntax.IJavaStatement, validationHelper);
     } else if (!leftSide && operator) {
       return inferTypeFromLeftOperation(operator.operation);
     }
@@ -76,8 +75,8 @@ export namespace JavaValidatorUtils {
         const literal = leftSide as JavaSyntax.IJavaLiteral;
 
         if (literal.type === JavaSyntax.JavaLiteralType.ARRAY) {
-          const arrayTypeDefiner = new ArrayType.Definer(symbolDictionary);
-          const firstElementType = getStatementType(literal.value[0] as JavaSyntax.IJavaStatement, symbolDictionary, scopeManager);
+          const arrayTypeDefiner = new ArrayType.Definer(validationHelper.symbolDictionary);
+          const firstElementType = getStatementType(literal.value[0] as JavaSyntax.IJavaStatement, validationHelper);
 
           arrayTypeDefiner.defineElementType(firstElementType);
 
@@ -88,21 +87,21 @@ export namespace JavaValidatorUtils {
       case JavaSyntax.JavaSyntaxNode.INSTANTIATION:
         const instantiation = leftSide as JavaSyntax.IJavaInstantiation;
         const { constructor } = instantiation;
+        const constructorType = validationHelper.findTypeDefinition(constructor.namespaceChain);
         const isArrayInstantiation = !!instantiation.arrayAllocationSize || !!instantiation.arrayLiteral;
 
         if (isArrayInstantiation) {
-          const arrayTypeDefiner = new ArrayType.Definer(symbolDictionary);
+          const arrayTypeDefiner = new ArrayType.Definer(validationHelper.symbolDictionary);
 
-          arrayTypeDefiner.defineElementType(constructor.namespaceChain.join('.'));
+          arrayTypeDefiner.defineElementType(constructorType);
 
           return arrayTypeDefiner;
         } else {
-          const symbolIdentifier = constructor.namespaceChain.join('.');
           const isAnonymousObjectInstantiation = !!instantiation.anonymousObjectBody;
 
-          // TODO: Resolve anonymous object type if necessary
-          // TODO: Constrain generic types
-          return symbolDictionary.getSymbolType(symbolIdentifier);
+          // TODO: Resolve anonymous object type for anonymous object instantiations
+          // TODO: Resolve constrained generic types
+          return constructorType;
         }
       default:
         return TypeUtils.createSimpleType(Dynamic);

@@ -11,10 +11,8 @@ export namespace ArrayType {
     protected elementType: TypeDefinition;
 
     public getElementType (): TypeDefinition {
-      if (typeof this.elementType === 'string') {
-        const { type } = this.symbolDictionary.getSymbol(this.elementType);
-
-        this.elementType = type;
+      if (this.elementType instanceof Array) {
+        this.elementType = this.symbolDictionary.getFirstDefinedSymbol(this.elementType).type;
       }
 
       return this.elementType;

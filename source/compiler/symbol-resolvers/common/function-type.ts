@@ -19,10 +19,8 @@ export namespace FunctionType {
     public getArgumentTypes (): TypeDefinition[] {
       if (!this.didResolveArgumentTypes) {
         this.argumentTypes.forEach((argumentType, index) => {
-          if (typeof argumentType === 'string') {
-            const { type } = this.symbolDictionary.getSymbol(argumentType);
-
-            this.argumentTypes[index] = type;
+          if (argumentType instanceof Array) {
+            this.argumentTypes[index] = this.symbolDictionary.getFirstDefinedSymbol(argumentType).type;
           }
         });
 
@@ -33,10 +31,8 @@ export namespace FunctionType {
     }
 
     public getReturnType (): TypeDefinition {
-      if (typeof this.returnType === 'string') {
-        const { type } = this.symbolDictionary.getSymbol(this.returnType);
-
-        this.returnType = type;
+      if (this.returnType instanceof Array) {
+        this.returnType = this.symbolDictionary.getFirstDefinedSymbol(this.returnType).type;
       }
 
       return this.returnType;

@@ -116,16 +116,16 @@ export namespace ObjectType {
     }
 
     private ensureObjectMemberHasDefinition (objectMember: IObjectMember): void {
-      if (typeof objectMember.type === 'string') {
-        objectMember.type = this.symbolDictionary.getSymbolType(objectMember.type);
+      if (objectMember.type instanceof Array) {
+        objectMember.type = this.symbolDictionary.getFirstDefinedSymbol(objectMember.type).type;
       }
     }
 
     private ensureSupertypeHasDefinition (index: number): void {
       const supertype = this.supertypes[index];
 
-      if (typeof supertype === 'string') {
-        this.supertypes[index] = this.symbolDictionary.getSymbolType(supertype);
+      if (supertype instanceof Array) {
+        this.supertypes[index] = this.symbolDictionary.getFirstDefinedSymbol(supertype).type;
       }
     }
 
