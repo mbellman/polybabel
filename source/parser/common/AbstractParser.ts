@@ -326,20 +326,6 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
     return (this.constructor as any as IDecoratedParser)[field];
   }
 
-  /**
-   * Returns a formatted and source-attributed error message from an
-   * arbitrary original error message. The formatting mimics that of
-   * a validation-time error as closely as possible.
-   */
-  private getNormalizedErrorMessage (message: string): string {
-    const messageIsAlreadyNormalized = message.indexOf('...') > -1;
-    const currentLine = this.currentToken.line;
-
-    return messageIsAlreadyNormalized
-      ? message
-      : `${message} (${this.constructor.name})\n ${chalk.yellow(`${currentLine}`)}. ... ${chalk.white(`${TokenUtils.createLinePreview(this.currentToken)}`)}`;
-  }
-
   private handleSanitizers (): void {
     const sanitizers = this.getDecoratedField('sanitizers') || [];
 
