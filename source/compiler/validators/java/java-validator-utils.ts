@@ -1,10 +1,11 @@
-import ScopeManager from '../../ScopeManager';
-import SymbolDictionary from '../../symbol-resolvers/common/SymbolDictionary';
 import { ArrayType } from '../../symbol-resolvers/common/array-type';
+import { Callback } from '../../../system/types';
 import { Dynamic, ISimpleType, Primitive, TypeDefinition, Void } from '../../symbol-resolvers/common/types';
+import { IToken } from '../../../tokenizer/types';
 import { IValidationHelper } from '../common/types';
 import { JavaConstants } from '../../../parser/java/java-constants';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
+import { TokenUtils } from '../../../tokenizer/token-utils';
 import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
 
 export namespace JavaValidatorUtils {

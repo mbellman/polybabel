@@ -4,6 +4,7 @@ import JavaStatementTranslator from './JavaStatementTranslator';
 import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
 import { JavaTranslatorUtils } from './java-translator-utils';
+import JavaClassTranslator from './JavaClassTranslator';
 
 export default class JavaInterfaceTranslator extends AbstractTranslator<JavaSyntax.IJavaInterface> {
   @Implements protected translate (): void {
@@ -23,7 +24,7 @@ export default class JavaInterfaceTranslator extends AbstractTranslator<JavaSynt
         () => this.emit(',').newline()
       )
       .exitBlock()
-      .emit('};');
+      .emit('}');
   }
 
   private emitMember (member: JavaSyntax.JavaObjectMember): void {
@@ -33,6 +34,14 @@ export default class JavaInterfaceTranslator extends AbstractTranslator<JavaSynt
         break;
       case JavaSyntax.JavaSyntaxNode.OBJECT_METHOD:
         this.emitMethod(member as JavaSyntax.IJavaObjectMethod);
+        break;
+      case JavaSyntax.JavaSyntaxNode.CLASS:
+        this.emitKey(member.name)
+          .emitNodeWith(JavaClassTranslator, member as JavaSyntax.IJavaClass);
+        break;
+      case JavaSyntax.JavaSyntaxNode.INTERFACE:
+        this.emitKey(member.name)
+          .emitNodeWith(JavaInterfaceTranslator, member as JavaSyntax.IJavaInterface);
         break;
     }
   }

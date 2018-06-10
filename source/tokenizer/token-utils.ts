@@ -53,40 +53,38 @@ export namespace TokenUtils {
   }
 
   /**
-   * Returns a special token searcher function which steps
-   * through the token stream using a provided step function,
-   * with the goal of determining whether a predicate-qualifying
-   * or predicate-disqualifying token is eventually reached.
-   * This ultimately makes composing lookahead or lookbehind
-   * routines easier than constructing loops manually.
-   *
-   * The provided search test qualifier evaluates the current
-   * token and determines whether we're ready to evaluate it
-   * with an actual search qualifier. If the search qualifier
-   * returns true, the search is successful; otherwise it fails.
-   *
-   * The provided search disqualifier is evaluated each time
-   * the search test qualifier fails, and if it returns true
-   * before the next step cycle, the search fails. Otherwise,
-   * we continue to the next step and repeat the cycle.
+   * Returns a special token search function which steps through
+   * a token stream, starting at a given token, using a provided
+   * step function, returning the token if the search qualifier
+   * returns true and null if the search disqualifier returns
+   * true. The token stream is stepped through until one of the
+   * two returns true, or the step function returns undefined
+   * or an EOF token.
    */
-  export function createTokenSearchPredicate (
-    tokenStepFunction: Callback<IToken>,
-    searchTestQualifier: TokenPredicate,
-    searchQualifier: TokenPredicate,
-    searchDisqualifier: TokenPredicate
-  ): TokenPredicate {
+  export function createTokenSearcher (tokenStepFunction: Callback<IToken, IToken>, searchQualifier: TokenPredicate, searchDisqualifier: TokenPredicate): Callback<IToken, IToken> {
     return (token: IToken) => {
       while ((token = tokenStepFunction(token)) && !isEOF(token)) {
-        if (searchTestQualifier(token)) {
-          return searchQualifier(token);
+        if (searchQualifier(token)) {
+          return token;
         } else if (searchDisqualifier(token)) {
-          return false;
+          return null;
         }
       }
 
-      return false;
+      return null;
     };
+  }
+
+  /**
+   * Follows the same principles as createTokenSearcher(), but
+   * creates a function which returns a boolean determining
+   * whether the token was found, instead of the token itself
+   * or null.
+   */
+  export function createTokenSearchPredicate (tokenStepFunction: Callback<IToken, IToken>, searchQualifier: TokenPredicate, searchDisqualifier: TokenPredicate): TokenPredicate {
+    const searchToken = createTokenSearcher(tokenStepFunction, searchQualifier, searchDisqualifier);
+
+    return (token: IToken) => !!searchToken(token);
   }
 
   /**

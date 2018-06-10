@@ -66,7 +66,7 @@ export namespace ObjectType {
 
           const supertype = this.supertypes[i];
 
-          if (supertype instanceof ObjectType.Definition) {
+          if (supertype instanceof ObjectType.Definition && supertype !== this) {
             supertype.forEachMember(handleMember);
           }
         }

@@ -101,3 +101,11 @@ export interface IParseSequenceConfiguration<V extends ISyntaxNode> {
   delimiter: TokenMatch;
   terminator: TokenMatch;
 }
+
+/**
+ * @todo @description
+ */
+export interface IParserError {
+  message: string;
+  token?: IToken;
+}

@@ -72,7 +72,7 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
       .newlineIfDidEmit()
       .emit(`return ${name};`)
       .exitBlock()
-      .emit('})();');
+      .emit('})()');
   }
 
   private addMemberToMap (member: JavaSyntax.JavaObjectMember): void {
@@ -244,6 +244,8 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
     }
 
     if (hasInstanceMethods) {
+      // We only need to emit methods here, since fields will
+      // have been emitted in the class constructor function
       this.newlineIfDidEmit()
         .emitInstanceMethods();
     }
@@ -255,6 +257,7 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
     return this.emit('(function(){')
       .enterBlock()
       .emitNodeWith(Translator, object)
+      .emit(';')
       .newline()
       .emit(`return ${object.name};`)
       .exitBlock()

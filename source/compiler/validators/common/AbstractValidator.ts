@@ -3,23 +3,24 @@ import { Callback } from '../../../system/types';
 import { Constructor, IConstructable } from 'trampoline-framework';
 import { Dynamic, TypeDefinition } from '../../symbol-resolvers/common/types';
 import { ISyntaxNode } from '../../../parser/common/syntax-types';
+import { IToken } from '../../../tokenizer/types';
 import { IValidationError, IValidationHelper } from './types';
 import { ObjectType } from '../../symbol-resolvers/common/object-type';
 import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
-import { ValidatorUtils } from './validator-utils';
 import { TypeValidation } from './type-validation';
+import { ValidatorUtils } from './validator-utils';
 
 export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxNode> {
   protected context: ValidatorContext;
   protected syntaxNode: S;
   protected validationHelper: IValidationHelper;
-  private focusedSyntaxNode: ISyntaxNode;
+  private focusedToken: IToken;
   private parentValidator: AbstractValidator;
 
   public constructor (context: ValidatorContext, syntaxNode: S) {
     this.context = context;
     this.syntaxNode = syntaxNode;
-    this.focusedSyntaxNode = syntaxNode;
+    this.focusedToken = syntaxNode.token;
 
     this.validationHelper = {
       symbolDictionary: this.context.symbolDictionary,
@@ -62,7 +63,7 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
 
     this.check(
       TypeValidation.typeMatches(type, expectedTypeDefinition),
-      `Type '${typeDescription}' does not match expected ${expectation} '${expectedTypeDescription}'`
+      `'${typeDescription}' does not match expected ${expectation} '${expectedTypeDescription}'`
     );
   }
 
@@ -190,20 +191,18 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     return TypeUtils.createSimpleType(Dynamic);
   }
 
-  protected focus (syntaxNode: ISyntaxNode): void {
-    this.focusedSyntaxNode = syntaxNode;
+  protected focus (token: IToken): void {
+    this.focusedToken = token || this.focusedToken;
   }
 
   protected getNamespacedIdentifier (identifier: string): string {
-    return this.context.getCurrentNamespace() + identifier;
+    return `${this.context.getCurrentNamespace()}.${identifier}`;
   }
 
   protected report (message: string): void {
-    const { token } = this.focusedSyntaxNode;
-
     this.context.errors.push({
-      message: `Line ${token.line}: ${message}`,
-      token
+      message,
+      token: this.focusedToken
     });
   }
 

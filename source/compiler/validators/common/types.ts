@@ -1,4 +1,5 @@
 import SymbolDictionary from '../../symbol-resolvers/common/SymbolDictionary';
+import { IParserError } from '../../../parser/common/parser-types';
 import { IToken } from '../../../tokenizer/types';
 import { TypeDefinition } from '../../symbol-resolvers/common/types';
 
@@ -13,10 +14,7 @@ export interface IValidationHelper {
 /**
  * @todo @description
  */
-export interface IValidationError {
-  message: string;
-  token?: IToken;
-}
+export interface IValidationError extends IParserError { }
 
 /**
  * An object containing an expected type definition queued up

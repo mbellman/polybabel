@@ -6,6 +6,8 @@ import { ObjectCategory, TypeDefinition } from '../../symbol-resolvers/common/ty
 import { FunctionType } from '../../symbol-resolvers/common/function-type';
 import { JavaValidatorUtils } from './java-validator-utils';
 import { ValidatorUtils } from '../common/validator-utils';
+import { JavaConstants } from '../../../parser/java/java-constants';
+import { TokenUtils } from '../../../tokenizer/token-utils';
 
 export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyntax.IJavaObjectMethod> {
   @Implements public validate (): void {
@@ -15,7 +17,7 @@ export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyn
     const identifier = `${parentObjectType.name}.${name}`;
     const returnTypeDefinition = JavaValidatorUtils.getTypeDefinition(type, this.validationHelper);
 
-    this.focus(type);
+    this.focus(type.token);
 
     if (returnTypeDefinition instanceof FunctionType.Definition) {
       const returnTypeDescription = ValidatorUtils.getTypeDescription(returnTypeDefinition);
@@ -29,6 +31,10 @@ export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyn
     });
 
     if (isAbstract) {
+      const abstractKeywordToken = ValidatorUtils.findKeywordToken(JavaConstants.Keyword.ABSTRACT, type.token, token => token.previousTextToken);
+
+      this.focus(abstractKeywordToken);
+
       this.check(
         !isInterfaceMethod,
         `Interface method '${identifier}' cannot be abstract`

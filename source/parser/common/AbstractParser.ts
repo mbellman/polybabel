@@ -1,7 +1,7 @@
 import chalk from 'chalk';
-import { BaseOf, Without } from '../../system/types';
+import { BaseOf, Callback, Without } from '../../system/types';
 import { Constructor, IConstructable } from 'trampoline-framework';
-import { IDecoratedTokenMatcher, IParseSequenceConfiguration, TokenMatch, TokenMatcherType, ISanitizer, IDecoratedParser } from './parser-types';
+import { IDecoratedParser, IDecoratedTokenMatcher, IParserError, IParseSequenceConfiguration, ISanitizer, TokenMatch, TokenMatcherType } from './parser-types';
 import { ISyntaxNode } from './syntax-types';
 import { IToken, TokenType } from '../../tokenizer/types';
 import { ParserUtils } from './parser-utils';
@@ -11,6 +11,12 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
   protected currentToken: IToken;
   protected indentation: number = 0;
   protected parsed: S = this.getDefault();
+
+  private error: IParserError = {
+    message: null,
+    token: null
+  };
+
   private isFinished: boolean = false;
   private isStopped: boolean = false;
 
@@ -38,6 +44,14 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
    */
   protected constructor () { }
 
+  public getError (): IParserError {
+    return this.error;
+  }
+
+  public hasError (): boolean {
+    return !!this.error.message;
+  }
+
   /**
    * Receives a single {token} and attempts to parse and return a
    * syntax tree or syntax node object by streaming through the
@@ -48,16 +62,10 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
 
     try {
       this.stream();
-    } catch (e) {
-      // Catching errors here allows both intentional halting errors
-      // and actual subclass design/runtime errors to be displayed,
-      // properly attributed to the source. We then throw the error
-      // again to propagate it up to the file compilation loop so
-      // it can be displayed in the context of the source file,
-      // which is unknown to parsers.
-      const message = this.getNormalizedErrorMessage(e.message);
-
-      throw new Error(message);
+    } catch ({ message }) {
+      // Propagate the error up the parsing stack so we can stop
+      // the current file's parsing stream
+      this.throw(message);
     }
 
     this.parsed.token = token;
@@ -194,12 +202,12 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
   protected onFirstToken (): void { }
 
   /**
-   * Attempts to parse a token stream starting from the current token
-   * using a provided parser class which subclasses AbstractParser, or
-   * instance thereof. If successful, assigns the current token to the
-   * final token reached by the parser and returns the parsed syntax
-   * object its parse() returned. Otherwise the provided parser class
-   * will control halting and error messaging behavior.
+   * Attempts to parse a token stream starting from the current
+   * token using a provided AbstractParser subclass. If successful,
+   * assigns the current token to the final token reached by the
+   * parser and returns the parsed syntax object its parse()
+   * returned. Otherwise the provided parser class will control
+   * halting and error messaging behavior.
    *
    * This method is intended as the main API for parsing recursively.
    * Rather than requiring parent parser classes to be responsible
@@ -208,15 +216,8 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
    * reassigning their own current tokens to the final token of the
    * child parser, we just contain the work here.
    */
-  protected parseNextWith <T extends ISyntaxNode>(parser: Constructor<AbstractParser<T>>): T;
-  protected parseNextWith <T extends ISyntaxNode>(parser: AbstractParser<T>): T;
-  protected parseNextWith <T extends ISyntaxNode>(parser: Constructor<AbstractParser<T>> | AbstractParser<T>): T {
-    const parserInstance = parser instanceof AbstractParser
-      ? parser
-      : this.createParser(parser);
-
-    this.provideSanitizers(parserInstance);
-
+  protected parseNextWith <T extends ISyntaxNode>(parser: Constructor<AbstractParser<T>>): T {
+    const parserInstance = this.createChildParser(parser);
     const parsed = parserInstance.parse(this.currentToken);
 
     this.currentToken = parserInstance.token();
@@ -260,8 +261,20 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
     this.isStopped = true;
   }
 
+  /**
+   * Assigns a message and error to the current parsing error object, and
+   * throws an error to propagate up the parsing stack. As soon as a parser
+   * has reason to throw an error, the file's entire parsing stream must be
+   * stopped to avoid a parsing error cascade following the erroneous token.
+   * If an error has already been assigned, we need not reassign one.
+   */
   protected throw (message: string): void {
-    throw new Error(message);
+    if (!this.error.message) {
+      this.error.message = message;
+      this.error.token = this.currentToken;
+    }
+
+    throw new Error();
   }
 
   protected token (): IToken {
@@ -269,10 +282,11 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
   }
 
   /**
-   * Runs during each cycle of the parsing stream, looping over each token
-   * matcher generated by a @Match() decorator to see whether the current
-   * token satisfies its token match. If a match is found, the decorated
-   * method is called. If no matches are found, the parser halts.
+   * Runs during each cycle of the parsing stream, looping over each
+   * token matcher generated by a @Match() decorator to see whether
+   * the current token satisfies its token match. If a match is found,
+   * the decorated method is called. If no matches are found, the
+   * parser halts.
    */
   private checkStreamMatchers (): void {
     const matchers: IDecoratedTokenMatcher[] = (this.constructor as any).streamMatchers || [];
@@ -290,8 +304,19 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
     this.halt();
   }
 
-  private createParser <A extends AbstractParser>(ParserClass: Constructor<A>): A {
-    return new (ParserClass as IConstructable<A>)();
+  /**
+   * Instantiates a parser class and provides it with the necessary
+   * instance or static values to maintain the parsing stream's
+   * contextual information.
+   */
+  private createChildParser <A extends AbstractParser>(ParserClass: Constructor<A>): A {
+    const parser = new (ParserClass as IConstructable<A>)();
+
+    this.provideSanitizers(parser);
+
+    parser.error = this.error;
+
+    return parser;
   }
 
   /**
@@ -307,11 +332,12 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
    * a validation-time error as closely as possible.
    */
   private getNormalizedErrorMessage (message: string): string {
-    const messageIsAlreadyNormalized = message.indexOf('->') > -1;
+    const messageIsAlreadyNormalized = message.indexOf('...') > -1;
+    const currentLine = this.currentToken.line;
 
     return messageIsAlreadyNormalized
       ? message
-      : `Line ${this.currentToken.line}: ${message} (${this.constructor.name})\n${chalk.white(` -> ${TokenUtils.createLinePreview(this.currentToken)}`)}`;
+      : `${message} (${this.constructor.name})\n ${chalk.yellow(`${currentLine}`)}. ... ${chalk.white(`${TokenUtils.createLinePreview(this.currentToken)}`)}`;
   }
 
   private handleSanitizers (): void {

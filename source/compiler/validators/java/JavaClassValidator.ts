@@ -12,7 +12,7 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
   private ownTypeDefinition: ObjectType.Definition;
 
   @Implements public validate (): void {
-    const { name, extended, implemented, constructors } = this.syntaxNode;
+    const { name, extended, implemented, constructors, token } = this.syntaxNode;
 
     this.ownTypeDefinition = this.findTypeDefinitionByName(name) as ObjectType.Definition;
 
@@ -41,7 +41,7 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
 
   private validateImplementations (implementations: JavaSyntax.IJavaType[]): void {
     for (const implementation of implementations) {
-      this.focus(implementation);
+      this.focus(implementation.token);
 
       const type = this.findTypeDefinition(implementation.namespaceChain);
       const name = implementation.namespaceChain.join('.');
@@ -56,27 +56,32 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
     }
   }
 
-  private validateSuperclass (superclass: JavaSyntax.IJavaType): void {
-    this.focus(superclass);
+  private validateSuperclass (superclassType: JavaSyntax.IJavaType): void {
+    this.focus(superclassType.token);
 
-    const supertype = this.findTypeDefinition(superclass.namespaceChain);
-    const name = superclass.namespaceChain.join('.');
-    const supertypeIsClass = ValidatorUtils.isClassType(supertype);
+    const superTypeDefinition = this.findTypeDefinition(superclassType.namespaceChain);
+    const name = superclassType.namespaceChain.join('.');
+    const supertypeIsClass = ValidatorUtils.isClassType(superTypeDefinition);
 
     this.check(
-      ValidatorUtils.isSimpleTypeOf(Dynamic, supertype) || supertypeIsClass,
+      this.ownTypeDefinition !== superTypeDefinition,
+      `Class '${this.syntaxNode.name}' cannot extend itself`
+    );
+
+    this.check(
+      ValidatorUtils.isSimpleTypeOf(Dynamic, superTypeDefinition) || supertypeIsClass,
       `Class '${this.syntaxNode.name}' cannot extend non-class '${name}'`
     );
 
     this.check(
       supertypeIsClass
-        ? (supertype as ObjectType.Definition).isExtensible
+        ? (superTypeDefinition as ObjectType.Definition).isExtensible
         : true,
       `Class '${name}' is not extensible`
     );
 
     if (supertypeIsClass) {
-      (supertype as ObjectType.Definition).forEachMember((superObjectMember, memberName) => {
+      (superTypeDefinition as ObjectType.Definition).forEachMember((superObjectMember, memberName) => {
         if (superObjectMember.requiresImplementation && !this.isAbstractClass()) {
           this.check(
             this.ownTypeDefinition.hasOwnObjectMember(memberName),

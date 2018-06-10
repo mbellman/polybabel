@@ -4,9 +4,9 @@ import interfaces.IExampleInterface;
 
 public class ExampleImplementation implements IExampleInterface {
   String example = 'Hello!';
-  Number number = 10;
+  Number num = 10;
 
-  String getExample () {
-    return example;
+  Number getExample () {
+    return num;
   }
 }

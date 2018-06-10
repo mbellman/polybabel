@@ -39,23 +39,20 @@ export default class JavaBlockValidator extends AbstractValidator<JavaSyntax.IJa
     this.context.scopeManager.exitScope();
   }
 
-  private getParentMethodIdentifier (): string {
-    return this.getNamespacedIdentifier(this.parentMethodNode.name);
-  }
-
   private validateReturnStatement (returnStatement: JavaSyntax.IJavaStatement): void {
     const isInsideInitializer = this.parentMethodNode === null;
 
-    this.focus(returnStatement);
+    this.focus(returnStatement.token);
 
     if (isInsideInitializer) {
       this.report(`Initializer blocks cannot return values.`);
     } else {
+      const parentMethodIdentifier = this.getNamespacedIdentifier(this.parentMethodNode.name);
       const { type: parentMethodReturnType } = this.context.getCurrentExpectedType();
       const isVoidMethod = ValidatorUtils.isSimpleTypeOf(Void, parentMethodReturnType);
 
       if (isVoidMethod) {
-        this.report(`Void method '${this.getParentMethodIdentifier()}' cannot return a value`);
+        this.report(`Void method '${parentMethodIdentifier}' cannot return a value`);
       } else {
         const returnStatementType = JavaValidatorUtils.getStatementType(returnStatement, this.validationHelper);
 

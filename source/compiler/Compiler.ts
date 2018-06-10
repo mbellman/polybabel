@@ -14,7 +14,7 @@ type CompilerError = [ string, IValidationError ];
 /**
  * @internal
  */
-type CompilerErrorHandler = (file: string, message: string, linePreview?: string) => void;
+type CompilerErrorHandler = (file: string, message: string, line: number, linePreview?: string) => void;
 
 export default class Compiler {
   private compiledCodeMap: IHashMap<string> = {};
@@ -24,6 +24,10 @@ export default class Compiler {
   private symbolDictionary: SymbolDictionary = new SymbolDictionary();
 
   public add (file: string, syntaxTree: ISyntaxTree): void {
+    if (!syntaxTree) {
+      return;
+    }
+
     this.syntaxTreeMap[file] = syntaxTree;
 
     const { SymbolResolver } = LanguageSpecification[syntaxTree.language];
@@ -38,24 +42,22 @@ export default class Compiler {
   public compileFile (file: string): void {
     const syntaxTree = this.syntaxTreeMap[file];
 
-    if (syntaxTree) {
-      const { Validator, Translator } = LanguageSpecification[syntaxTree.language];
-      const validationContext = new ValidatorContext(this.formatFilename(file), this.symbolDictionary);
-      const validator = new Validator(validationContext, syntaxTree);
+    if (!syntaxTree) {
+      return;
+    }
 
-      validator.validate();
+    const { Validator, Translator } = LanguageSpecification[syntaxTree.language];
+    const validationContext = new ValidatorContext(this.formatFilename(file), this.symbolDictionary);
+    const validator = new Validator(validationContext, syntaxTree);
 
-      if (validator.hasErrors()) {
-        validator.forErrors(reportedError => this.addError(file, reportedError));
-      } else {
-        const translation = new Translator(syntaxTree).getTranslation();
+    validator.validate();
 
-        this.compiledCodeMap[file] = translation;
-      }
+    if (validator.hasErrors()) {
+      validator.forErrors(reportedError => this.addError(file, reportedError));
     } else {
-      this.addError(file, {
-        message: 'Missing file'
-      });
+      const translation = new Translator(syntaxTree).getTranslation();
+
+      this.compiledCodeMap[file] = translation;
     }
   }
 
@@ -65,11 +67,13 @@ export default class Compiler {
 
   public forEachError (handler: CompilerErrorHandler): void {
     this.errors.forEach(([ file, { message, token } ]) => {
+      const line = token ? token.line : 0;
+
       const linePreview = token
         ? TokenUtils.createLinePreview(token)
-        : null;
+        : '';
 
-      handler(file, message, linePreview);
+      handler(file, message, line, linePreview);
     });
   }
 

@@ -9,6 +9,7 @@ import { LanguageSpecification } from '../source/language-specifications';
 
 @Wired @Automated class Demo {
   private static readonly EDITOR_CONTENT_LOCALSTORAGE_KEY = 'polybabel-demo-editor-content';
+  private static readonly FILE_NAME = 'demo';
   private static readonly RECOMPILATION_DELAY = 400;
 
   @Autowired()
@@ -76,19 +77,26 @@ import { LanguageSpecification } from '../source/language-specifications';
     let syntaxTree: ISyntaxTree;
 
     // Compilation
-    try {
-      this.compilationStartTime = Date.now();
+    this.compilationStartTime = Date.now();
 
+    try {
       const { Parser } = LanguageSpecification[Language.JAVA];
       const firstToken = tokenize(editorContent);
+      const parser = new Parser();
 
-      syntaxTree = new Parser().parse(firstToken);
+      try {
+        syntaxTree = parser.parse(firstToken);
+      } catch (e) { }
 
-      this.compiler.add('demo', syntaxTree);
-      this.compiler.compileFile('demo');
+      if (parser.hasError()) {
+        this.compiler.addError(Demo.FILE_NAME, parser.getError());
+      }
     } catch ({ message }) {
-      this.compiler.addError('demo', { message });
+      this.compiler.addError(Demo.FILE_NAME, { message });
     }
+
+    this.compiler.add(Demo.FILE_NAME, syntaxTree);
+    this.compiler.compileFile(Demo.FILE_NAME);
 
     // Post-compilation output
     if (this.compiler.hasErrors()) {
@@ -139,8 +147,12 @@ import { LanguageSpecification } from '../source/language-specifications';
   private showCompilerErrors (): void {
     const errors: string[] = [];
 
-    this.compiler.forEachError((file, message, linePreview) => {
-      errors.push(`Compilation Error: ${message}${linePreview ? ` --> <b>${linePreview}</b>` : ''}`);
+    this.compiler.forEachError((file, message, line, linePreview) => {
+      errors.push(
+        `Compilation Error: ${message}` +
+        `${line ? ` (Line ${line}):` : ''}` +
+        `${linePreview ? ` --> <b>${linePreview}</b>` : ''}`
+      );
     });
 
     this.showOutput(errors.join('<br />'));

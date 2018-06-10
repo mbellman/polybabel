@@ -73,8 +73,10 @@ export namespace JavaUtils {
    */
   const isNonTrivialCast = TokenUtils.createTokenSearchPredicate(
     token => token.nextTextToken,
-    ({ value }) => value === ')',
-    token => !ParserUtils.tokenMatches(token.nextTextToken, InvalidCastValueTokens),
+    ({ value, nextTextToken}) => (
+      value === ')' &&
+      !ParserUtils.tokenMatches(nextTextToken, InvalidCastValueTokens)
+    ),
     token => ParserUtils.tokenMatches(token, InvalidTypeTokens)
   );
 
@@ -88,8 +90,10 @@ export namespace JavaUtils {
    */
   const isMultiParameterLambdaExpression = TokenUtils.createTokenSearchPredicate(
     token => token.nextTextToken,
-    ({ value }) => value === ')',
-    token => isLambdaExpressionArrow(token.nextTextToken),
+    ({ value, nextTextToken }) => (
+      value === ')' &&
+      isLambdaExpressionArrow(nextTextToken)
+    ),
     token => ParserUtils.tokenMatches(token, InvalidTypeTokens)
   );
 
@@ -132,7 +136,6 @@ export namespace JavaUtils {
   const isGenericBlock = TokenUtils.createTokenSearchPredicate(
     token => token.nextTextToken,
     ({ value }) => value === '>',
-    token => true,
     token => ParserUtils.tokenMatches(token, InvalidTypeTokens)
   );
 

@@ -1,7 +1,10 @@
-import { Dynamic, ISimpleType, ObjectCategory, Primitive, TypeDefinition, Void } from '../../symbol-resolvers/common/types';
-import { ObjectType } from '../../symbol-resolvers/common/object-type';
 import { ArrayType } from '../../symbol-resolvers/common/array-type';
+import { Callback } from '../../../system/types';
+import { Dynamic, ISimpleType, ObjectCategory, Primitive, TypeDefinition, Void } from '../../symbol-resolvers/common/types';
 import { FunctionType } from '../../symbol-resolvers/common/function-type';
+import { IToken } from '../../../tokenizer/types';
+import { ObjectType } from '../../symbol-resolvers/common/object-type';
+import { TokenUtils } from '../../../tokenizer/token-utils';
 
 export namespace ValidatorUtils {
   export function isSimpleType (typeDefinition: TypeDefinition): boolean {
@@ -41,5 +44,24 @@ export namespace ValidatorUtils {
     } else {
       return (typeDefinition as ISimpleType).type;
     }
+  }
+
+  /**
+   * Finds a token corresponding to a provided keyword, given a
+   * starting token and token step function. This is a special
+   * contingency to retrieve keyword tokens so they can be focused
+   * during error reporting when the original token reference is
+   * unavailable.
+   *
+   * Found tokens must be on the same line as the starting token.
+   */
+  export function findKeywordToken (keyword: string, startingToken: IToken, tokenStepFunction: Callback<IToken, IToken>): IToken {
+    const searchKeywordToken = TokenUtils.createTokenSearcher(
+      tokenStepFunction,
+      token => token.value === keyword,
+      token => TokenUtils.isStartOfLine(token)
+    );
+
+    return searchKeywordToken(startingToken);
   }
 }

@@ -49,7 +49,16 @@ async function createCompiler (inputFolderName: string, files: string[]): Promis
       const { Parser } = LanguageSpecification[language];
       const fileContents = await getFileContents(`${cwd}/${inputFolderName}/${file}`);
       const firstToken = tokenize(fileContents);
-      const syntaxTree = new Parser().parse(firstToken);
+      const parser = new Parser();
+      let syntaxTree: ISyntaxTree;
+
+      try {
+        syntaxTree = parser.parse(firstToken);
+      } catch (e) { }
+
+      if (parser.hasError()) {
+        compiler.addError(file, parser.getError());
+      }
 
       compiler.add(file, syntaxTree);
     } catch ({ message }) {
@@ -75,11 +84,11 @@ async function main (args: string[]) {
   compiler.run();
 
   if (compiler.hasErrors()) {
-    compiler.forEachError((file, message, linePreview) => {
-      console.log(`\n${chalk.bgRed.white(` ${file}: `)} ${chalk.redBright(message)}`);
+    compiler.forEachError((file, message, line, linePreview) => {
+      console.log(`\n${chalk.blue(`${file}`)}: ${chalk.redBright(message)}`);
 
-      if (linePreview) {
-        console.log(` -> ${linePreview}`);
+      if (line && linePreview) {
+        console.log(` ${chalk.yellow(`${line}`)}. ... ${linePreview}`);
       }
     });
 
