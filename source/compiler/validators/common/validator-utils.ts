@@ -36,6 +36,7 @@ export namespace ValidatorUtils {
     } else if (typeDefinition instanceof FunctionType.Definition) {
       const returnTypeDescription = getTypeDescription(typeDefinition.getReturnType());
 
+      // TODO: Output function argument types
       return `Function => ${returnTypeDescription}`;
     } else {
       return (typeDefinition as ISimpleType).type;

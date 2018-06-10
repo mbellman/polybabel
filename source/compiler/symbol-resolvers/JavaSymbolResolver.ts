@@ -91,7 +91,7 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
     }
 
     return (
-      JavaValidatorUtils.getNativeType(typeName) ||
+      JavaValidatorUtils.getNativeTypeDefinition(typeName) ||
       this.getPossibleSymbolIdentifiers(typeName)
     );
   }

@@ -3,7 +3,7 @@ import ScopeManager from '../../ScopeManager';
 import SymbolDictionary from '../../symbol-resolvers/common/SymbolDictionary';
 import { IHashMap } from 'trampoline-framework';
 import { ISymbol, TypeDefinition } from '../../symbol-resolvers/common/types';
-import { IValidationError } from './types';
+import { IValidationError, IExpectedType } from './types';
 
 /**
  * A container providing access to essential validation APIs
@@ -16,8 +16,9 @@ export default class ValidatorContext {
   public scopeManager: ScopeManager<TypeDefinition> = new ScopeManager();
   public symbolDictionary: SymbolDictionary;
   public errors: IValidationError[] = [];
-  public namespaceStack: string[] = [];
-  public importToSourceFileMap: IHashMap<string> = {};
+  private expectedTypeStack: IExpectedType[] = [];
+  private importToSourceFileMap: IHashMap<string> = {};
+  private namespaceStack: string[] = [];
 
   public constructor (file: string, symbolDictionary: SymbolDictionary) {
     this.file = file;
@@ -32,7 +33,27 @@ export default class ValidatorContext {
     this.namespaceStack.pop();
   }
 
+  public expectType (expectedType: IExpectedType): void {
+    this.expectedTypeStack.push(expectedType);
+  }
+
+  public getCurrentExpectedType (): IExpectedType {
+    return this.expectedTypeStack[this.expectedTypeStack.length - 1];
+  }
+
+  public getCurrentNamespace (): string {
+    return this.namespaceStack[this.namespaceStack.length - 1];
+  }
+
+  public getImportSourceFile (importName: string): string {
+    return this.importToSourceFileMap[importName];
+  }
+
   public mapImportToSourceFile (name: string, sourceFile: string): void {
     this.importToSourceFileMap[name] = sourceFile;
+  }
+
+  public resetExpectedType (): void {
+    this.expectedTypeStack.pop();
   }
 }

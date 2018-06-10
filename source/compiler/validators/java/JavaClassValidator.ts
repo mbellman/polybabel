@@ -12,10 +12,9 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
   private ownTypeDefinition: ObjectType.Definition;
 
   @Implements public validate (): void {
-    const { name, extended, implemented, constructors, members } = this.syntaxNode;
-    const { scopeManager, file, symbolDictionary, objectVisitor } = this.context;
+    const { name, extended, implemented, constructors } = this.syntaxNode;
 
-    this.ownTypeDefinition = this.getTypeInCurrentNamespace(name) as ObjectType.Definition;
+    this.ownTypeDefinition = this.findTypeDefinitionByName(name) as ObjectType.Definition;
 
     if (extended.length !== 0) {
       this.validateSuperclass(extended[0]);

@@ -6,8 +6,8 @@ import { TypeDefinition } from '../../symbol-resolvers/common/types';
  * @todo @description
  */
 export interface IValidationHelper {
-  symbolDictionary: SymbolDictionary;
-  findTypeDefinition: (namespaceChain: string[]) => TypeDefinition;
+  readonly symbolDictionary: SymbolDictionary;
+  readonly findTypeDefinition: (namespaceChain: string[]) => TypeDefinition;
 }
 
 /**
@@ -16,4 +16,16 @@ export interface IValidationHelper {
 export interface IValidationError {
   message: string;
   token?: IToken;
+}
+
+/**
+ * An object containing an expected type definition queued up
+ * for validation at some future point, and a short 'expectation'
+ * message explaining the nature of the type.
+ *
+ * @see ValidatorContext.expectType()
+ */
+export interface IExpectedType {
+  type: TypeDefinition;
+  expectation: string;
 }

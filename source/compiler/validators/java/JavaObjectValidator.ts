@@ -10,7 +10,7 @@ export default class JavaObjectValidator extends AbstractValidator<JavaSyntax.IJ
   @Implements public validate (): void {
     const { name, members } = this.syntaxNode;
     const { scopeManager, objectVisitor } = this.context;
-    const ownType = this.getTypeInCurrentNamespace(name) as ObjectType.Definition;
+    const ownType = this.findTypeDefinitionByName(name) as ObjectType.Definition;
 
     objectVisitor.visitObject(ownType);
     scopeManager.addToScope(name, ownType);
@@ -39,10 +39,9 @@ export default class JavaObjectValidator extends AbstractValidator<JavaSyntax.IJ
     this.context.exitNamespace();
   }
 
-  private getIdentifier (): string {
-    return this.getNamespacedIdentifier(this.syntaxNode.name);
-  }
-
+  /**
+   * @todo
+   */
   private validateObjectField (objectField: JavaSyntax.IJavaObjectField): void {
     const { type } = objectField;
   }

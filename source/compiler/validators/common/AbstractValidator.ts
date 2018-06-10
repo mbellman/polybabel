@@ -7,10 +7,12 @@ import { IValidationError, IValidationHelper } from './types';
 import { ObjectType } from '../../symbol-resolvers/common/object-type';
 import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
 import { ValidatorUtils } from './validator-utils';
+import { TypeValidation } from './type-validation';
 
 export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxNode> {
   protected context: ValidatorContext;
   protected syntaxNode: S;
+  protected validationHelper: IValidationHelper;
   private focusedSyntaxNode: ISyntaxNode;
   private parentValidator: AbstractValidator;
 
@@ -18,6 +20,11 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     this.context = context;
     this.syntaxNode = syntaxNode;
     this.focusedSyntaxNode = syntaxNode;
+
+    this.validationHelper = {
+      symbolDictionary: this.context.symbolDictionary,
+      findTypeDefinition: (namespaceChain: string[]) => this.findTypeDefinition(namespaceChain)
+    };
   }
 
   public forErrors (callback: Callback<IValidationError>): void {
@@ -48,11 +55,15 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     this.assert(condition, message, false);
   }
 
-  protected createValidationHelper (): IValidationHelper {
-    return {
-      symbolDictionary: this.context.symbolDictionary,
-      findTypeDefinition: (namespaceChain: string[]) => this.findTypeDefinition(namespaceChain)
-    };
+  protected checkIfTypeMatchesExpected (type: TypeDefinition): void {
+    const { type: expectedTypeDefinition, expectation } = this.context.getCurrentExpectedType();
+    const typeDescription = ValidatorUtils.getTypeDescription(type);
+    const expectedTypeDescription = ValidatorUtils.getTypeDescription(expectedTypeDefinition);
+
+    this.check(
+      TypeValidation.typeMatches(type, expectedTypeDefinition),
+      `Type '${typeDescription}' does not match expected ${expectation} '${expectedTypeDescription}'`
+    );
   }
 
   /**
@@ -86,29 +97,9 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
    * found type definition.
    */
   public findTypeDefinition (namespaceChain: string[]): TypeDefinition {
-    const { importToSourceFileMap, objectVisitor, symbolDictionary, scopeManager, file } = this.context;
     const outerName = namespaceChain[0];
-    const isImportedSymbol = outerName in importToSourceFileMap;
-    const foundParentObjectMember = objectVisitor.findParentObjectMember(outerName);
+    const outerType = this.findTypeDefinitionByName(namespaceChain[0]);
     const shouldSearchDeep = namespaceChain.length > 1;
-    let outerType: TypeDefinition;
-
-    if (foundParentObjectMember) {
-      outerType = foundParentObjectMember.type;
-    } else if (isImportedSymbol) {
-      const sourceFile = importToSourceFileMap[outerName];
-
-      outerType = symbolDictionary.getSymbol(sourceFile + outerName).type;
-    } else {
-      outerType = scopeManager.getScopedValue(outerName);
-
-      if (!outerType) {
-        // If the outer name isn't in scope, stop here
-        this.reportUnknownIdentifier(outerName);
-
-        return TypeUtils.createSimpleType(Dynamic);
-      }
-    }
 
     if (shouldSearchDeep) {
       if (ValidatorUtils.isSimpleTypeOf(Dynamic, outerType)) {
@@ -163,30 +154,48 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     }
   }
 
+  public findTypeDefinitionByName (name: string): TypeDefinition {
+    const scopedType = this.context.scopeManager.getScopedValue(name);
+    const { objectVisitor, symbolDictionary, file } = this.context;
+
+    if (scopedType) {
+      // If the name is in scope, the scoped type definition
+      // value should take precedence over all else
+      return scopedType;
+    }
+
+    const parentObjectMember = objectVisitor.findParentObjectMember(name);
+
+    if (parentObjectMember) {
+      // If the name is a parent object member, return its type
+      return parentObjectMember.type;
+    }
+
+    const importSourceFile = this.context.getImportSourceFile(name);
+
+    if (importSourceFile) {
+      // If the name is an import, we return its symbol type
+      return symbolDictionary.getSymbolType(importSourceFile + name);
+    }
+
+    const symbol = symbolDictionary.getDefinedSymbol(file + name);
+
+    if (symbol) {
+      // If all else fails, return the symbol in the current file
+      return symbol.type;
+    }
+
+    this.reportUnknownIdentifier(name);
+
+    return TypeUtils.createSimpleType(Dynamic);
+  }
+
   protected focus (syntaxNode: ISyntaxNode): void {
     this.focusedSyntaxNode = syntaxNode;
   }
 
-  protected getImmediateNamespacedIdentifier (identifier: string): string {
-    const { namespaceStack } = this.context;
-
-    return `${namespaceStack[namespaceStack.length - 1]}.${identifier}`;
-  }
-
   protected getNamespacedIdentifier (identifier: string): string {
-    return this.context.namespaceStack.concat(identifier).join('.');
-  }
-
-  protected getTypeInCurrentNamespace (name: string): TypeDefinition {
-    const parentObjectMember = this.context.objectVisitor.findParentObjectMember(name);
-
-    if (parentObjectMember) {
-      return parentObjectMember.type;
-    } else {
-      const { symbolDictionary, file } = this.context;
-
-      return symbolDictionary.getSymbol(file + name).type;
-    }
+    return this.context.getCurrentNamespace() + identifier;
   }
 
   protected report (message: string): void {

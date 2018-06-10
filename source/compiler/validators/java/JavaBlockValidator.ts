@@ -43,13 +43,6 @@ export default class JavaBlockValidator extends AbstractValidator<JavaSyntax.IJa
     return this.getNamespacedIdentifier(this.parentMethodNode.name);
   }
 
-  private getParentMethodReturnType (): TypeDefinition {
-    const { objectVisitor } = this.context;
-    const parentMethodFunctionType = objectVisitor.findParentObjectMember(this.parentMethodNode.name).type as FunctionType.Definition;
-
-    return parentMethodFunctionType.getReturnType();
-  }
-
   private validateReturnStatement (returnStatement: JavaSyntax.IJavaStatement): void {
     const isInsideInitializer = this.parentMethodNode === null;
 
@@ -58,20 +51,15 @@ export default class JavaBlockValidator extends AbstractValidator<JavaSyntax.IJa
     if (isInsideInitializer) {
       this.report(`Initializer blocks cannot return values.`);
     } else {
-      const parentMethodReturnType = this.getParentMethodReturnType();
+      const { type: parentMethodReturnType } = this.context.getCurrentExpectedType();
       const isVoidMethod = ValidatorUtils.isSimpleTypeOf(Void, parentMethodReturnType);
 
       if (isVoidMethod) {
         this.report(`Void method '${this.getParentMethodIdentifier()}' cannot return a value`);
       } else {
-        const returnStatementType = JavaValidatorUtils.getStatementType(returnStatement, this.createValidationHelper());
+        const returnStatementType = JavaValidatorUtils.getStatementType(returnStatement, this.validationHelper);
 
-        if (!TypeValidation.typeMatches(returnStatementType, parentMethodReturnType)) {
-          const returnStatementTypeDescription = ValidatorUtils.getTypeDescription(returnStatementType);
-          const parentMethodReturnTypeDescription = ValidatorUtils.getTypeDescription(parentMethodReturnType);
-
-          this.report(`Expected method '${this.getParentMethodIdentifier()}' to return '${parentMethodReturnTypeDescription}'; returned '${returnStatementTypeDescription}' instead`);
-        }
+        this.checkIfTypeMatchesExpected(returnStatementType);
       }
     }
   }

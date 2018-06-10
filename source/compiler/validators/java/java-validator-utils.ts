@@ -92,13 +92,8 @@ export namespace JavaValidatorUtils {
         return referenceType;
       case JavaSyntax.JavaSyntaxNode.INSTANTIATION:
         const instantiation = leftSide as JavaSyntax.IJavaInstantiation;
-        const { namespaceChain } = instantiation.constructor;
         const isArrayInstantiation = !!instantiation.arrayAllocationSize || !!instantiation.arrayLiteral;
-
-        const constructorType = (
-          getNativeType(namespaceChain.join('.')) ||
-          validationHelper.findTypeDefinition(namespaceChain)
-        );
+        const constructorType = getTypeDefinition(instantiation.constructor, validationHelper);
 
         if (isArrayInstantiation) {
           const arrayTypeDefiner = new ArrayType.Definer(validationHelper.symbolDictionary);
@@ -119,11 +114,11 @@ export namespace JavaValidatorUtils {
   }
 
   /**
-   * Returns a native Java type definition for a given type name,
-   * or null if the name does not correspond to any known native
-   * types.
+   * Returns a type definition for native Java type names,
+   * or null if the provided type name doesn't correspond
+   * to any.
    */
-  export function getNativeType (typeName: string): TypeDefinition {
+  export function getNativeTypeDefinition (typeName: string): TypeDefinition {
     switch (typeName) {
       case JavaConstants.Type.STRING:
       case JavaConstants.Type.CHAR:
@@ -146,5 +141,17 @@ export namespace JavaValidatorUtils {
       default:
         return null;
     }
+  }
+
+  /**
+   * Returns a type definition for a provided Java type syntax node.
+   */
+  export function getTypeDefinition ({ namespaceChain }: JavaSyntax.IJavaType, validationHelper: IValidationHelper): TypeDefinition {
+    const typeName = namespaceChain.join('.');
+
+    return (
+      getNativeTypeDefinition(typeName) ||
+      validationHelper.findTypeDefinition(namespaceChain)
+    );
   }
 }
