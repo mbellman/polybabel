@@ -45,6 +45,26 @@ export default class ObjectVisitor {
     return this.visitedObjectStack[this.visitedObjectStack.length - 1];
   }
 
+  public isInsideObject (objectType: ObjectType.Definition): boolean {
+    for (let i = this.visitedObjectStack.length - 1; i >= 0; i--) {
+      if (this.visitedObjectStack[i] === objectType) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  public isInsideSubtypeOf (objectType: ObjectType.Definition): boolean {
+    for (let i = this.visitedObjectStack.length - 1; i >= 0; i--) {
+      if (objectType.isSubtypeOf(this.visitedObjectStack[i])) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   public leaveObject (): void {
     this.visitedObjectStack.pop();
   }

@@ -42,7 +42,7 @@ export default class JavaBlockValidator extends AbstractValidator<JavaSyntax.IJa
   private validateReturnStatement (returnStatement: JavaSyntax.IJavaStatement): void {
     const isInsideInitializer = this.parentMethodNode === null;
 
-    this.focus(returnStatement.token);
+    this.focusToken(returnStatement.token);
 
     if (isInsideInitializer) {
       this.report(`Initializer blocks cannot return values.`);
@@ -54,7 +54,7 @@ export default class JavaBlockValidator extends AbstractValidator<JavaSyntax.IJa
       if (isVoidMethod) {
         this.report(`Void method '${parentMethodIdentifier}' cannot return a value`);
       } else {
-        const returnStatementType = JavaValidatorUtils.getStatementType(returnStatement, this.validationHelper);
+        const returnStatementType = JavaValidatorUtils.getStatementType(returnStatement, this.validatorHelper);
 
         this.checkIfTypeMatchesExpected(returnStatementType);
       }

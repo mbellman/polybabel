@@ -7,7 +7,7 @@ export default class JavaImportValidator extends AbstractValidator<JavaSyntax.IJ
     const { token, defaultImport, nonDefaultImports, paths } = this.syntaxNode;
     const sourceFile = paths.join('/');
 
-    this.focus(token);
+    this.focusToken(token);
 
     if (defaultImport) {
       this.handleImport(defaultImport, sourceFile);

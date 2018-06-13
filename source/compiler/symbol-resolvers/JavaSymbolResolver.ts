@@ -82,6 +82,9 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
     }
   }
 
+  /**
+   * @todo @description
+   */
   private createTypeDefinition (type: JavaSyntax.IJavaType): TypeDefinition {
     const { namespaceChain, arrayDimensions } = type;
     const typeName = namespaceChain.join('.');

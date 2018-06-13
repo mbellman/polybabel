@@ -2,14 +2,14 @@ import SymbolDictionary from './symbol-resolvers/common/SymbolDictionary';
 import ValidatorContext from './validators/common/ValidatorContext';
 import { IHashMap } from 'trampoline-framework';
 import { ISyntaxTree } from '../parser/common/syntax-types';
-import { IValidationError } from './validators/common/types';
+import { IValidatorError } from './validators/common/types';
 import { LanguageSpecification } from '../language-specifications/index';
 import { TokenUtils } from '../tokenizer/token-utils';
 
 /**
  * @internal
  */
-type CompilerError = [ string, IValidationError ];
+type CompilerError = [ string, IValidatorError ];
 
 /**
  * @internal
@@ -35,7 +35,7 @@ export default class Compiler {
     new SymbolResolver(this.formatFilename(file), this.symbolDictionary).resolve(syntaxTree);
   }
 
-  public addError (file: string, reportedError: IValidationError): void {
+  public addError (file: string, reportedError: IValidatorError): void {
     this.errors.push([ file, reportedError ]);
   }
 

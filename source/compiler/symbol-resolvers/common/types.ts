@@ -14,9 +14,9 @@ interface IMemberTypeMap {
  * reconcilable by all languages.
  */
 export enum ObjectMemberVisibility {
-  ALL = 'ALL',
-  DERIVED = 'DERIVED',
-  SELF = 'SELF'
+  ALL = 2,
+  DERIVED = 1,
+  SELF = 0
 }
 
 /**

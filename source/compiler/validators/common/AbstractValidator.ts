@@ -4,7 +4,7 @@ import { Constructor, IConstructable } from 'trampoline-framework';
 import { Dynamic, TypeDefinition } from '../../symbol-resolvers/common/types';
 import { ISyntaxNode } from '../../../parser/common/syntax-types';
 import { IToken } from '../../../tokenizer/types';
-import { IValidationError, IValidationHelper } from './types';
+import { IValidatorError, IValidatorHelper } from './types';
 import { ObjectType } from '../../symbol-resolvers/common/object-type';
 import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
 import { TypeValidation } from './type-validation';
@@ -13,7 +13,8 @@ import { ValidatorUtils } from './validator-utils';
 export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxNode> {
   protected context: ValidatorContext;
   protected syntaxNode: S;
-  protected validationHelper: IValidationHelper;
+  protected validatorHelper: IValidatorHelper;
+  private errors: IValidatorError[] = [];
   private focusedToken: IToken;
   private parentValidator: AbstractValidator;
 
@@ -22,18 +23,21 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     this.syntaxNode = syntaxNode;
     this.focusedToken = syntaxNode.token;
 
-    this.validationHelper = {
+    this.validatorHelper = {
+      objectVisitor: this.context.objectVisitor,
       symbolDictionary: this.context.symbolDictionary,
-      findTypeDefinition: (namespaceChain: string[]) => this.findTypeDefinition(namespaceChain)
+      findTypeDefinition: (namespaceChain: string[]) => this.findTypeDefinition(namespaceChain),
+      focusToken: (token: IToken) => this.focusToken(token),
+      report: (message: string) => this.report(message)
     };
   }
 
-  public forErrors (callback: Callback<IValidationError>): void {
-    this.context.errors.forEach(callback);
+  public forErrors (callback: Callback<IValidatorError>): void {
+    this.errors.forEach(callback);
   }
 
   public hasErrors (): boolean {
-    return this.context.errors.length > 0;
+    return this.errors.length > 0;
   }
 
   public abstract validate (): void;
@@ -191,7 +195,7 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     return TypeUtils.createSimpleType(Dynamic);
   }
 
-  protected focus (token: IToken): void {
+  protected focusToken (token: IToken): void {
     this.focusedToken = token || this.focusedToken;
   }
 
@@ -200,7 +204,7 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
   }
 
   protected report (message: string): void {
-    this.context.errors.push({
+    this.errors.push({
       message,
       token: this.focusedToken
     });

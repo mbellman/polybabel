@@ -27,6 +27,8 @@ import { TokenUtils } from '../../../tokenizer/token-utils';
  *  object[...](...).value
  *  object[...]<...>method(...).value
  *  method(...).value
+ *
+ * @todo Handle non-static object instantiation properties, e.g. 'object.new ____()'
  */
 export default class JavaPropertyChainParser extends AbstractParser<JavaSyntax.IJavaPropertyChain> {
   /**
@@ -53,7 +55,7 @@ export default class JavaPropertyChainParser extends AbstractParser<JavaSyntax.I
     );
 
     if (didExitPropertyChain) {
-      this.onEnd();
+      this.stop();
 
       return;
     }

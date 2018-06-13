@@ -2,19 +2,23 @@ import SymbolDictionary from '../../symbol-resolvers/common/SymbolDictionary';
 import { IParserError } from '../../../parser/common/parser-types';
 import { IToken } from '../../../tokenizer/types';
 import { TypeDefinition } from '../../symbol-resolvers/common/types';
+import ObjectVisitor from './ObjectVisitor';
 
 /**
  * @todo @description
  */
-export interface IValidationHelper {
+export interface IValidatorHelper {
+  readonly objectVisitor: ObjectVisitor;
   readonly symbolDictionary: SymbolDictionary;
-  readonly findTypeDefinition: (namespaceChain: string[]) => TypeDefinition;
+  findTypeDefinition (namespaceChain: string[]): TypeDefinition;
+  focusToken (token: IToken): void;
+  report (message: string): void;
 }
 
 /**
  * @todo @description
  */
-export interface IValidationError extends IParserError { }
+export interface IValidatorError extends IParserError { }
 
 /**
  * An object containing an expected type definition queued up

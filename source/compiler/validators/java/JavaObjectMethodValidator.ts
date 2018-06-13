@@ -16,9 +16,9 @@ export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyn
     const isInterfaceMethod = parentObjectType.category === ObjectCategory.INTERFACE;
     const identifier = `${parentObjectType.name}.${name}`;
 
-    this.focus(type.token);
+    this.focusToken(type.token);
 
-    const returnTypeDefinition = JavaValidatorUtils.getTypeDefinition(type, this.validationHelper);
+    const returnTypeDefinition = JavaValidatorUtils.getTypeDefinition(type, this.validatorHelper);
 
     if (returnTypeDefinition instanceof FunctionType.Definition) {
       const returnTypeDescription = ValidatorUtils.getTypeDescription(returnTypeDefinition);
@@ -34,7 +34,7 @@ export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyn
     if (isAbstract) {
       const abstractKeywordToken = ValidatorUtils.findKeywordToken(JavaConstants.Keyword.ABSTRACT, type.token, token => token.previousTextToken);
 
-      this.focus(abstractKeywordToken);
+      this.focusToken(abstractKeywordToken);
 
       this.check(
         !isInterfaceMethod,
