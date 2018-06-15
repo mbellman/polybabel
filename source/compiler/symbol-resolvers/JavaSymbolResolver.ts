@@ -2,12 +2,10 @@ import AbstractSymbolResolver from './common/AbstractSymbolResolver';
 import { ArrayType } from './common/array-type';
 import { FunctionType } from './common/function-type';
 import { Implements } from 'trampoline-framework';
-import { IObjectMember, ISymbol, ObjectCategory, ObjectMemberVisibility, Primitive, TypeDefinition, Void } from './common/types';
-import { JavaConstants } from '../../parser/java/java-constants';
+import { IObjectMember, ISymbol, ObjectCategory, ObjectMemberVisibility, TypeDefinition } from './common/types';
+import { JavaCompilerUtils } from '../utils/java-compiler-utils';
 import { JavaSyntax } from '../../parser/java/java-syntax';
 import { ObjectType } from './common/object-type';
-import { TypeUtils } from './common/type-utils';
-import { JavaValidatorUtils } from '../validators/java/java-validator-utils';
 
 export default class JavaSymbolResolver extends AbstractSymbolResolver {
   @Implements public resolve (javaSyntaxTree: JavaSyntax.IJavaSyntaxTree): void {
@@ -94,7 +92,7 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
     }
 
     return (
-      JavaValidatorUtils.getNativeTypeDefinition(typeName) ||
+      JavaCompilerUtils.getNativeTypeDefinition(typeName) ||
       this.getPossibleSymbolIdentifiers(typeName)
     );
   }

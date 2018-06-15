@@ -1,13 +1,12 @@
 import AbstractValidator from '../common/AbstractValidator';
 import JavaBlockValidator from './JavaBlockValidator';
 import { Implements } from 'trampoline-framework';
-import { JavaSyntax } from '../../../parser/java/java-syntax';
-import { ObjectCategory, TypeDefinition } from '../../symbol-resolvers/common/types';
-import { FunctionType } from '../../symbol-resolvers/common/function-type';
-import { JavaValidatorUtils } from './java-validator-utils';
-import { ValidatorUtils } from '../common/validator-utils';
+import { JavaCompilerUtils } from '../../utils/java-compiler-utils';
 import { JavaConstants } from '../../../parser/java/java-constants';
-import { TokenUtils } from '../../../tokenizer/token-utils';
+import { JavaSyntax } from '../../../parser/java/java-syntax';
+import { ObjectCategory } from '../../symbol-resolvers/common/types';
+import { TypeExpectation } from '../common/types';
+import { ValidatorUtils } from '../common/validator-utils';
 
 export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyntax.IJavaObjectMethod> {
   @Implements public validate (): void {
@@ -18,17 +17,14 @@ export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyn
 
     this.focusToken(type.token);
 
-    const returnTypeDefinition = JavaValidatorUtils.getTypeDefinition(type, this.validatorHelper);
+    const returnTypeDefinition = (
+      JavaCompilerUtils.getNativeTypeDefinition(type.namespaceChain.join('.')) ||
+      this.findTypeDefinition(type.namespaceChain)
+    );
 
-    if (returnTypeDefinition instanceof FunctionType.Definition) {
-      const returnTypeDescription = ValidatorUtils.getTypeDescription(returnTypeDefinition);
-
-      this.report(`Method '${identifier}' cannot return '${returnTypeDescription}'`);
-    }
-
-    this.context.expectType({
+    this.expectType({
       type: returnTypeDefinition,
-      expectation: 'return type'
+      expectation: TypeExpectation.RETURN
     });
 
     if (isAbstract) {
@@ -56,6 +52,6 @@ export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyn
       this.validateNodeWith(JavaBlockValidator, block);
     }
 
-    this.context.resetExpectedType();
+    this.resetExpectedType();
   }
 }

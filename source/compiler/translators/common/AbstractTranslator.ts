@@ -2,9 +2,9 @@ import { Callback } from '../../../system/types';
 import { Constructor, IConstructable } from 'trampoline-framework';
 import { ISyntaxNode } from '../../../parser/common/syntax-types';
 
-export default abstract class AbstractTranslator<N extends ISyntaxNode = ISyntaxNode> {
+export default abstract class AbstractTranslator<S extends ISyntaxNode = ISyntaxNode> {
   private static readonly INDENTATION_AMOUNT = 2;
-  protected syntaxNode: N;
+  protected syntaxNode: S;
   private code: string = '';
   private didEmitWhileTracking: boolean = false;
   private indentation: number = 0;
@@ -20,7 +20,7 @@ export default abstract class AbstractTranslator<N extends ISyntaxNode = ISyntax
    *
    * @see emitNodeWith()
    */
-  protected constructor (syntaxNode: N) {
+  protected constructor (syntaxNode: S) {
     this.syntaxNode = syntaxNode;
   }
 
@@ -58,7 +58,7 @@ export default abstract class AbstractTranslator<N extends ISyntaxNode = ISyntax
     return this;
   }
 
-  protected emitNodeWith <T extends ISyntaxNode, S extends T>(Translator: Constructor<AbstractTranslator<T>>, node: S): this {
+  protected emitNodeWith <T extends ISyntaxNode, N extends T>(Translator: Constructor<AbstractTranslator<T>>, node: N): this {
     const translator = new (Translator as IConstructable<AbstractTranslator>)(node);
 
     translator.indentation = this.indentation;

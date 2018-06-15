@@ -17,13 +17,13 @@ export default class JavaValidator extends AbstractValidator<JavaSyntax.IJavaSyn
     nodes.forEach(syntaxNode => {
       switch (syntaxNode.node) {
         case JavaSyntax.JavaSyntaxNode.IMPORT:
-          this.validateNodeWith(JavaImportValidator, syntaxNode);
+          this.validateNodeWith(JavaImportValidator, syntaxNode as JavaSyntax.IJavaImport);
           break;
         case JavaSyntax.JavaSyntaxNode.CLASS:
-          this.validateNodeWith(JavaClassValidator, syntaxNode);
+          this.validateNodeWith(JavaClassValidator, syntaxNode as JavaSyntax.IJavaClass);
           break;
         case JavaSyntax.JavaSyntaxNode.INTERFACE:
-          this.validateNodeWith(JavaInterfaceValidator, syntaxNode);
+          this.validateNodeWith(JavaInterfaceValidator, syntaxNode as JavaSyntax.IJavaInterface);
           break;
       }
     });

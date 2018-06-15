@@ -1,9 +1,7 @@
-import chalk from 'chalk';
-import { BaseOf, Callback, Without } from '../../system/types';
 import { Constructor, IConstructable } from 'trampoline-framework';
-import { IDecoratedParser, IDecoratedTokenMatcher, IParserError, IParseSequenceConfiguration, ISanitizer, TokenMatch, TokenMatcherType } from './parser-types';
+import { IDecoratedParser, IDecoratedTokenMatcher, IParserError, IParseSequenceConfiguration, TokenMatch, TokenMatcherType } from './parser-types';
 import { ISyntaxNode } from './syntax-types';
-import { IToken, TokenType } from '../../tokenizer/types';
+import { IToken } from '../../tokenizer/types';
 import { ParserUtils } from './parser-utils';
 import { TokenUtils } from '../../tokenizer/token-utils';
 
@@ -124,21 +122,9 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
   /**
    * Parses over the incoming token stream with a parser class
    * and merges the parsed result onto this instance's parsed
-   * syntax node object. Provided parser classes must parse a
-   * syntax node whose type signature is a subset of that of
-   * this one's.
-   *
-   * Note: Partial<P> doesn't work for enforcing a type signature
-   * subset here. Since we purposely remove the 'node' key from
-   * P and T to avoid syntax node type collisions (which would
-   * render this feature useless), we still need to add back
-   * a constraint of ISyntaxNode & ... to satisfy the constraint
-   * on AbstractParser<T>. This would effectively permit any
-   * object with *at least* the interface of ISyntaxNode and
-   * *at least* the interface of Partial<P> without 'node',
-   * yielding a false positive for many invalid objects.
+   * syntax node object.
    */
-  protected emulate <T extends ISyntaxNode & BaseOf<Without<S, 'node'>, Without<T, 'node'>>>(ParserClass: Constructor<AbstractParser<T>>): void {
+  protected emulate (ParserClass: Constructor<AbstractParser>): void {
     const { node, ...parsed } = this.parseNextWith(ParserClass) as any;
 
     Object.assign(this.parsed, parsed);

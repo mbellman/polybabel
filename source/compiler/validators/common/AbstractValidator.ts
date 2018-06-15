@@ -4,7 +4,7 @@ import { Constructor, IConstructable } from 'trampoline-framework';
 import { Dynamic, TypeDefinition } from '../../symbol-resolvers/common/types';
 import { ISyntaxNode } from '../../../parser/common/syntax-types';
 import { IToken } from '../../../tokenizer/types';
-import { IValidatorError, IValidatorHelper } from './types';
+import { IValidatorError, IValidatorHelper, IExpectedType, TypeExpectation } from './types';
 import { ObjectType } from '../../symbol-resolvers/common/object-type';
 import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
 import { TypeValidation } from './type-validation';
@@ -13,8 +13,6 @@ import { ValidatorUtils } from './validator-utils';
 export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxNode> {
   protected context: ValidatorContext;
   protected syntaxNode: S;
-  protected validatorHelper: IValidatorHelper;
-  private errors: IValidatorError[] = [];
   private focusedToken: IToken;
   private parentValidator: AbstractValidator;
 
@@ -22,25 +20,26 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     this.context = context;
     this.syntaxNode = syntaxNode;
     this.focusedToken = syntaxNode.token;
-
-    this.validatorHelper = {
-      objectVisitor: this.context.objectVisitor,
-      symbolDictionary: this.context.symbolDictionary,
-      findTypeDefinition: (namespaceChain: string[]) => this.findTypeDefinition(namespaceChain),
-      focusToken: (token: IToken) => this.focusToken(token),
-      report: (message: string) => this.report(message)
-    };
   }
 
   public forErrors (callback: Callback<IValidatorError>): void {
-    this.errors.forEach(callback);
+    this.context.errors.forEach(callback);
   }
 
   public hasErrors (): boolean {
-    return this.errors.length > 0;
+    return this.context.errors.length > 0;
   }
 
   public abstract validate (): void;
+
+  /**
+   * Temporarily allows any type to be checked against the current
+   * expected type without errors. As soon as a type is checked,
+   * the original expected type becomes active again.
+   */
+  protected allowAnyType (): void {
+    this.context.shouldAllowAnyType = true;
+  }
 
   protected assert (condition: boolean, message: string, shouldHalt: boolean = true): void {
     if (!condition) {
@@ -61,7 +60,14 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
   }
 
   protected checkIfTypeMatchesExpected (type: TypeDefinition): void {
-    const { type: expectedTypeDefinition, expectation } = this.context.getCurrentExpectedType();
+    if (!this.context.shouldAllowAnyType) {
+      this.context.shouldAllowAnyType = false;
+
+      return;
+    }
+
+    const { expectedTypeStack } = this.context;
+    const { type: expectedTypeDefinition, expectation } = expectedTypeStack[expectedTypeStack.length - 1];
     const typeDescription = ValidatorUtils.getTypeDescription(type);
     const expectedTypeDescription = ValidatorUtils.getTypeDescription(expectedTypeDefinition);
 
@@ -69,6 +75,24 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
       TypeValidation.typeMatches(type, expectedTypeDefinition),
       `'${typeDescription}' does not match expected ${expectation} '${expectedTypeDescription}'`
     );
+  }
+
+  protected enterNamespace (name: string): void {
+    this.context.namespaceStack.push(name);
+  }
+
+  protected exitNamespace (): void {
+    this.context.namespaceStack.pop();
+  }
+
+  protected expectType (expectedType: IExpectedType): void {
+    this.context.shouldAllowAnyType = false;
+
+    this.context.expectedTypeStack.push(expectedType);
+  }
+
+  protected expectsType (): boolean {
+    return !this.context.shouldAllowAnyType;
   }
 
   /**
@@ -173,10 +197,11 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
 
     if (parentObjectMember) {
       // If the name is a parent object member, return its type
+      // TODO: Check member visibility
       return parentObjectMember.type;
     }
 
-    const importSourceFile = this.context.getImportSourceFile(name);
+    const importSourceFile = this.getImportSourceFile(name);
 
     if (importSourceFile) {
       // If the name is an import, we return its symbol type
@@ -199,15 +224,59 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     this.focusedToken = token || this.focusedToken;
   }
 
+  protected getCurrentNamespace (): string {
+    const { namespaceStack } = this.context;
+
+    return namespaceStack[namespaceStack.length - 1];
+  }
+
+  protected getLastExpectedTypeFor (typeExpectation: TypeExpectation): TypeDefinition {
+    const { expectedTypeStack } = this.context;
+
+    for (let i = expectedTypeStack.length - 1; i >= 0; i--) {
+      const { expectation, type } = expectedTypeStack[i];
+
+      if (expectation === typeExpectation) {
+        return type;
+      }
+    }
+
+    return null;
+  }
+
+  protected getImportSourceFile (importName: string): string {
+    return this.context.importToSourceFileMap[importName];
+  }
+
   protected getNamespacedIdentifier (identifier: string): string {
-    return `${this.context.getCurrentNamespace()}.${identifier}`;
+    return `${this.getCurrentNamespace()}.${identifier}`;
+  }
+
+  protected mapImportToSourceFile (name: string, sourceFile: string): void {
+    this.context.importToSourceFileMap[name] = sourceFile;
   }
 
   protected report (message: string): void {
-    this.errors.push({
+    this.context.errors.push({
       message,
       token: this.focusedToken
     });
+  }
+
+  protected reportNonObjectMemberAccess (name: string): void {
+    this.report(`Identifier '${name}' does not have any members`);
+  }
+
+  protected reportUnknownIdentifier (name: string): void {
+    this.report(`Unknown identifier '${name}'`);
+  }
+
+  protected reportUnknownMember (source: string, member: string): void {
+    this.report(`Member '${member}' not found on '${source}'`);
+  }
+
+  protected resetExpectedType (): void {
+    this.context.expectedTypeStack.pop();
   }
 
   /**
@@ -215,7 +284,7 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
    * subclass. Hands off both the instance's ScopeManager and its
    * errors list so both can be used and manipulated by reference.
    */
-  protected validateNodeWith <T extends ISyntaxNode>(Validator: Constructor<AbstractValidator<T>>, syntaxNode: T): void {
+  protected validateNodeWith <T extends ISyntaxNode, N extends T>(Validator: Constructor<AbstractValidator<T>>, syntaxNode: N): void {
     const validator = new (Validator as IConstructable<AbstractValidator>)(this.context, syntaxNode);
 
     validator.parentValidator = this;
@@ -225,17 +294,5 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     } catch (e) {
       this.report(e.toString());
     }
-  }
-
-  private reportNonObjectMemberAccess (name: string): void {
-    this.report(`Identifier '${name}' does not have any members`);
-  }
-
-  private reportUnknownIdentifier (name: string): void {
-    this.report(`Unknown identifier '${name}'`);
-  }
-
-  private reportUnknownMember (source: string, member: string): void {
-    this.report(`Member '${member}' not found on '${source}'`);
   }
 }

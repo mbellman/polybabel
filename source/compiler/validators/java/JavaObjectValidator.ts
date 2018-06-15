@@ -15,7 +15,8 @@ export default class JavaObjectValidator extends AbstractValidator<JavaSyntax.IJ
     objectVisitor.visitObject(ownType);
     scopeManager.addToScope(name, ownType);
     scopeManager.enterScope();
-    this.context.enterNamespace(name);
+
+    this.enterNamespace(name);
 
     members.forEach(member => {
       switch (member.node) {
@@ -26,17 +27,18 @@ export default class JavaObjectValidator extends AbstractValidator<JavaSyntax.IJ
           this.validateNodeWith(JavaObjectMethodValidator, member as JavaSyntax.IJavaObjectMethod);
           break;
         case JavaSyntax.JavaSyntaxNode.CLASS:
-          this.validateNodeWith(JavaClassValidator, member);
+          this.validateNodeWith(JavaClassValidator, member as JavaSyntax.IJavaClass);
           break;
         case JavaSyntax.JavaSyntaxNode.INTERFACE:
-          this.validateNodeWith(JavaInterfaceValidator, member);
+          this.validateNodeWith(JavaInterfaceValidator, member as JavaSyntax.IJavaInterface);
           break;
       }
     });
 
     scopeManager.exitScope();
     objectVisitor.leaveObject();
-    this.context.exitNamespace();
+
+    this.exitNamespace();
   }
 
   /**

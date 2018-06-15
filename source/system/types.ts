@@ -11,14 +11,6 @@ export type Callback<T = any, U = any> = (arg?: T) => U;
 export type BoundCallback<C, T = any, U = any> = (this: C, arg?: T) => U;
 
 /**
- * A conditional type which enforces that the type B is a base
- * of T.
- */
-export type BaseOf<T, B> = T extends B
-  ? { [K in keyof B]?: B[K] }
-  : never;
-
-/**
  * Defines a type T without the properties defined in a string
  * union type P.
  */

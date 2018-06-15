@@ -22,7 +22,7 @@ export default class JavaImportValidator extends AbstractValidator<JavaSyntax.IJ
       `Invalid import name: '${importName}'`
     );
 
-    this.context.mapImportToSourceFile(importName, sourceFile);
+    this.mapImportToSourceFile(importName, sourceFile);
     this.context.scopeManager.addToScope(importName);
   }
 }
