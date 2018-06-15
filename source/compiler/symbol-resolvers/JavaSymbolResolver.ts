@@ -3,7 +3,6 @@ import { ArrayType } from './common/array-type';
 import { FunctionType } from './common/function-type';
 import { Implements } from 'trampoline-framework';
 import { IObjectMember, ISymbol, ObjectCategory, ObjectMemberVisibility, TypeDefinition } from './common/types';
-import { JavaCompilerUtils } from '../utils/java-compiler-utils';
 import { JavaSyntax } from '../../parser/java/java-syntax';
 import { ObjectType } from './common/object-type';
 
@@ -92,7 +91,7 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
     }
 
     return (
-      JavaCompilerUtils.getNativeTypeDefinition(typeName) ||
+      this.nativeTypeMap[typeName] ||
       this.getPossibleSymbolIdentifiers(typeName)
     );
   }
@@ -116,11 +115,16 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
         case JavaSyntax.JavaSyntaxNode.OBJECT_METHOD: {
           const { access, isFinal, isStatic, isAbstract, genericTypes, type: returnType, parameters } = member as JavaSyntax.IJavaObjectMethod;
           const functionTypeDefiner = this.createTypeDefiner(FunctionType.Definer);
-          const parameterTypeSymbolIdentifiers = parameters.map(({ type }) => this.createTypeDefinition(type));
-          const returnTypeSymbolIdentifier = this.createTypeDefinition(returnType);
+          const returnTypeDefinition = this.createTypeDefinition(returnType);
+
+          parameters.forEach(({ type }) => {
+            const parameterTypeDefinition = this.createTypeDefinition(type);
+
+            functionTypeDefiner.addParameterType(parameterTypeDefinition);
+          });
 
           // TODO: Add generic parameters
-          functionTypeDefiner.defineReturnType(returnTypeSymbolIdentifier);
+          functionTypeDefiner.defineReturnType(returnTypeDefinition);
 
           resolvedObjectMember.visibility = this.getObjectMemberVisibility(access);
           resolvedObjectMember.isConstant = !!isFinal;

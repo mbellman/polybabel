@@ -2,9 +2,9 @@ import AbstractParser from '../parser/common/AbstractParser';
 import AbstractSymbolResolver from '../compiler/symbol-resolvers/common/AbstractSymbolResolver';
 import AbstractTranslator from '../compiler/translators/common/AbstractTranslator';
 import AbstractValidator from '../compiler/validators/common/AbstractValidator';
-import { Callback } from '../system/types';
 import { IConstructable, IHashMap } from 'trampoline-framework';
 import { ISyntaxTree } from '../parser/common/syntax-types';
+import { TypeDefinition } from 'compiler/symbol-resolvers/common/types';
 
 /**
  * An object providing all of the top-level classes and
@@ -17,4 +17,5 @@ export interface ILanguageSpecification {
   SymbolResolver: IConstructable<AbstractSymbolResolver>;
   Validator: IConstructable<AbstractValidator>;
   Translator: IConstructable<AbstractTranslator>;
+  NativeTypeMap?: IHashMap<TypeDefinition>;
 }

@@ -184,12 +184,21 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
   }
 
   public findTypeDefinitionByName (name: string): TypeDefinition {
+    const nativeType = this.context.nativeTypeMap[name];
+
+    if (nativeType) {
+      // If the name corresponds to a native type as specified
+      // by a language-native type map, return that before
+      // anything else
+      return nativeType;
+    }
+
     const scopedType = this.context.scopeManager.getScopedValue(name);
     const { objectVisitor, symbolDictionary, file } = this.context;
 
     if (scopedType) {
       // If the name is in scope, the scoped type definition
-      // value should take precedence over all else
+      // value should take precedence over other references
       return scopedType;
     }
 
@@ -197,7 +206,6 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
 
     if (parentObjectMember) {
       // If the name is a parent object member, return its type
-      // TODO: Check member visibility
       return parentObjectMember.type;
     }
 
@@ -288,6 +296,8 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     const validator = new (Validator as IConstructable<AbstractValidator>)(this.context, syntaxNode);
 
     validator.parentValidator = this;
+
+    this.focusToken(syntaxNode.token);
 
     try {
       validator.validate();

@@ -1,11 +1,9 @@
 import AbstractValidator from '../common/AbstractValidator';
 import JavaObjectValidator from './JavaObjectValidator';
-import { Bound, Implements } from 'trampoline-framework';
-import { Callback } from '../../../system/types';
-import { ISymbol, ObjectCategory, TypeDefinition, Dynamic } from '../../symbol-resolvers/common/types';
+import { Dynamic } from '../../symbol-resolvers/common/types';
+import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
 import { ObjectType } from '../../symbol-resolvers/common/object-type';
-import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
 import { ValidatorUtils } from '../common/validator-utils';
 
 export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJavaClass> {

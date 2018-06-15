@@ -4,7 +4,7 @@ import { Implements } from 'trampoline-framework';
 
 export namespace FunctionType {
   export class Definition extends AbstractTypeDefinition implements IConstrainable {
-    protected argumentTypes: TypeDefinition[] = [];
+    protected parameterTypes: TypeDefinition[] = [];
     protected genericParameters: string[] = [];
     protected returnType: TypeDefinition;
     private didResolveArgumentTypes: boolean = false;
@@ -16,18 +16,18 @@ export namespace FunctionType {
       return null;
     }
 
-    public getArgumentTypes (): TypeDefinition[] {
+    public getParameterTypes (): TypeDefinition[] {
       if (!this.didResolveArgumentTypes) {
-        this.argumentTypes.forEach((argumentType, index) => {
+        this.parameterTypes.forEach((argumentType, index) => {
           if (argumentType instanceof Array) {
-            this.argumentTypes[index] = this.symbolDictionary.getFirstDefinedSymbol(argumentType).type;
+            this.parameterTypes[index] = this.symbolDictionary.getFirstDefinedSymbol(argumentType).type;
           }
         });
 
         this.didResolveArgumentTypes = true;
       }
 
-      return this.argumentTypes;
+      return this.parameterTypes;
     }
 
     public getReturnType (): TypeDefinition {
@@ -43,8 +43,8 @@ export namespace FunctionType {
    * A FunctionType.Definition's definer subclass.
    */
   export class Definer extends Definition {
-    public addArgument (argumentType: TypeDefinition): void {
-      this.argumentTypes.push(argumentType);
+    public addParameterType (argumentType: TypeDefinition): void {
+      this.parameterTypes.push(argumentType);
     }
 
     public addGenericParameter (name: string): void {

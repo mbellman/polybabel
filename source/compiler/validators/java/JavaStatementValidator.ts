@@ -1,14 +1,13 @@
 import AbstractValidator from '../common/AbstractValidator';
 import { ArrayType } from '../../symbol-resolvers/common/array-type';
-import { Implements } from 'trampoline-framework';
-import { ISimpleType, Primitive, TypeDefinition, Dynamic, IObjectMember } from '../../symbol-resolvers/common/types';
-import { JavaCompilerUtils } from '../../utils/java-compiler-utils';
-import { JavaConstants } from 'parser/java/java-constants';
-import { JavaSyntax } from '../../../parser/java/java-syntax';
-import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
-import { ObjectType } from '../../symbol-resolvers/common/object-type';
-import { ValidatorUtils } from '../common/validator-utils';
+import { Dynamic, IObjectMember, ISimpleType, Primitive, TypeDefinition } from '../../symbol-resolvers/common/types';
 import { FunctionType } from '../../symbol-resolvers/common/function-type';
+import { Implements } from 'trampoline-framework';
+import { JavaConstants } from '../../../parser/java/java-constants';
+import { JavaSyntax } from '../../../parser/java/java-syntax';
+import { ObjectType } from '../../symbol-resolvers/common/object-type';
+import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
+import { ValidatorUtils } from '../common/validator-utils';
 
 export default class JavaStatementValidator extends AbstractValidator<JavaSyntax.IJavaStatement> {
   @Implements public validate (): void {
@@ -185,11 +184,7 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
         const instantiation = javaSyntaxNode as JavaSyntax.IJavaInstantiation;
         const { constructor } = instantiation;
         const isArrayInstantiation = !!instantiation.arrayAllocationSize || !!instantiation.arrayLiteral;
-
-        const constructorType = (
-          JavaCompilerUtils.getNativeTypeDefinition(constructor.namespaceChain.join('.')) ||
-          this.findTypeDefinition(constructor.namespaceChain)
-        );
+        const constructorType = this.findTypeDefinition(constructor.namespaceChain);
 
         if (isArrayInstantiation) {
           const arrayTypeDefiner = new ArrayType.Definer(this.context.symbolDictionary);

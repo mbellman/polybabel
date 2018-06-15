@@ -1,7 +1,6 @@
 import AbstractValidator from '../common/AbstractValidator';
 import JavaBlockValidator from './JavaBlockValidator';
 import { Implements } from 'trampoline-framework';
-import { JavaCompilerUtils } from '../../utils/java-compiler-utils';
 import { JavaConstants } from '../../../parser/java/java-constants';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
 import { ObjectCategory } from '../../symbol-resolvers/common/types';
@@ -17,10 +16,7 @@ export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyn
 
     this.focusToken(type.token);
 
-    const returnTypeDefinition = (
-      JavaCompilerUtils.getNativeTypeDefinition(type.namespaceChain.join('.')) ||
-      this.findTypeDefinition(type.namespaceChain)
-    );
+    const returnTypeDefinition = this.findTypeDefinition(type.namespaceChain);
 
     this.expectType({
       type: returnTypeDefinition,

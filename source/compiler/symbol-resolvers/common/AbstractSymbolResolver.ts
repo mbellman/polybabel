@@ -2,22 +2,24 @@ import SymbolDictionary from './SymbolDictionary';
 import { ArrayType } from './array-type';
 import { FunctionType } from './function-type';
 import { IConstructable, IHashMap } from 'trampoline-framework';
-import { ISymbol, SymbolIdentifier } from './types';
 import { ISyntaxTree } from '../../../parser/common/syntax-types';
 import { ObjectType } from './object-type';
+import { SymbolIdentifier, TypeDefinition } from './types';
 
 /**
  * @todo @description
  */
 export default abstract class AbstractSymbolResolver {
   protected readonly file: string;
+  protected nativeTypeMap: IHashMap<TypeDefinition>;
   protected symbolDictionary: SymbolDictionary;
   private importToSourceFileMap: IHashMap<string> = {};
   private namespaceStack: string[] = [];
 
-  public constructor (file: string, symbolDictionary: SymbolDictionary) {
+  public constructor (file: string, symbolDictionary: SymbolDictionary, nativeTypeMap: IHashMap<TypeDefinition> = {}) {
     this.file = file;
     this.symbolDictionary = symbolDictionary;
+    this.nativeTypeMap = nativeTypeMap;
   }
 
   public abstract resolve (syntaxTree: ISyntaxTree): void;
