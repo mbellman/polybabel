@@ -8,18 +8,32 @@ import { JavaSyntax } from '../../../parser/java/java-syntax';
 import { ObjectType } from '../../symbol-resolvers/common/object-type';
 import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
 import { ValidatorUtils } from '../common/validator-utils';
+import { TypeValidation } from '../common/type-validation';
+import { TypeExpectation } from '../common/types';
 
 export default class JavaStatementValidator extends AbstractValidator<JavaSyntax.IJavaStatement> {
   @Implements public validate (): void {
     const type = this.getStatementType(this.syntaxNode);
+    const isReturnStatement = this.isReturnStatement();
+
+    if (isReturnStatement) {
+      this.expectType({
+        type: this.getLastExpectedTypeFor(TypeExpectation.RETURN),
+        expectation: TypeExpectation.RETURN
+      });
+    }
 
     this.checkIfTypeMatchesExpected(type);
+
+    if (isReturnStatement) {
+      this.resetExpectedType();
+    }
   }
 
   private getPropertyChainType (propertyChain: JavaSyntax.IJavaPropertyChain): TypeDefinition {
-    const { token, properties } = propertyChain;
+    const { token: propertyChainToken, properties } = propertyChain;
 
-    this.focusToken(token);
+    this.focusToken(propertyChainToken);
 
     const firstProperty = properties[0];
     let currentPropertyLookupType: TypeDefinition;
@@ -31,11 +45,13 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
       currentPropertyLookupType = this.getSyntaxNodeType(firstProperty);
     }
 
-    if (!currentPropertyLookupType) {
+    if (TypeValidation.isDynamic(currentPropertyLookupType)) {
       // If there was any problem getting the initial lookup type, it will
-      // have been reported within one of the previous calls calls. Since
-      // the type itself is unknown, we use a dynamic type fallback.
-      return TypeUtils.createSimpleType(Dynamic);
+      // have been reported within one of the previous calls. If the lookup
+      // type was actually resolved and simply corresponds to a dynamic type,
+      // the whole property chain is dynamic. In either case, we return a
+      // dynamic type as a graceful fallback.
+      return currentPropertyLookupType;
     }
 
     let incomingProperty = properties[++propertyIndex];
@@ -57,6 +73,9 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
         currentMember = currentPropertyLookupType.getObjectMember(incomingProperty);
 
         if (!currentMember) {
+          const propertyNameToken = ValidatorUtils.findKeywordToken(incomingProperty, propertyChainToken, token => token.nextTextToken);
+
+          this.focusToken(propertyNameToken);
           this.reportUnknownMember(currentPropertyLookupType.name, incomingProperty);
 
           return TypeUtils.createSimpleType(Dynamic);
@@ -69,6 +88,8 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
             // The next lookup type of a function call
             // property is its return type
             const { name: functionName } = incomingProperty;
+
+            this.focusToken(incomingProperty.token);
 
             currentMember = currentPropertyLookupType.getObjectMember(functionName);
 
@@ -91,6 +112,8 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
             // property is its constructor type
             const { constructor } = incomingProperty;
             const constructorName = constructor.namespaceChain.join('.');
+
+            this.focusToken(constructor.token);
 
             currentMember = currentPropertyLookupType.getObjectMember(constructorName);
 
@@ -138,17 +161,13 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
   }
 
   private getStatementType (statement: JavaSyntax.IJavaStatement): TypeDefinition {
-    const { isParenthetical, leftSide, operator, rightSide } = statement;
+    const { isParenthetical, leftSide, operator } = statement;
 
     if (isParenthetical) {
       return this.getStatementType(leftSide as JavaSyntax.IJavaStatement);
-    } else if (!leftSide && operator) {
-      return this.inferTypeFromLeftOperation(operator.operation);
-    }
-
-    if (!!leftSide) {
+    } else if (!!leftSide) {
       return this.getSyntaxNodeType(leftSide);
-    } else {
+    } else if (operator) {
       return this.inferTypeFromLeftOperation(operator.operation);
     }
   }
@@ -172,9 +191,20 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
         }
       case JavaSyntax.JavaSyntaxNode.REFERENCE:
         const reference = javaSyntaxNode as JavaSyntax.IJavaReference;
-        const { value } = reference;
+        const { value: referenceName } = reference;
 
-        return this.findTypeDefinitionByName(value);
+        return this.findTypeDefinitionByName(referenceName);
+      case JavaSyntax.JavaSyntaxNode.INSTRUCTION:
+        const instruction = javaSyntaxNode as JavaSyntax.IJavaInstruction;
+        const { type, value: instructionValue } = instruction;
+
+        if (type === JavaSyntax.JavaInstructionType.RETURN) {
+          this.focusToken(instructionValue.token);
+
+          return this.getStatementType(instructionValue);
+        } else {
+          return TypeUtils.createSimpleType(Dynamic);
+        }
       case JavaSyntax.JavaSyntaxNode.FUNCTION_CALL:
         const { name } = javaSyntaxNode as JavaSyntax.IJavaFunctionCall;
         const functionType = this.findTypeDefinitionByName(name) as FunctionType.Definition;
@@ -185,6 +215,8 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
         const { constructor } = instantiation;
         const isArrayInstantiation = !!instantiation.arrayAllocationSize || !!instantiation.arrayLiteral;
         const constructorType = this.findTypeDefinition(constructor.namespaceChain);
+
+        this.focusToken(constructor.token);
 
         if (isArrayInstantiation) {
           const arrayTypeDefiner = new ArrayType.Definer(this.context.symbolDictionary);
@@ -220,5 +252,20 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
       case JavaSyntax.JavaOperation.BITWISE_COMPLEMENT:
         return TypeUtils.createSimpleType(Primitive.NUMBER);
     }
+  }
+
+  private isReturnStatement (): boolean {
+    const { leftSide } = this.syntaxNode;
+
+    if (!leftSide) {
+      return false;
+    }
+
+    const { node, type } = leftSide as JavaSyntax.IJavaInstruction;
+
+    return (
+      node === JavaSyntax.JavaSyntaxNode.INSTRUCTION &&
+      type === JavaSyntax.JavaInstructionType.RETURN
+    );
   }
 }

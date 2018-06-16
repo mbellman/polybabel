@@ -2,9 +2,10 @@ import ValidatorContext from './ValidatorContext';
 import { Callback } from '../../../system/types';
 import { Constructor, IConstructable } from 'trampoline-framework';
 import { Dynamic, TypeDefinition } from '../../symbol-resolvers/common/types';
+import { GlobalNativeTypeMap } from '../../native-type-maps/global';
+import { IExpectedType, IValidatorError, IValidatorHelper, TypeExpectation } from './types';
 import { ISyntaxNode } from '../../../parser/common/syntax-types';
 import { IToken } from '../../../tokenizer/types';
-import { IValidatorError, IValidatorHelper, IExpectedType, TypeExpectation } from './types';
 import { ObjectType } from '../../symbol-resolvers/common/object-type';
 import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
 import { TypeValidation } from './type-validation';
@@ -14,7 +15,6 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
   protected context: ValidatorContext;
   protected syntaxNode: S;
   private focusedToken: IToken;
-  private parentValidator: AbstractValidator;
 
   public constructor (context: ValidatorContext, syntaxNode: S) {
     this.context = context;
@@ -60,7 +60,7 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
   }
 
   protected checkIfTypeMatchesExpected (type: TypeDefinition): void {
-    if (!this.context.shouldAllowAnyType) {
+    if (this.context.shouldAllowAnyType) {
       this.context.shouldAllowAnyType = false;
 
       return;
@@ -73,7 +73,7 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
 
     this.check(
       TypeValidation.typeMatches(type, expectedTypeDefinition),
-      `'${typeDescription}' does not match expected ${expectation} '${expectedTypeDescription}'`
+      `Expected ${expectation} '${expectedTypeDescription}'; got '${typeDescription}' instead`
     );
   }
 
@@ -89,25 +89,6 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     this.context.shouldAllowAnyType = false;
 
     this.context.expectedTypeStack.push(expectedType);
-  }
-
-  protected expectsType (): boolean {
-    return !this.context.shouldAllowAnyType;
-  }
-
-  /**
-   * @todo @description
-   */
-  protected findParentNode (node: any): ISyntaxNode {
-    if (this.syntaxNode.node === node) {
-      return this.syntaxNode;
-    }
-
-    if (this.parentValidator) {
-      return this.parentValidator.findParentNode(node);
-    }
-
-    return null;
   }
 
   /**
@@ -205,7 +186,8 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     const parentObjectMember = objectVisitor.findParentObjectMember(name);
 
     if (parentObjectMember) {
-      // If the name is a parent object member, return its type
+      // If the name is a parent object member, we return
+      // its type
       return parentObjectMember.type;
     }
 
@@ -219,8 +201,17 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     const symbol = symbolDictionary.getDefinedSymbol(file + name);
 
     if (symbol) {
-      // If all else fails, return the symbol in the current file
+      // If the name is a symbol in the current file, we
+      // return its type
       return symbol.type;
+    }
+
+    const globalNativeType = GlobalNativeTypeMap[name];
+
+    if (globalNativeType) {
+      // If the name is a global native (i.e. to JavaScript)
+      // we return its mapped type
+      return globalNativeType;
     }
 
     this.reportUnknownIdentifier(name);
@@ -294,8 +285,6 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
    */
   protected validateNodeWith <T extends ISyntaxNode, N extends T>(Validator: Constructor<AbstractValidator<T>>, syntaxNode: N): void {
     const validator = new (Validator as IConstructable<AbstractValidator>)(this.context, syntaxNode);
-
-    validator.parentValidator = this;
 
     this.focusToken(syntaxNode.token);
 

@@ -16,6 +16,14 @@ export namespace TypeValidation {
   }
 
   /**
+   * Determines whether a provided type definition corresponds
+   * to a dynamic type.
+   */
+  export function isDynamic (typeDefinition: TypeDefinition): boolean {
+    return (typeDefinition as ISimpleType).type === Dynamic;
+  }
+
+  /**
    * Perhaps the most important function in the entire program;
    * determines whether a provided source type matches a provided
    * comparison type. Matching is not determined by equivalence,
@@ -43,14 +51,14 @@ export namespace TypeValidation {
       return true;
     }
 
-    const sourceAsSimpleType = sourceType as ISimpleType;
-    const comparisonAsSimpleType = comparisonType as ISimpleType;
-
-    if (comparisonAsSimpleType.type === Dynamic) {
+    if (isDynamic(comparisonType)) {
       // If the comparison type is dynamic, the source type
       // automatically matches (#2)
       return true;
     }
+
+    const sourceAsSimpleType = sourceType as ISimpleType;
+    const comparisonAsSimpleType = comparisonType as ISimpleType;
 
     if (sourceAsSimpleType.type && comparisonAsSimpleType.type) {
       // If the source and comparison types are both simple
