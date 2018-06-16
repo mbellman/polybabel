@@ -227,7 +227,6 @@ export namespace JavaUtils {
     }
 
     const { INSTANCEOF } = JavaConstants.Operator;
-    const { RETURN, THROW, CASE, ASSERT } = JavaConstants.Keyword;
 
     // Flanked tokens are those which have tokens on both
     // sides isolating them as singular syntactic units

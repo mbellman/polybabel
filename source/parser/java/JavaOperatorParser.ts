@@ -4,6 +4,7 @@ import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { ParserUtils } from '../common/parser-utils';
 import { TokenMatch } from '../common/parser-types';
+import { TokenUtils } from '../../tokenizer/token-utils';
 
 const {
   EQUAL,
@@ -173,6 +174,10 @@ export default class JavaOperatorParser extends AbstractParser<JavaSyntax.IJavaO
     }
 
     if (!this.isDefaultOperator && !isShorthandAssignment) {
+      this.next();
+    }
+
+    if (!this.currentTokenMatches(TokenUtils.isText)) {
       this.next();
     }
 

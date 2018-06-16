@@ -14,7 +14,7 @@ type CompilerError = [ string, IValidatorError ];
 /**
  * @internal
  */
-type CompilerErrorHandler = (file: string, message: string, line: number, linePreview?: string) => void;
+type CompilerErrorHandler = (filename: string, message: string, line: number, linePreview?: string) => void;
 
 export default class Compiler {
   private compiledCodeMap: IHashMap<string> = {};
@@ -23,62 +23,62 @@ export default class Compiler {
   private syntaxTreeMap: IHashMap<ISyntaxTree> = {};
   private symbolDictionary: SymbolDictionary = new SymbolDictionary();
 
-  public add (file: string, syntaxTree: ISyntaxTree): void {
+  public add (filename: string, syntaxTree: ISyntaxTree): void {
     if (!syntaxTree) {
       return;
     }
 
-    this.syntaxTreeMap[file] = syntaxTree;
+    this.syntaxTreeMap[filename] = syntaxTree;
 
     const { SymbolResolver, NativeTypeMap } = LanguageSpecification[syntaxTree.language];
 
-    new SymbolResolver(this.formatFilename(file), this.symbolDictionary, NativeTypeMap).resolve(syntaxTree);
+    new SymbolResolver(this.removeExtension(filename), this.symbolDictionary, NativeTypeMap).resolve(syntaxTree);
   }
 
-  public addError (file: string, reportedError: IValidatorError): void {
-    this.errors.push([ file, reportedError ]);
+  public addError (filename: string, reportedError: IValidatorError): void {
+    this.errors.push([ filename, reportedError ]);
   }
 
-  public compileFile (file: string): void {
-    const syntaxTree = this.syntaxTreeMap[file];
+  public compileFile (filename: string): void {
+    const syntaxTree = this.syntaxTreeMap[filename];
 
     if (!syntaxTree) {
       return;
     }
 
     const { Validator, Translator, NativeTypeMap } = LanguageSpecification[syntaxTree.language];
-    const validatorContext = new ValidatorContext(this.formatFilename(file), this.symbolDictionary, NativeTypeMap);
+    const validatorContext = new ValidatorContext(this.removeExtension(filename), this.symbolDictionary, NativeTypeMap);
     const validator = new Validator(validatorContext, syntaxTree);
 
     validator.validate();
 
     if (validator.hasErrors()) {
-      validator.forErrors(reportedError => this.addError(file, reportedError));
+      validator.forErrors(reportedError => this.addError(filename, reportedError));
     } else {
       const translation = new Translator(syntaxTree).getTranslation();
 
-      this.compiledCodeMap[file] = translation;
+      this.compiledCodeMap[filename] = translation;
     }
   }
 
-  public defineEntryFile (file: string): void {
-    this.entryFile = file;
+  public defineEntryFilename (filename: string): void {
+    this.entryFile = filename;
   }
 
   public forEachError (handler: CompilerErrorHandler): void {
-    this.errors.forEach(([ file, { message, token } ]) => {
+    this.errors.forEach(([ filename, { message, token } ]) => {
       const line = token ? token.line : 0;
 
       const linePreview = token
         ? TokenUtils.createLinePreview(token)
         : '';
 
-      handler(file, message, line, linePreview);
+      handler(filename, message, line, linePreview);
     });
   }
 
-  public getCompiledCode (file: string): string {
-    return this.compiledCodeMap[file];
+  public getCompiledCode (filename: string): string {
+    return this.compiledCodeMap[filename];
   }
 
   public hasErrors (): boolean {
@@ -93,15 +93,12 @@ export default class Compiler {
   }
 
   public run (): void {
-    Object.keys(this.syntaxTreeMap).forEach(file => {
-      this.compileFile(file);
+    Object.keys(this.syntaxTreeMap).forEach(filename => {
+      this.compileFile(filename);
     });
   }
 
-  /**
-   * @todo @description
-   */
-  private formatFilename (filename: string): string {
+  private removeExtension (filename: string): string {
     return filename.split('.').slice(0, -1).join('.');
   }
 }

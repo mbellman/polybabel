@@ -15,19 +15,10 @@ export default class SymbolDictionary {
 
   /**
    * Returns a symbol based on its identifier, without any safeguard
-   * against undefined symbools.
+   * against undefined symbols.
    */
   public getDefinedSymbol (symbolIdentifier: SymbolIdentifier): ISymbol {
     return this.symbolMap[symbolIdentifier];
-  }
-
-  /**
-   * Returns a symbol based on its identifier, or a dynamically
-   * typed symbol created on the fly for identifiers without
-   * dictionary entries.
-   */
-  public getSymbol (symbolIdentifier: SymbolIdentifier): ISymbol {
-    return this.getDefinedSymbol(symbolIdentifier) || this.createDynamicSymbol(symbolIdentifier);
   }
 
   /**
@@ -46,6 +37,15 @@ export default class SymbolDictionary {
     }
 
     return this.createDynamicSymbol();
+  }
+
+  /**
+   * Returns a symbol based on its identifier, or a dynamically
+   * typed symbol created on the fly for identifiers without
+   * dictionary entries.
+   */
+  public getSymbol (symbolIdentifier: SymbolIdentifier): ISymbol {
+    return this.getDefinedSymbol(symbolIdentifier) || this.createDynamicSymbol(symbolIdentifier);
   }
 
   /**

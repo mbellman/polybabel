@@ -11,22 +11,62 @@ import { ValidatorUtils } from '../common/validator-utils';
 import { TypeValidation } from '../common/type-validation';
 import { TypeExpectation } from '../common/types';
 
+/**
+ * Validates Java statements. The fundamental qualifications for
+ * 'valid' Java statements are that they:
+ *
+ *  1. Have a type corresponding to the current expected type
+ *
+ *  2. Don't involve invalid property chain access where applicable
+ *
+ *  3. Aren't located in an invalid spot (e.g. full statements where
+ *     only expressions are allowed). Since the Java parser does not
+ *     distinguish between statements and expressions in that it only
+ *     identifies statement syntax nodes, we have to validate their
+ *     type and proper use here.
+ *
+ * When invoked directly from a block, Java statement validation allows
+ * the type of the incoming statement to be any type. However, in the
+ * case of return statements or recursively validated operand/assigned
+ * statements, we need to ensure that the statement type matches that
+ * expected.
+ */
 export default class JavaStatementValidator extends AbstractValidator<JavaSyntax.IJavaStatement> {
   @Implements public validate (): void {
-    const type = this.getStatementType(this.syntaxNode);
-    const isReturnStatement = this.isReturnStatement();
+    if (this.isReturnStatement()) {
+      const { value: returnStatement } = this.syntaxNode.leftSide as JavaSyntax.IJavaInstruction;
 
-    if (isReturnStatement) {
       this.expectType({
         type: this.getLastExpectedTypeFor(TypeExpectation.RETURN),
         expectation: TypeExpectation.RETURN
       });
-    }
 
-    this.checkIfTypeMatchesExpected(type);
-
-    if (isReturnStatement) {
+      this.validateNodeWith(JavaStatementValidator, returnStatement);
       this.resetExpectedType();
+    } else {
+      const statementType = this.getStatementType(this.syntaxNode);
+      const { operator } = this.syntaxNode;
+
+      this.checkIfTypeMatchesExpected(statementType);
+
+      if (this.hasRightSide()) {
+        const { rightSide } = this.syntaxNode;
+
+        const expectation = operator.operation === JavaSyntax.JavaOperation.ASSIGN
+          ? TypeExpectation.ASSIGNMENT
+          : TypeExpectation.OPERAND;
+
+        this.expectType({
+          type: statementType,
+          expectation
+        });
+
+        this.validateNodeWith(JavaStatementValidator, rightSide);
+        this.resetExpectedType();
+      } else if (operator) {
+        // TODO: Validate that statements with ++ and --
+        // operators are references and number types
+      }
     }
   }
 
@@ -72,10 +112,11 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
         // of the member it accesses
         currentMember = currentPropertyLookupType.getObjectMember(incomingProperty);
 
-        if (!currentMember) {
-          const propertyNameToken = ValidatorUtils.findKeywordToken(incomingProperty, propertyChainToken, token => token.nextTextToken);
+        const propertyNameToken = ValidatorUtils.findKeywordToken(incomingProperty, propertyChainToken, token => token.nextTextToken);
 
-          this.focusToken(propertyNameToken);
+        this.focusToken(propertyNameToken);
+
+        if (!currentMember) {
           this.reportUnknownMember(currentPropertyLookupType.name, incomingProperty);
 
           return TypeUtils.createSimpleType(Dynamic);
@@ -138,7 +179,7 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
       incomingProperty = properties[++propertyIndex];
     }
 
-    return currentMember.type;
+    return currentPropertyLookupType;
   }
 
   private getSimpleLiteralType (literal: JavaSyntax.IJavaLiteral): ISimpleType {
@@ -172,11 +213,26 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
     }
   }
 
+  /**
+   * Returns the type of a Java syntax node. This method has side
+   * effects, as the process of determining a syntax node type also
+   * might involve focusing tokens or adding values to scope, mostly
+   * to avoid duplication of effort.
+   */
   private getSyntaxNodeType (javaSyntaxNode: JavaSyntax.IJavaSyntaxNode): TypeDefinition {
     switch (javaSyntaxNode.node) {
-      case JavaSyntax.JavaSyntaxNode.STATEMENT:
+      case JavaSyntax.JavaSyntaxNode.VARIABLE_DECLARATION: {
+        const { type, name } = javaSyntaxNode as JavaSyntax.IJavaVariableDeclaration;
+        const typeDefinition = this.findTypeDefinition(type.namespaceChain);
+
+        this.context.scopeManager.addToScope(name, typeDefinition);
+
+        return typeDefinition;
+      }
+      case JavaSyntax.JavaSyntaxNode.STATEMENT: {
         return this.getStatementType(javaSyntaxNode as JavaSyntax.IJavaStatement);
-      case JavaSyntax.JavaSyntaxNode.LITERAL:
+      }
+      case JavaSyntax.JavaSyntaxNode.LITERAL: {
         const literal = javaSyntaxNode as JavaSyntax.IJavaLiteral;
 
         if (literal.type === JavaSyntax.JavaLiteralType.ARRAY) {
@@ -189,28 +245,20 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
         } else {
           return this.getSimpleLiteralType(literal);
         }
-      case JavaSyntax.JavaSyntaxNode.REFERENCE:
+      }
+      case JavaSyntax.JavaSyntaxNode.REFERENCE: {
         const reference = javaSyntaxNode as JavaSyntax.IJavaReference;
         const { value: referenceName } = reference;
 
         return this.findTypeDefinitionByName(referenceName);
-      case JavaSyntax.JavaSyntaxNode.INSTRUCTION:
-        const instruction = javaSyntaxNode as JavaSyntax.IJavaInstruction;
-        const { type, value: instructionValue } = instruction;
-
-        if (type === JavaSyntax.JavaInstructionType.RETURN) {
-          this.focusToken(instructionValue.token);
-
-          return this.getStatementType(instructionValue);
-        } else {
-          return TypeUtils.createSimpleType(Dynamic);
-        }
-      case JavaSyntax.JavaSyntaxNode.FUNCTION_CALL:
+      }
+      case JavaSyntax.JavaSyntaxNode.FUNCTION_CALL: {
         const { name } = javaSyntaxNode as JavaSyntax.IJavaFunctionCall;
         const functionType = this.findTypeDefinitionByName(name) as FunctionType.Definition;
 
         return functionType.getReturnType();
-      case JavaSyntax.JavaSyntaxNode.INSTANTIATION:
+      }
+      case JavaSyntax.JavaSyntaxNode.INSTANTIATION: {
         const instantiation = javaSyntaxNode as JavaSyntax.IJavaInstantiation;
         const { constructor } = instantiation;
         const isArrayInstantiation = !!instantiation.arrayAllocationSize || !!instantiation.arrayLiteral;
@@ -231,11 +279,22 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
           // TODO: Resolve constrained generic types
           return constructorType;
         }
-      case JavaSyntax.JavaSyntaxNode.PROPERTY_CHAIN:
+      }
+      case JavaSyntax.JavaSyntaxNode.PROPERTY_CHAIN: {
         return this.getPropertyChainType(javaSyntaxNode as JavaSyntax.IJavaPropertyChain);
+      }
       default:
         return TypeUtils.createSimpleType(Dynamic);
     }
+  }
+
+  private hasRightSide (): boolean {
+    const { rightSide } = this.syntaxNode;
+
+    return !!rightSide && (
+      !!rightSide.leftSide ||
+      !!rightSide.rightSide
+    );
   }
 
   /**

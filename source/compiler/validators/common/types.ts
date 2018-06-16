@@ -31,15 +31,13 @@ export interface IValidatorError extends IParserError { }
  * statements/expressions to those which a language allows
  * to be assigned or operated on.
  *
- *  1. 'Any' type expectations
- *  2. Return type expectations enforce return statement/expression types
- *  3. Assignment type expectations enforce the type of an assigned statement/expression value
- *  4. Operand type expectations enforce the type of operand statements/expressions
+ *  1. Return type expectations enforce return statement/expression types
+ *  2. Assignment type expectations enforce the type of an assigned statement/expression value
+ *  3. Operand type expectations enforce the type of operand statements/expressions
  */
 export const enum TypeExpectation {
-  ANY = 'any type',
   RETURN = 'return type',
-  ASSIGNMENT = 'assignment type',
+  ASSIGNMENT = 'assigned type',
   OPERAND = 'operand type'
 }
 

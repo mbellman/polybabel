@@ -209,7 +209,7 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     const globalNativeType = GlobalNativeTypeMap[name];
 
     if (globalNativeType) {
-      // If the name is a global native (i.e. to JavaScript)
+      // If the name is a global native type (i.e. to JavaScript)
       // we return its mapped type
       return globalNativeType;
     }

@@ -18,12 +18,11 @@ import JavaTryCatchParser from './statement-parsers/JavaTryCatchParser';
 import JavaTypeParser from './JavaTypeParser';
 import JavaVariableDeclarationParser from './statement-parsers/JavaVariableDeclarationParser';
 import JavaWhileLoopParser from './statement-parsers/JavaWhileLoopParser';
-import { Allow, Match } from '../common/parser-decorators';
 import { Constructor, Implements, Override } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { JavaUtils } from './java-utils';
-import { ParserUtils } from '../common/parser-utils';
+import { Match } from '../common/parser-decorators';
 import { TokenMatch } from '../common/parser-types';
 import { TokenUtils } from '../../tokenizer/token-utils';
 
@@ -62,7 +61,7 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
    * common ones by including them earlier in the list
    * where priority does not cause conflicts.
    *
-   * @see: onStatement()
+   * @see onStatement()
    *
    * A getter is used to circumvent circular dependency
    * issues with CommonJS; returning the list in a method
@@ -216,7 +215,7 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
     const { leftSide } = this.parsed;
 
     this.assert(
-      leftSide
+      !!leftSide
         // If we've already parsed a left side, ensure
         // that it isn't a lambda expression, since they
         // aren't operable

@@ -147,7 +147,7 @@ import { LanguageSpecification } from '../source/language-specifications';
   private showCompilerErrors (): void {
     const errors: string[] = [];
 
-    this.compiler.forEachError((file, message, line, linePreview) => {
+    this.compiler.forEachError((filename, message, line, linePreview) => {
       errors.push(
         `Compilation Error: ${message}` +
         `${line ? ` (Line ${line}):` : ''}` +

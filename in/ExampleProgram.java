@@ -11,6 +11,8 @@ public final class ExampleProgram {
   }
 
   public static IExampleInterface getExample () {
-    return new ExampleImplementation();
+    ExampleImplementation exampleImplementation = new ExampleImplementation();
+
+    return exampleImplementation;
   }
 }

@@ -37,17 +37,17 @@ function getLanguageByExtension (extension: string): Language {
 /**
  * @internal
  */
-async function createCompiler (inputFolderName: string, files: string[]): Promise<Compiler> {
+async function createCompiler (inputFolderName: string, filenames: string[]): Promise<Compiler> {
   const compiler = new Compiler();
   const cwd = process.cwd();
 
-  for (const file of files) {
-    const extension = file.split('.').pop();
+  for (const filename of filenames) {
+    const extension = filename.split('.').pop();
 
     try {
       const language = getLanguageByExtension(extension);
       const { Parser } = LanguageSpecification[language];
-      const fileContents = await getFileContents(`${cwd}/${inputFolderName}/${file}`);
+      const fileContents = await getFileContents(`${cwd}/${inputFolderName}/${filename}`);
       const firstToken = tokenize(fileContents);
       const parser = new Parser();
       let syntaxTree: ISyntaxTree;
@@ -57,12 +57,12 @@ async function createCompiler (inputFolderName: string, files: string[]): Promis
       } catch (e) { }
 
       if (parser.hasError()) {
-        compiler.addError(file, parser.getError());
+        compiler.addError(filename, parser.getError());
       }
 
-      compiler.add(file, syntaxTree);
+      compiler.add(filename, syntaxTree);
     } catch ({ message }) {
-      compiler.addError(file, { message });
+      compiler.addError(filename, { message });
     }
   }
 
@@ -84,15 +84,17 @@ async function main (args: string[]) {
   compiler.run();
 
   if (compiler.hasErrors()) {
+    console.log(`${chalk.yellow('\nErrors detected:')}`);
+
     compiler.forEachError((file, message, line, linePreview) => {
-      console.log(`\n${chalk.blue(`${file}`)}: ${chalk.redBright(message)}`);
+      console.log(`\n${chalk.bold.white(`${file}`)}: ${chalk.yellow(message)}`);
 
       if (line && linePreview) {
-        console.log(` ${chalk.yellow(`${line}`)}. ... ${linePreview}`);
+        console.log(` ${chalk.red(`${line}`)}. ... ${linePreview}`);
       }
     });
 
-    console.log(chalk.red('\nFailed to compile.'));
+    console.log(chalk.redBright('\nFailed to compile.'));
   } else {
     console.log(chalk.white.bold(`\nDone. ${Date.now() - startTime}ms`));
   }

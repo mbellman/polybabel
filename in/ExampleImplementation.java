@@ -9,4 +9,8 @@ public class ExampleImplementation implements IExampleInterface {
   Number getExample () {
     return num;
   }
+
+  Number getAddedNumber () {
+    return num + num;
+  }
 }
