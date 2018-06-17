@@ -21,7 +21,7 @@ export default class JavaInstantiationTranslator extends AbstractTranslator<Java
   }
 
   private emitAnonymousObject (): void {
-    const { constructor, anonymousObjectBody } = this.syntaxNode;
+    const { anonymousObjectBody, overloadIndex, arguments: args } = this.syntaxNode;
     const { members } = anonymousObjectBody;
     const constructorName = this.getConstructorName();
 
@@ -30,9 +30,8 @@ export default class JavaInstantiationTranslator extends AbstractTranslator<Java
       .emit(`var instance = typeof Ctor === \'function\'`)
       .enterBlock()
       // Anonymous class extension
-      .emit('? new Ctor(')
-      .emitConstructorArguments()
-      .emit(')')
+      .emit('? new Ctor()')
+      .emitPossibleOverloadedConstructorCall()
       .newline()
       // Anonymous interface implementation
       .emit(': Object.create(Ctor);')
@@ -137,16 +136,24 @@ export default class JavaInstantiationTranslator extends AbstractTranslator<Java
     );
   }
 
-  private emitRegularInstantiation (): this {
-    const { constructor, arguments: args } = this.syntaxNode;
+  private emitPossibleOverloadedConstructorCall (): this {
+    const { constructor, arguments: args, overloadIndex } = this.syntaxNode;
+    const lastConstructorNamespace = constructor.namespaceChain[constructor.namespaceChain.length - 1];
 
+    if (args.length > 0) {
+      this.emit(`.${lastConstructorNamespace}_${overloadIndex}(`)
+        .emitConstructorArguments()
+        .emit(')');
+    }
+
+    return this;
+  }
+
+  private emitRegularInstantiation (): this {
     const constructorName = this.getConstructorName();
 
-    return this.emit(`new ${constructorName}`)
-      .emit('(0')
-      .emit(args.length > 0 ? ', ' : '')
-      .emitConstructorArguments()
-      .emit(')');
+    return this.emit(`new ${constructorName}()`)
+      .emitPossibleOverloadedConstructorCall();
   }
 
   private getConstructorName (): string {

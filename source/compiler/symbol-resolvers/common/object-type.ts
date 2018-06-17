@@ -2,6 +2,7 @@ import AbstractTypeDefinition from './AbstractTypeDefinition';
 import { FunctionType } from './function-type';
 import { IConstrainable, IObjectMember, ObjectCategory, SymbolIdentifier, TypeDefinition } from './types';
 import { IHashMap, Implements } from 'trampoline-framework';
+import { TypeValidation } from '../../validators/common/type-validation';
 
 export namespace ObjectType {
   /**
@@ -73,9 +74,37 @@ export namespace ObjectType {
       }
     }
 
-    /**
-     * @todo Allow optional visibility restrictions
-     */
+    public getConstructorSignatureIndex (argumentTypes: TypeDefinition[]): number {
+      if (this.constructors.length === 0 && argumentTypes.length === 0) {
+        return 0;
+      }
+
+      for (let i = 0; i < this.constructors.length; i++) {
+        const { type: functionType } = this.constructors[i];
+        const parameterTypes = functionType.getParameterTypes();
+        let j = 0;
+
+        for (j = 0; j < parameterTypes.length; j++) {
+          const argumentType = argumentTypes[j];
+
+          if (!argumentType || !TypeValidation.typeMatches(argumentType, parameterTypes[j])) {
+            break;
+          }
+        }
+
+        const matchedAllParameters = (
+          argumentTypes.length === parameterTypes.length &&
+          j === parameterTypes.length
+        );
+
+        if (matchedAllParameters) {
+          return i;
+        }
+      }
+
+      return -1;
+    }
+
     public getObjectMember (memberName: string): IObjectMember {
       const objectMember = this.objectMemberMap[memberName];
 

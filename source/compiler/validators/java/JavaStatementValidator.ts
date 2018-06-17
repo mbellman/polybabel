@@ -15,7 +15,7 @@ import { TypeExpectation } from '../common/types';
  * Validates Java statements. The fundamental qualifications for
  * 'valid' Java statements are that they:
  *
- *  1. Have a type corresponding to the current expected type
+ *  1. Have a type corresponding to the current expected type if any
  *
  *  2. Don't involve invalid property chain access where applicable
  *
@@ -34,14 +34,14 @@ import { TypeExpectation } from '../common/types';
 export default class JavaStatementValidator extends AbstractValidator<JavaSyntax.IJavaStatement> {
   @Implements public validate (): void {
     if (this.isReturnStatement()) {
-      const { value: returnStatement } = this.syntaxNode.leftSide as JavaSyntax.IJavaInstruction;
+      const { value: returnValue } = this.syntaxNode.leftSide as JavaSyntax.IJavaInstruction;
 
       this.expectType({
         type: this.getLastExpectedTypeFor(TypeExpectation.RETURN),
         expectation: TypeExpectation.RETURN
       });
 
-      this.validateNodeWith(JavaStatementValidator, returnStatement);
+      this.validateNodeWith(JavaStatementValidator, returnValue);
       this.resetExpectedType();
     } else {
       const statementType = this.getStatementType(this.syntaxNode);
@@ -108,7 +108,7 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
       }
 
       if (typeof incomingProperty === 'string') {
-        // The next lookup type of a string property is the type
+        // The next lookup type after a string property is the type
         // of the member it accesses
         currentMember = currentPropertyLookupType.getObjectMember(incomingProperty);
 
@@ -125,10 +125,11 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
         currentPropertyLookupType = currentMember.type;
       } else {
         switch (incomingProperty.node) {
-          case JavaSyntax.JavaSyntaxNode.FUNCTION_CALL:
-            // The next lookup type of a function call
+          case JavaSyntax.JavaSyntaxNode.FUNCTION_CALL: {
+            // The next lookup type after a function call
             // property is its return type
-            const { name: functionName } = incomingProperty;
+            const { name: functionName, arguments: args } = incomingProperty;
+            const functionArgumentTypes = args.map(argument => this.getStatementType(argument));
 
             this.focusToken(incomingProperty.token);
 
@@ -140,6 +141,8 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
               return TypeUtils.createSimpleType(Dynamic);
             }
 
+            // TODO: Handle overloads
+
             if (!(currentMember.type instanceof FunctionType.Definition)) {
               this.report(`'${currentPropertyLookupType.name}.${functionName}' is not a function type`);
 
@@ -148,10 +151,11 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
 
             currentPropertyLookupType = currentMember.type.getReturnType();
             break;
-          case JavaSyntax.JavaSyntaxNode.INSTANTIATION:
-            // The next lookup type of an instantiation
+          }
+          case JavaSyntax.JavaSyntaxNode.INSTANTIATION: {
+            // The next lookup type after an instantiation
             // property is its constructor type
-            const { constructor } = incomingProperty;
+            const { constructor, arguments: args } = incomingProperty;
             const constructorName = constructor.namespaceChain.join('.');
 
             this.focusToken(constructor.token);
@@ -165,12 +169,18 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
             }
 
             currentPropertyLookupType = currentMember.type;
+
+            this.validateInstantiation(incomingProperty, currentPropertyLookupType);
             break;
-          case JavaSyntax.JavaSyntaxNode.STATEMENT:
+          }
+          case JavaSyntax.JavaSyntaxNode.STATEMENT: {
+            // TODO: Number indexes -> array element type
+            //
             // We can't know what the computed property name will be,
             // and since Java doesn't have index types, we just return
             // a dynamic type as a fallback
             return TypeUtils.createSimpleType(Dynamic);
+          }
         }
       }
 
@@ -222,7 +232,7 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
   private getSyntaxNodeType (javaSyntaxNode: JavaSyntax.IJavaSyntaxNode): TypeDefinition {
     switch (javaSyntaxNode.node) {
       case JavaSyntax.JavaSyntaxNode.VARIABLE_DECLARATION: {
-        const { type, name } = javaSyntaxNode as JavaSyntax.IJavaVariableDeclaration;
+        const { type, name, isFinal } = javaSyntaxNode as JavaSyntax.IJavaVariableDeclaration;
         const typeDefinition = this.findTypeDefinition(type.namespaceChain);
 
         this.context.scopeManager.addToScope(name, typeDefinition);
@@ -253,8 +263,11 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
         return this.findTypeDefinitionByName(referenceName);
       }
       case JavaSyntax.JavaSyntaxNode.FUNCTION_CALL: {
-        const { name } = javaSyntaxNode as JavaSyntax.IJavaFunctionCall;
+        const functionCall = javaSyntaxNode as JavaSyntax.IJavaFunctionCall;
+        const { name } = functionCall;
         const functionType = this.findTypeDefinitionByName(name) as FunctionType.Definition;
+
+        // TODO: this.validateFunctionCall(javaSyntax, functionType)
 
         return functionType.getReturnType();
       }
@@ -277,6 +290,8 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
 
           // TODO: Resolve anonymous object type for anonymous object instantiations
           // TODO: Resolve constrained generic types
+          this.validateInstantiation(instantiation, constructorType);
+
           return constructorType;
         }
       }
@@ -326,5 +341,46 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
       node === JavaSyntax.JavaSyntaxNode.INSTRUCTION &&
       type === JavaSyntax.JavaInstructionType.RETURN
     );
+  }
+
+  private validateFunctionCall (functionCall: JavaSyntax.IJavaFunctionCall, functionType: TypeDefinition | TypeDefinition[]): void {
+
+  }
+
+  private validateInstantiation (instantiation: JavaSyntax.IJavaInstantiation, objectType: TypeDefinition): void {
+    const { constructor, arguments: args } = instantiation;
+    const constructorName = constructor.namespaceChain.join('.');
+
+    const constructorArgumentTypes = args.map(argument => this.getStatementType(argument));
+
+    if (objectType instanceof ObjectType.Definition) {
+      if (!objectType.isConstructable) {
+        this.reportNonConstructableInstantiation(constructorName);
+      }
+
+      const constructorOverloadIndex = objectType.getConstructorSignatureIndex(constructorArgumentTypes);
+
+      if (constructorOverloadIndex === -1) {
+        const constructorArgumentDescriptions = constructorArgumentTypes.map(type => `'${ValidatorUtils.getTypeDescription(type)}'`);
+
+        this.report(`Invalid constructor arguments ${constructorArgumentDescriptions.join(', ')}`);
+      }
+
+      instantiation.overloadIndex = constructorOverloadIndex;
+    } else {
+      this.reportInvalidConstructor(constructorName);
+    }
+  }
+
+  private validateArguments (args: JavaSyntax.IJavaStatement[], argumentTypes: TypeDefinition[]): void {
+    for (let i = 0; i < args.length; i++) {
+      this.expectType({
+        type: argumentTypes[i],
+        expectation: TypeExpectation.ARGUMENT
+      });
+
+      this.validateNodeWith(JavaStatementValidator, args[i]);
+      this.resetExpectedType();
+    }
   }
 }

@@ -3,7 +3,7 @@ import { Callback } from '../../../system/types';
 import { Constructor, IConstructable } from 'trampoline-framework';
 import { Dynamic, TypeDefinition } from '../../symbol-resolvers/common/types';
 import { GlobalNativeTypeMap } from '../../native-type-maps/global';
-import { IExpectedType, IValidatorError, IValidatorHelper, TypeExpectation } from './types';
+import { IExpectedType, IValidatorError, TypeExpectation } from './types';
 import { ISyntaxNode } from '../../../parser/common/syntax-types';
 import { IToken } from '../../../tokenizer/types';
 import { ObjectType } from '../../symbol-resolvers/common/object-type';
@@ -83,6 +83,10 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
 
   protected exitNamespace (): void {
     this.context.namespaceStack.pop();
+  }
+
+  protected expectsType (): boolean {
+    return !this.context.shouldAllowAnyType;
   }
 
   protected expectType (expectedType: IExpectedType): void {
@@ -262,6 +266,18 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     });
   }
 
+  protected reportInvalidConstructor (name: string): void {
+    this.report(`'${name}' is not a constructor`);
+  }
+
+  protected reportNonConstructableInstantiation (name: string): void {
+    this.report(`Object '${name}' cannot be constructed`);
+  }
+
+  protected reportNonFunctionCalled (name: string): void {
+    this.report(`'${name}' is not a function`);
+  }
+
   protected reportNonObjectMemberAccess (name: string): void {
     this.report(`Identifier '${name}' does not have any members`);
   }
@@ -270,8 +286,8 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     this.report(`Unknown identifier '${name}'`);
   }
 
-  protected reportUnknownMember (source: string, member: string): void {
-    this.report(`Member '${member}' not found on '${source}'`);
+  protected reportUnknownMember (source: string, memberName: string): void {
+    this.report(`Unknown member '${source}.${memberName}'`);
   }
 
   protected resetExpectedType (): void {

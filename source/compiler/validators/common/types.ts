@@ -1,19 +1,5 @@
-import ObjectVisitor from './ObjectVisitor';
-import SymbolDictionary from '../../symbol-resolvers/common/SymbolDictionary';
 import { IParserError } from '../../../parser/common/parser-types';
-import { IToken } from '../../../tokenizer/types';
 import { TypeDefinition } from '../../symbol-resolvers/common/types';
-
-/**
- * @todo @description
- */
-export interface IValidatorHelper {
-  readonly objectVisitor: ObjectVisitor;
-  readonly symbolDictionary: SymbolDictionary;
-  findTypeDefinition (namespaceChain: string[]): TypeDefinition;
-  focusToken (token: IToken): void;
-  report (message: string): void;
-}
 
 /**
  * @todo @description
@@ -30,15 +16,12 @@ export interface IValidatorError extends IParserError { }
  * and operand type expectations constrain the set of valid
  * statements/expressions to those which a language allows
  * to be assigned or operated on.
- *
- *  1. Return type expectations enforce return statement/expression types
- *  2. Assignment type expectations enforce the type of an assigned statement/expression value
- *  3. Operand type expectations enforce the type of operand statements/expressions
  */
 export const enum TypeExpectation {
   RETURN = 'return type',
   ASSIGNMENT = 'assigned type',
-  OPERAND = 'operand type'
+  OPERAND = 'operand type',
+  ARGUMENT = 'argument type'
 }
 
 /**

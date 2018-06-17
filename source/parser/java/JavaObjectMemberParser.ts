@@ -122,8 +122,6 @@ export default class JavaObjectMemberParser extends AbstractParser<ISyntaxNode &
       this.parsed.node = JavaSyntax.JavaSyntaxNode.OBJECT_FIELD;
     }
 
-    const { value } = this.parsed as JavaSyntax.IJavaObjectField;
-
     this.finish();
   }
 

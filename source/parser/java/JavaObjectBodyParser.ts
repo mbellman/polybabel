@@ -53,8 +53,11 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
     const name = this.eat(TokenUtils.isWord);
     const method = this.parseNextWith(JavaObjectMethodParser);
 
+    this.assert(method.block !== null);
+
     this.parsed.constructors.push({
       ...method,
+      isConstructor: true,
       access,
       name
     });

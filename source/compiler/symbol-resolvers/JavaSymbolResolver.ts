@@ -75,14 +75,14 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
 
       return arrayTypeDefiner;
     } else {
-      return this.createTypeDefinition(type);
+      return this.javaTypeToTypeDefinition(type);
     }
   }
 
   /**
    * @todo @description
    */
-  private createTypeDefinition (type: JavaSyntax.IJavaType): TypeDefinition {
+  private javaTypeToTypeDefinition (type: JavaSyntax.IJavaType): TypeDefinition {
     const { namespaceChain, arrayDimensions } = type;
     const typeName = namespaceChain.join('.');
 
@@ -108,17 +108,17 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
           resolvedObjectMember.isStatic = !!isStatic;
           resolvedObjectMember.isConstant = !!isFinal;
           resolvedObjectMember.requiresImplementation = !!isAbstract;
-          resolvedObjectMember.type = this.createTypeDefinition(fieldType);
+          resolvedObjectMember.type = this.javaTypeToTypeDefinition(fieldType);
 
           break;
         }
         case JavaSyntax.JavaSyntaxNode.OBJECT_METHOD: {
           const { access, isFinal, isStatic, isAbstract, genericTypes, type: returnType, parameters } = member as JavaSyntax.IJavaObjectMethod;
           const functionTypeDefiner = this.createTypeDefiner(FunctionType.Definer);
-          const returnTypeDefinition = this.createTypeDefinition(returnType);
+          const returnTypeDefinition = this.javaTypeToTypeDefinition(returnType);
 
           parameters.forEach(({ type }) => {
-            const parameterTypeDefinition = this.createTypeDefinition(type);
+            const parameterTypeDefinition = this.javaTypeToTypeDefinition(type);
 
             functionTypeDefiner.addParameterType(parameterTypeDefinition);
           });
@@ -162,15 +162,15 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
   private resolveClassSymbol (classNode: JavaSyntax.IJavaClass): ISymbol {
     const { name, extended, implemented, members, access, isFinal, isAbstract, constructors } = classNode;
     const identifier = this.createSymbolIdentifier(name);
-    const objectTypeDefiner = this.createTypeDefiner(ObjectType.Definer);
+    const classType = this.createTypeDefiner(ObjectType.Definer);
 
     // TODO: Add generic parameters
-    objectTypeDefiner.name = name;
-    objectTypeDefiner.category = ObjectCategory.CLASS;
-    objectTypeDefiner.isExtensible = !isFinal;
-    objectTypeDefiner.requiresImplementation = isAbstract;
+    classType.name = name;
+    classType.category = ObjectCategory.CLASS;
+    classType.isExtensible = !isFinal;
+    classType.requiresImplementation = isAbstract;
 
-    objectTypeDefiner.isConstructable = (
+    classType.isConstructable = (
       access === JavaSyntax.JavaAccessModifier.PUBLIC ||
       !isAbstract
     );
@@ -179,7 +179,7 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
       const superclassName = extended[0].namespaceChain.join('.');
       const possibleSuperclassSymbolIdentifiers = this.getPossibleSymbolIdentifiers(superclassName);
 
-      objectTypeDefiner.addSupertype(possibleSuperclassSymbolIdentifiers);
+      classType.addSupertype(possibleSuperclassSymbolIdentifiers);
     }
 
     if (implemented.length > 0) {
@@ -187,23 +187,33 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
         const interfaceName = implementation.namespaceChain.join('.');
         const possibleInterfaceSymbolIdentifiers = this.getPossibleSymbolIdentifiers(interfaceName);
 
-        objectTypeDefiner.addSupertype(possibleInterfaceSymbolIdentifiers);
+        classType.addSupertype(possibleInterfaceSymbolIdentifiers);
       }
     }
 
-    constructors.forEach(constructor => {
-      // TODO: Define constructor members
-      // TODO: Differentiate constructor overloads
+    constructors.forEach(({ parameters, access: constructorAccess }) => {
+      const constructorType = this.createTypeDefiner(FunctionType.Definer);
+
+      constructorType.defineReturnType(classType);
+
+      parameters.forEach(parameter => {
+        constructorType.addParameterType(this.javaTypeToTypeDefinition(parameter.type));
+      });
+
+      classType.addConstructor({
+        type: constructorType,
+        visibility: this.getObjectMemberVisibility(constructorAccess)
+      });
     });
 
     this.enterNamespace(name);
-    this.resolveAndAddObjectMembers(members, objectTypeDefiner);
+    this.resolveAndAddObjectMembers(members, classType);
     this.exitNamespace();
 
     return {
       identifier,
       name,
-      type: objectTypeDefiner
+      type: classType
     };
   }
 

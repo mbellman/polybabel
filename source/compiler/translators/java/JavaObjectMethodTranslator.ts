@@ -1,13 +1,11 @@
 import AbstractTranslator from '../common/AbstractTranslator';
 import JavaBlockTranslator from './JavaBlockTranslator';
-import JavaStatementTranslator from './JavaStatementTranslator';
 import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
-import { JavaTranslatorUtils } from './java-translator-utils';
 
 export default class JavaObjectMethodTranslator extends AbstractTranslator<JavaSyntax.IJavaObjectMethod> {
   @Implements protected translate (): void {
-    const { isStatic, name, parameters, block } = this.syntaxNode;
+    const { parameters, block, isConstructor } = this.syntaxNode;
     let hasVariadicParameter = false;
 
     this.emit('function (')
@@ -30,6 +28,8 @@ export default class JavaObjectMethodTranslator extends AbstractTranslator<JavaS
     }
 
     this.emitNodeWith(JavaBlockTranslator, block)
+      .newlineIf(isConstructor && block.nodes.length > 0)
+      .emit(isConstructor ? 'return this;' : '')
       .exitBlock()
       .emit('}');
   }

@@ -50,6 +50,12 @@ export interface IObjectMember<T extends TypeDefinition = TypeDefinition> {
   requiresImplementation?: boolean;
 }
 
+export interface ITypeSignature {
+  type: TypeDefinition;
+  isOriginal: boolean;
+  isFinal?: boolean;
+}
+
 /**
  * A constant representing a dynamic type. Providing both
  * a type form and string form allows us to use the constant

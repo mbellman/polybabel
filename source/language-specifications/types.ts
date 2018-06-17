@@ -4,7 +4,7 @@ import AbstractTranslator from '../compiler/translators/common/AbstractTranslato
 import AbstractValidator from '../compiler/validators/common/AbstractValidator';
 import { IConstructable, IHashMap } from 'trampoline-framework';
 import { ISyntaxTree } from '../parser/common/syntax-types';
-import { TypeDefinition } from 'compiler/symbol-resolvers/common/types';
+import { TypeDefinition } from '../compiler/symbol-resolvers/common/types';
 
 /**
  * An object providing all of the top-level classes and

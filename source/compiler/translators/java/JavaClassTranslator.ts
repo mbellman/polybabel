@@ -53,13 +53,13 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
     const hasConstructors = this.partitionedMemberMap.constructors.length > 0;
     const hasClassFunctionBodyContent = this.hasNonMethodInstanceMembers() || hasConstructors || this.hasSuperclass();
 
-    this.emit(`var ${name} = (function(){`)
+    this.emit(`(function(){`)
       .enterBlock()
       .emit(`function ${name} () {`);
 
     if (hasClassFunctionBodyContent) {
       this.enterBlock()
-        .emitClassFunctionBody()
+        .emitClassConstructorFunctionBody()
         .exitBlock();
     }
 
@@ -124,22 +124,18 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
     );
   }
 
-  private emitClassFunctionBody (): this {
-    const { instanceMembers, constructors } = this.partitionedMemberMap;
+  private emitClassConstructorFunctionBody (): this {
+    const { instanceMembers } = this.partitionedMemberMap;
     const { fields, classes, interfaces, initializers } = instanceMembers;
     const hasSuperclass = this.syntaxNode.extended.length > 0;
 
-    this.emit(`var overloadIndex = arguments[0];`)
-      .newline()
-      .emit('var remainingArgs = Array.prototype.slice.call(arguments, 1);')
-      .newline()
-      .trackEmits();
+    this.trackEmits();
 
     if (hasSuperclass) {
       const { extended } = this.syntaxNode;
       const superClassName = extended[0].namespaceChain[0];
 
-      this.emit(`${superClassName}.apply(this, arguments);`);
+      this.emit(`${superClassName}.apply(this);`);
     }
 
     this.newlineIfDidEmit()
@@ -150,9 +146,10 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
             return false;
           }
 
-          this.emitField(field, true);
+          this.trackEmits()
+            .emitField(field, true);
         },
-        () => this.newline()
+        () => this.newlineIfDidEmit()
       )
       .newlineIfDidEmit()
       .emitNestedObjectsWith(JavaClassTranslator, classes, true)
@@ -161,32 +158,10 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
       .newlineIfDidEmit()
       .emitInitializers(initializers);
 
-    if (constructors.length > 0) {
-      this.newlineIfDidEmit()
-        .emit('switch (overloadIndex) {')
-        .enterBlock()
-        .emitNodes(
-          constructors,
-          ({ name }, index) => {
-            const transformedName = `${name}_${index}`;
-
-            this.emit(`case ${index}:`)
-              .enterBlock()
-              .emit(`this.${transformedName}.apply(this, remainingArgs);`)
-              .newline()
-              .emit('break;')
-              .exitBlock();
-          }
-        )
-        .exitBlock()
-        .emit('}');
-    }
-
     return this;
   }
 
   private emitField (field: JavaSyntax.IJavaObjectField, isInstanceSide: boolean): this {
-    const { name: className } = this.syntaxNode;
     const { name, value } = field;
 
     if (isInstanceSide) {
@@ -232,7 +207,6 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
   }
 
   private emitInstanceSide (): this {
-    const hasNonMethodInstanceMembers = this.hasNonMethodInstanceMembers();
     const hasDefinedConstructors = this.partitionedMemberMap.constructors.length > 0;
     const hasInstanceMethods = this.partitionedMemberMap.instanceMembers.methods.length > 0;
 
@@ -256,6 +230,7 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
   private emitNestedObjectWith <O extends JavaSyntax.IJavaObject>(Translator: Constructor<AbstractTranslator<O>>, object: O): this {
     return this.emit('(function(){')
       .enterBlock()
+      .emit(`var ${object.name} = `)
       .emitNodeWith(Translator, object)
       .emit(';')
       .newline()

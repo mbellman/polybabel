@@ -211,6 +211,7 @@ export namespace JavaSyntax {
     node: JavaSyntaxNode.OBJECT_METHOD;
     annotations?: IJavaAnnotation[];
     genericTypes?: IJavaType[];
+    isConstructor?: boolean;
     throws: IJavaType[];
     block: IJavaBlock;
   }
@@ -304,6 +305,8 @@ export namespace JavaSyntax {
     arrayAllocationSize?: IJavaStatement;
     arrayLiteral?: IJavaLiteral;
     anonymousObjectBody?: IJavaObjectBody;
+    // Determined during validation
+    overloadIndex?: number;
   }
 
   /**

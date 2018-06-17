@@ -8,9 +8,9 @@ import JavaClassTranslator from './JavaClassTranslator';
 
 export default class JavaInterfaceTranslator extends AbstractTranslator<JavaSyntax.IJavaInterface> {
   @Implements protected translate (): void {
-    const { name, members } = this.syntaxNode;
+    const { members } = this.syntaxNode;
 
-    this.emit(`var ${name} = {`)
+    this.emit(`{`)
       .enterBlock()
       .emitNodes(
         members,
@@ -54,7 +54,7 @@ export default class JavaInterfaceTranslator extends AbstractTranslator<JavaSynt
   }
 
   private emitMethod (method: JavaSyntax.IJavaObjectMethod): void {
-    const { block, name } = method;
+    const { name } = method;
 
     this.emitKey(name)
       .emit('function ')
