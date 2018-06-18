@@ -22,7 +22,16 @@ export default class JavaImportValidator extends AbstractValidator<JavaSyntax.IJ
       `Invalid import name: '${importName}'`
     );
 
-    this.mapImportToSourceFile(importName, sourceFile);
-    this.context.scopeManager.addToScope(importName);
+    // TODO: Once SymbolDictionary stores type signatures, supply
+    // the scoped reference with the looked-up signature
+    const importTypeDefinition = this.context.symbolDictionary.getSymbolType(sourceFile + importName);
+
+    this.context.scopeManager.addToScope(importName, {
+      signature: {
+        definition: importTypeDefinition,
+        isOriginal: true
+      },
+      isConstant: true
+    });
   }
 }

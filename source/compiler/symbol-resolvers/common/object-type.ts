@@ -79,26 +79,26 @@ export namespace ObjectType {
         return 0;
       }
 
-      for (let i = 0; i < this.constructors.length; i++) {
-        const { type: functionType } = this.constructors[i];
+      for (let constructorIndex = 0; constructorIndex < this.constructors.length; constructorIndex++) {
+        const { type: functionType } = this.constructors[constructorIndex];
         const parameterTypes = functionType.getParameterTypes();
-        let j = 0;
+        let parameterIndex = 0;
 
-        for (j = 0; j < parameterTypes.length; j++) {
-          const argumentType = argumentTypes[j];
+        for (parameterIndex = 0; parameterIndex < parameterTypes.length; parameterIndex++) {
+          const argumentType = argumentTypes[parameterIndex];
 
-          if (!argumentType || !TypeValidation.typeMatches(argumentType, parameterTypes[j])) {
+          if (!argumentType || !TypeValidation.typeMatches(argumentType, parameterTypes[parameterIndex])) {
             break;
           }
         }
 
         const matchedAllParameters = (
           argumentTypes.length === parameterTypes.length &&
-          j === parameterTypes.length
+          parameterIndex === parameterTypes.length
         );
 
         if (matchedAllParameters) {
-          return i;
+          return constructorIndex;
         }
       }
 

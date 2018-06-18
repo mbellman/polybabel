@@ -29,7 +29,7 @@ export const enum TypeExpectation {
  * for validation at some future point, and a TypeExpectation
  * constant describing the nature of the type.
  *
- * @see ValidatorContext.expectType()
+ * @see AbstractValidator.expectType()
  */
 export interface IExpectedType {
   type: TypeDefinition;

@@ -1,8 +1,8 @@
 import { IHashMap } from 'trampoline-framework';
-import { INamed, ISyntaxNode } from '../parser/common/syntax-types';
+import { IScopedReference } from './symbol-resolvers/common/types';
 
-export default class ScopeManager<V extends any = any> {
-  private scopes: IHashMap<V>[] = [];
+export default class ScopeManager {
+  private scopes: IHashMap<IScopedReference>[] = [];
 
   public get activeScope (): IHashMap<any> {
     return this.scopes[this.scopes.length - 1];
@@ -12,7 +12,7 @@ export default class ScopeManager<V extends any = any> {
     this.enterScope();
   }
 
-  public addToScope (name: string, value?: V): void {
+  public addToScope (name: string, value?: IScopedReference): void {
     this.activeScope[name] = value;
   }
 
@@ -24,12 +24,12 @@ export default class ScopeManager<V extends any = any> {
     this.scopes.pop();
   }
 
-  public getScopedValue (name: string): V {
+  public getScopedReference (name: string): IScopedReference {
     for (let i = this.scopes.length - 1; i >= 0; i--) {
-      const value = this.scopes[i][name];
+      const reference = this.scopes[i][name];
 
-      if (value) {
-        return value;
+      if (reference) {
+        return reference;
       }
     }
 

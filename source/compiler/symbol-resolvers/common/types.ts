@@ -43,17 +43,36 @@ export enum ObjectCategory {
  * An object member definition.
  */
 export interface IObjectMember<T extends TypeDefinition = TypeDefinition> {
+  name: string;
   visibility: ObjectMemberVisibility;
-  type: T;
+  type: T; // TODO: ITypeSignature<T>
   isConstant?: boolean;
   isStatic?: boolean;
   requiresImplementation?: boolean;
 }
 
-export interface ITypeSignature {
-  type: TypeDefinition;
-  isOriginal: boolean;
-  isFinal?: boolean;
+/**
+ * An in-scope reference containing information about the
+ * reference's type signature and whether or not it can be
+ * reassigned.
+ */
+export interface IScopedReference {
+  signature: ITypeSignature;
+  isConstant?: boolean;
+}
+
+/**
+ * An expanded description of a symbol or identifier's type,
+ * containing information about its actual type definition and
+ * whether or not the symbol or identifier is the original
+ * symbol which defined the type. For example, original type
+ * signatures might correspond to the static side of a class,
+ * or an original function type definition rather than a
+ * function matching the type definition's constraint.
+ */
+export interface ITypeSignature<T extends TypeDefinition = TypeDefinition> {
+  definition: T;
+  isOriginal?: boolean;
 }
 
 /**

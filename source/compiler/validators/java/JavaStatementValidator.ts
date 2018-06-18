@@ -32,17 +32,21 @@ import { TypeExpectation } from '../common/types';
  * expected.
  */
 export default class JavaStatementValidator extends AbstractValidator<JavaSyntax.IJavaStatement> {
+  /**
+   * Determines whether the last member on a property chain is final.
+   * Assignment validation depends on characteristics of the statement's
+   * left side, and because property chain statements will have already
+   * been traversed to ascertain their type, we preserve information
+   * relevant to assignment validation for optimization purposes. In
+   * this case all we need to know is whether the last member is final,
+   * and can therefore be reassigned. Non-string last properties are
+   * automatically disqualified.
+   */
+  private lastPropertyIsFinal: boolean = false;
+
   @Implements public validate (): void {
     if (this.isReturnStatement()) {
-      const { value: returnValue } = this.syntaxNode.leftSide as JavaSyntax.IJavaInstruction;
-
-      this.expectType({
-        type: this.getLastExpectedTypeFor(TypeExpectation.RETURN),
-        expectation: TypeExpectation.RETURN
-      });
-
-      this.validateNodeWith(JavaStatementValidator, returnValue);
-      this.resetExpectedType();
+      this.validateReturnStatement();
     } else {
       const statementType = this.getStatementType(this.syntaxNode);
       const { operator } = this.syntaxNode;
@@ -51,8 +55,13 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
 
       if (this.hasRightSide()) {
         const { rightSide } = this.syntaxNode;
+        const isAssignment = operator.operation === JavaSyntax.JavaOperation.ASSIGN;
 
-        const expectation = operator.operation === JavaSyntax.JavaOperation.ASSIGN
+        if (isAssignment) {
+          this.validateAssignment();
+        }
+
+        const expectation = isAssignment
           ? TypeExpectation.ASSIGNMENT
           : TypeExpectation.OPERAND;
 
@@ -80,7 +89,9 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
     let propertyIndex = 0;
 
     if (typeof firstProperty === 'string') {
-      currentPropertyLookupType = this.findTypeDefinitionByName(firstProperty);
+      currentPropertyLookupType = firstProperty === JavaConstants.Keyword.THIS
+        ? this.context.objectVisitor.getCurrentVisitedObject()
+        : this.findTypeDefinitionByName(firstProperty);
     } else {
       currentPropertyLookupType = this.getSyntaxNodeType(firstProperty);
     }
@@ -144,7 +155,7 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
             // TODO: Handle overloads
 
             if (!(currentMember.type instanceof FunctionType.Definition)) {
-              this.report(`'${currentPropertyLookupType.name}.${functionName}' is not a function type`);
+              this.reportNonFunctionCalled(`${currentPropertyLookupType.name}.${functionName}`);
 
               return TypeUtils.createSimpleType(Dynamic);
             }
@@ -155,7 +166,7 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
           case JavaSyntax.JavaSyntaxNode.INSTANTIATION: {
             // The next lookup type after an instantiation
             // property is its constructor type
-            const { constructor, arguments: args } = incomingProperty;
+            const { constructor } = incomingProperty;
             const constructorName = constructor.namespaceChain.join('.');
 
             this.focusToken(constructor.token);
@@ -188,6 +199,8 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
 
       incomingProperty = properties[++propertyIndex];
     }
+
+    this.lastPropertyIsFinal = currentMember.isConstant;
 
     return currentPropertyLookupType;
   }
@@ -224,10 +237,7 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
   }
 
   /**
-   * Returns the type of a Java syntax node. This method has side
-   * effects, as the process of determining a syntax node type also
-   * might involve focusing tokens or adding values to scope, mostly
-   * to avoid duplication of effort.
+   * Returns the type of a Java syntax node.
    */
   private getSyntaxNodeType (javaSyntaxNode: JavaSyntax.IJavaSyntaxNode): TypeDefinition {
     switch (javaSyntaxNode.node) {
@@ -235,7 +245,12 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
         const { type, name, isFinal } = javaSyntaxNode as JavaSyntax.IJavaVariableDeclaration;
         const typeDefinition = this.findTypeDefinition(type.namespaceChain);
 
-        this.context.scopeManager.addToScope(name, typeDefinition);
+        this.context.scopeManager.addToScope(name, {
+          signature: {
+            definition: typeDefinition
+          },
+          isConstant: isFinal
+        });
 
         return typeDefinition;
       }
@@ -343,6 +358,43 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
     );
   }
 
+  private validateAssignment (): void {
+    const { leftSide, operator } = this.syntaxNode;
+
+    this.focusToken(operator.token);
+
+    switch (leftSide.node) {
+      case JavaSyntax.JavaSyntaxNode.VARIABLE_DECLARATION:
+        return;
+      case JavaSyntax.JavaSyntaxNode.REFERENCE:
+        const { value } = leftSide as JavaSyntax.IJavaReference;
+        const referenceOrMember = this.findReferenceOrMember(value);
+
+        this.check(
+          !referenceOrMember.isConstant,
+          `Cannot reassign final value '${value}'`
+        );
+
+        break;
+      case JavaSyntax.JavaSyntaxNode.PROPERTY_CHAIN:
+        const { properties } = leftSide as JavaSyntax.IJavaPropertyChain;
+        const lastProperty = properties[properties.length - 1];
+
+        if (typeof lastProperty === 'string') {
+          this.check(
+            !this.lastPropertyIsFinal,
+            `Cannot reassign final member '${lastProperty}'`
+          );
+        } else {
+          this.report('Invalid assignment');
+        }
+
+        break;
+      default:
+        this.report('Invalid assignment');
+    }
+  }
+
   private validateFunctionCall (functionCall: JavaSyntax.IJavaFunctionCall, functionType: TypeDefinition | TypeDefinition[]): void {
 
   }
@@ -350,7 +402,6 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
   private validateInstantiation (instantiation: JavaSyntax.IJavaInstantiation, objectType: TypeDefinition): void {
     const { constructor, arguments: args } = instantiation;
     const constructorName = constructor.namespaceChain.join('.');
-
     const constructorArgumentTypes = args.map(argument => this.getStatementType(argument));
 
     if (objectType instanceof ObjectType.Definition) {
@@ -368,19 +419,19 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
 
       instantiation.overloadIndex = constructorOverloadIndex;
     } else {
-      this.reportInvalidConstructor(constructorName);
+      this.reportNonConstructor(constructorName);
     }
   }
 
-  private validateArguments (args: JavaSyntax.IJavaStatement[], argumentTypes: TypeDefinition[]): void {
-    for (let i = 0; i < args.length; i++) {
-      this.expectType({
-        type: argumentTypes[i],
-        expectation: TypeExpectation.ARGUMENT
-      });
+  private validateReturnStatement (): void {
+    const { value: returnValue } = this.syntaxNode.leftSide as JavaSyntax.IJavaInstruction;
 
-      this.validateNodeWith(JavaStatementValidator, args[i]);
-      this.resetExpectedType();
-    }
+    this.expectType({
+      type: this.getLastExpectedTypeFor(TypeExpectation.RETURN),
+      expectation: TypeExpectation.RETURN
+    });
+
+    this.validateNodeWith(JavaStatementValidator, returnValue);
+    this.resetExpectedType();
   }
 }

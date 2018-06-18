@@ -102,8 +102,9 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
 
       switch (member.node) {
         case JavaSyntax.JavaSyntaxNode.OBJECT_FIELD: {
-          const { access, type: fieldType, isStatic, isFinal, isAbstract } = member as JavaSyntax.IJavaObjectField;
+          const { name, access, type: fieldType, isStatic, isFinal, isAbstract } = member as JavaSyntax.IJavaObjectField;
 
+          resolvedObjectMember.name = name;
           resolvedObjectMember.visibility = this.getObjectMemberVisibility(access);
           resolvedObjectMember.isStatic = !!isStatic;
           resolvedObjectMember.isConstant = !!isFinal;
@@ -113,7 +114,7 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
           break;
         }
         case JavaSyntax.JavaSyntaxNode.OBJECT_METHOD: {
-          const { access, isFinal, isStatic, isAbstract, genericTypes, type: returnType, parameters } = member as JavaSyntax.IJavaObjectMethod;
+          const { name, access, isFinal, isStatic, isAbstract, genericTypes, type: returnType, parameters } = member as JavaSyntax.IJavaObjectMethod;
           const functionTypeDefiner = this.createTypeDefiner(FunctionType.Definer);
           const returnTypeDefinition = this.javaTypeToTypeDefinition(returnType);
 
@@ -126,6 +127,7 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
           // TODO: Add generic parameters
           functionTypeDefiner.defineReturnType(returnTypeDefinition);
 
+          resolvedObjectMember.name = name;
           resolvedObjectMember.visibility = this.getObjectMemberVisibility(access);
           resolvedObjectMember.isConstant = !!isFinal;
           resolvedObjectMember.isStatic = !!isStatic;
@@ -136,13 +138,14 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
         }
         case JavaSyntax.JavaSyntaxNode.CLASS:
         case JavaSyntax.JavaSyntaxNode.INTERFACE: {
-          const { node, access, isFinal, isStatic } = member;
+          const { name, node, access, isFinal, isStatic } = member;
           const isClass = node === JavaSyntax.JavaSyntaxNode.CLASS;
 
           const nestedObjectSymbol = isClass
               ? this.resolveClassSymbol(member as JavaSyntax.IJavaClass)
               : this.resolveInterfaceSymbol(member as JavaSyntax.IJavaInterface);
 
+          resolvedObjectMember.name = name;
           resolvedObjectMember.visibility = this.getObjectMemberVisibility(access);
           resolvedObjectMember.isStatic = isStatic;
           resolvedObjectMember.isConstant = isFinal;
@@ -201,6 +204,7 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
       });
 
       classType.addConstructor({
+        name,
         type: constructorType,
         visibility: this.getObjectMemberVisibility(constructorAccess)
       });

@@ -11,17 +11,11 @@ import { ArrayType } from '../../symbol-resolvers/common/array-type';
 export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyntax.IJavaObjectMethod> {
   @Implements public validate (): void {
     const { type, name, isAbstract, block } = this.syntaxNode;
-    const parentObjectType = this.context.objectVisitor.getCurrentVisitedObject();
-    const isInterfaceMethod = parentObjectType.category === ObjectCategory.INTERFACE;
-    const identifier = `${parentObjectType.name}.${name}`;
-    const returnTypeDefinition = this.getReturnTypeDefinition();
+    const parentObjectTypeDefinition = this.context.objectVisitor.getCurrentVisitedObject();
+    const isInterfaceMethod = parentObjectTypeDefinition.category === ObjectCategory.INTERFACE;
+    const identifier = `${parentObjectTypeDefinition.name}.${name}`;
 
     this.focusToken(type.token);
-
-    this.expectType({
-      type: returnTypeDefinition,
-      expectation: TypeExpectation.RETURN
-    });
 
     if (isAbstract) {
       const abstractKeywordToken = ValidatorUtils.findKeywordToken(JavaConstants.Keyword.ABSTRACT, type.token, token => token.previousTextToken);
@@ -45,10 +39,8 @@ export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyn
     }
 
     if (block) {
-      this.validateNodeWith(JavaBlockValidator, block);
+      this.validateMethodBody();
     }
-
-    this.resetExpectedType();
   }
 
   private getReturnTypeDefinition (): TypeDefinition {
@@ -66,5 +58,32 @@ export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyn
     }
 
     return returnType;
+  }
+
+  private validateMethodBody (): void {
+    const { parameters, block } = this.syntaxNode;
+    const { scopeManager } = this.context;
+
+    this.expectType({
+      type: this.getReturnTypeDefinition(),
+      expectation: TypeExpectation.RETURN
+    });
+
+    scopeManager.enterScope();
+
+    parameters.forEach(({ type: parameterType, name: parameterName, isFinal }) => {
+      const typeDefinition = this.findTypeDefinition(parameterType.namespaceChain);
+
+      scopeManager.addToScope(parameterName, {
+        signature: {
+          definition: typeDefinition
+        },
+        isConstant: isFinal
+      });
+    });
+
+    this.validateNodeWith(JavaBlockValidator, block);
+    this.resetExpectedType();
+    scopeManager.exitScope();
   }
 }

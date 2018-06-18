@@ -1,7 +1,7 @@
 import ValidatorContext from './ValidatorContext';
 import { Callback } from '../../../system/types';
 import { Constructor, IConstructable } from 'trampoline-framework';
-import { Dynamic, TypeDefinition } from '../../symbol-resolvers/common/types';
+import { Dynamic, TypeDefinition, IScopedReference, IObjectMember } from '../../symbol-resolvers/common/types';
 import { GlobalNativeTypeMap } from '../../native-type-maps/global';
 import { IExpectedType, IValidatorError, TypeExpectation } from './types';
 import { ISyntaxNode } from '../../../parser/common/syntax-types';
@@ -95,6 +95,13 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     this.context.expectedTypeStack.push(expectedType);
   }
 
+  public findReferenceOrMember (name: string): IScopedReference | IObjectMember {
+    return (
+      this.context.scopeManager.getScopedReference(name) ||
+      this.context.objectVisitor.findParentObjectMember(name)
+    );
+  }
+
   /**
    * Attempts to find and return the type definition for a given
    * symbol or construct identified by namespace chain. The outer
@@ -178,13 +185,15 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
       return nativeType;
     }
 
-    const scopedType = this.context.scopeManager.getScopedValue(name);
-    const { objectVisitor, symbolDictionary, file } = this.context;
+    const { scopeManager, objectVisitor, symbolDictionary, file } = this.context;
+    const scopedReference = scopeManager.getScopedReference(name);
 
-    if (scopedType) {
+    if (scopedReference) {
       // If the name is in scope, the scoped type definition
       // value should take precedence over other references
-      return scopedType;
+      //
+      // TODO: Return full signature
+      return scopedReference.signature.definition;
     }
 
     const parentObjectMember = objectVisitor.findParentObjectMember(name);
@@ -193,13 +202,6 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
       // If the name is a parent object member, we return
       // its type
       return parentObjectMember.type;
-    }
-
-    const importSourceFile = this.getImportSourceFile(name);
-
-    if (importSourceFile) {
-      // If the name is an import, we return its symbol type
-      return symbolDictionary.getSymbolType(importSourceFile + name);
     }
 
     const symbol = symbolDictionary.getDefinedSymbol(file + name);
@@ -247,16 +249,8 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     return null;
   }
 
-  protected getImportSourceFile (importName: string): string {
-    return this.context.importToSourceFileMap[importName];
-  }
-
   protected getNamespacedIdentifier (identifier: string): string {
     return `${this.getCurrentNamespace()}.${identifier}`;
-  }
-
-  protected mapImportToSourceFile (name: string, sourceFile: string): void {
-    this.context.importToSourceFileMap[name] = sourceFile;
   }
 
   protected report (message: string): void {
@@ -266,12 +260,12 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     });
   }
 
-  protected reportInvalidConstructor (name: string): void {
-    this.report(`'${name}' is not a constructor`);
-  }
-
   protected reportNonConstructableInstantiation (name: string): void {
     this.report(`Object '${name}' cannot be constructed`);
+  }
+
+  protected reportNonConstructor (name: string): void {
+    this.report(`'${name}' is not a constructor`);
   }
 
   protected reportNonFunctionCalled (name: string): void {
@@ -296,8 +290,8 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
 
   /**
    * Validates a provided syntax node using an AbstractValidator
-   * subclass. Hands off both the instance's ScopeManager and its
-   * errors list so both can be used and manipulated by reference.
+   * subclass, passing the current validator context along so it
+   * can be shared between ancestor and descendant validators.
    */
   protected validateNodeWith <T extends ISyntaxNode, N extends T>(Validator: Constructor<AbstractValidator<T>>, syntaxNode: N): void {
     const validator = new (Validator as IConstructable<AbstractValidator>)(this.context, syntaxNode);

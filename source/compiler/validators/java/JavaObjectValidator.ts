@@ -10,12 +10,19 @@ export default class JavaObjectValidator extends AbstractValidator<JavaSyntax.IJ
   @Implements public validate (): void {
     const { name, members } = this.syntaxNode;
     const { scopeManager, objectVisitor } = this.context;
-    const ownType = this.findTypeDefinitionByName(name) as ObjectType.Definition;
+    const ownTypeDefinition = this.findTypeDefinitionByName(name) as ObjectType.Definition;
 
-    objectVisitor.visitObject(ownType);
-    scopeManager.addToScope(name, ownType);
+    objectVisitor.visitObject(ownTypeDefinition);
+
+    scopeManager.addToScope(name, {
+      signature: {
+        definition: ownTypeDefinition,
+        isOriginal: true
+      },
+      isConstant: true
+    });
+
     scopeManager.enterScope();
-
     this.enterNamespace(name);
 
     members.forEach(member => {
@@ -37,7 +44,6 @@ export default class JavaObjectValidator extends AbstractValidator<JavaSyntax.IJ
 
     scopeManager.exitScope();
     objectVisitor.leaveObject();
-
     this.exitNamespace();
   }
 

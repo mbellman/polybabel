@@ -14,11 +14,10 @@ export default class ValidatorContext {
   public readonly file: string;
   public errors: IValidatorError[] = [];
   public expectedTypeStack: IExpectedType[] = [];
-  public importToSourceFileMap: IHashMap<string> = {};
   public namespaceStack: string[] = [];
   public nativeTypeMap: IHashMap<TypeDefinition>;
   public objectVisitor: ObjectVisitor = new ObjectVisitor();
-  public scopeManager: ScopeManager<TypeDefinition> = new ScopeManager();
+  public scopeManager: ScopeManager = new ScopeManager();
   public symbolDictionary: SymbolDictionary;
   public shouldAllowAnyType: boolean = false;
 
