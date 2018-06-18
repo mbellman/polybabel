@@ -29,6 +29,7 @@ Polybabel's emphasis on idiomatic programming means the standard libraries and A
 * * Class extension validation - 50%?
 * * Class implementation validation - 25%?
 * * Constructor overloads ✔
+* * Class field validation ✔
 * * Class method validation - 75%?
 * * Statement type verification - 60%?
 * * Expression statement validation - 60%

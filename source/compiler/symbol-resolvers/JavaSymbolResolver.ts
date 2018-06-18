@@ -170,6 +170,7 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
     // TODO: Add generic parameters
     classType.name = name;
     classType.category = ObjectCategory.CLASS;
+    classType.isConstructable = !isAbstract;
     classType.isExtensible = !isFinal;
     classType.requiresImplementation = isAbstract;
 

@@ -149,8 +149,8 @@ import { LanguageSpecification } from '../source/language-specifications';
 
     this.compiler.forEachError((filename, message, line, linePreview) => {
       errors.push(
-        `Compilation Error: ${message}` +
-        `${line ? ` (Line ${line}):` : ''}` +
+        `${line ? `(Line ${line}): ` : ''}` +
+        message +
         `${linePreview ? ` --> <b>${linePreview}</b>` : ''}`
       );
     });

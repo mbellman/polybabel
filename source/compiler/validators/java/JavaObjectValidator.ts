@@ -1,6 +1,7 @@
 import AbstractValidator from '../common/AbstractValidator';
 import JavaClassValidator from './JavaClassValidator';
 import JavaInterfaceValidator from './JavaInterfaceValidator';
+import JavaObjectFieldValidator from './JavaObjectFieldValidator';
 import JavaObjectMethodValidator from './JavaObjectMethodValidator';
 import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
@@ -28,7 +29,7 @@ export default class JavaObjectValidator extends AbstractValidator<JavaSyntax.IJ
     members.forEach(member => {
       switch (member.node) {
         case JavaSyntax.JavaSyntaxNode.OBJECT_FIELD:
-          this.validateObjectField(member as JavaSyntax.IJavaObjectField);
+          this.validateNodeWith(JavaObjectFieldValidator, member as JavaSyntax.IJavaObjectField);
           break;
         case JavaSyntax.JavaSyntaxNode.OBJECT_METHOD:
           this.validateNodeWith(JavaObjectMethodValidator, member as JavaSyntax.IJavaObjectMethod);

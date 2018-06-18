@@ -7,6 +7,7 @@ import { ObjectCategory, TypeDefinition } from '../../symbol-resolvers/common/ty
 import { TypeExpectation } from '../common/types';
 import { ValidatorUtils } from '../common/validator-utils';
 import { ArrayType } from '../../symbol-resolvers/common/array-type';
+import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
 
 export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyntax.IJavaObjectMethod> {
   @Implements public validate (): void {
@@ -21,6 +22,11 @@ export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyn
       const abstractKeywordToken = ValidatorUtils.findKeywordToken(JavaConstants.Keyword.ABSTRACT, type.token, token => token.previousTextToken);
 
       this.focusToken(abstractKeywordToken);
+
+      this.check(
+        parentObjectTypeDefinition.requiresImplementation,
+        'Abstract methods are only allowed in abstract classes'
+      );
 
       this.check(
         !isInterfaceMethod,
@@ -46,18 +52,11 @@ export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyn
   private getReturnTypeDefinition (): TypeDefinition {
     const { type } = this.syntaxNode;
     const { symbolDictionary } = this.context;
-    let returnType = this.findTypeDefinition(type.namespaceChain);
-    let remainingArrayDimensions = type.arrayDimensions;
+    const returnType = this.findTypeDefinition(type.namespaceChain);
 
-    while (remainingArrayDimensions-- > 0) {
-      const arrayType = new ArrayType.Definer(symbolDictionary);
-
-      arrayType.defineElementType(returnType);
-
-      returnType = arrayType;
-    }
-
-    return returnType;
+    return type.arrayDimensions > 0
+      ? TypeUtils.createArrayType(symbolDictionary, returnType, type.arrayDimensions)
+      : returnType;
   }
 
   private validateMethodBody (): void {

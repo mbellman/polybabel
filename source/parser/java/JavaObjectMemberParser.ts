@@ -100,6 +100,7 @@ export default class JavaObjectMemberParser extends AbstractParser<ISyntaxNode &
     );
 
     this.next();
+    this.assert(!this.currentTokenMatches(';'));
 
     const node = JavaSyntax.JavaSyntaxNode.OBJECT_FIELD;
     const value = this.parseNextWith(JavaStatementParser);

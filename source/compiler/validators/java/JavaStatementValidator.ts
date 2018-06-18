@@ -274,8 +274,14 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
       case JavaSyntax.JavaSyntaxNode.REFERENCE: {
         const reference = javaSyntaxNode as JavaSyntax.IJavaReference;
         const { value: referenceName } = reference;
+        const referenceType = this.findTypeDefinitionByName(referenceName);
 
-        return this.findTypeDefinitionByName(referenceName);
+        // TODO: Determine this information using a new 'find'
+        // API which returns not only type information, but
+        // the source of the found reference
+        reference.isInstanceFieldReference = this.context.objectVisitor.currentVisitedObjectHasMember(referenceName);
+
+        return referenceType;
       }
       case JavaSyntax.JavaSyntaxNode.FUNCTION_CALL: {
         const functionCall = javaSyntaxNode as JavaSyntax.IJavaFunctionCall;
@@ -283,6 +289,9 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
         const functionType = this.findTypeDefinitionByName(name) as FunctionType.Definition;
 
         // TODO: this.validateFunctionCall(javaSyntax, functionType)
+        // TODO: Determine this information using a new 'find'
+        // API, etc. (see the case above)
+        functionCall.isInstanceFunction = this.context.objectVisitor.currentVisitedObjectHasMember(name);
 
         return functionType.getReturnType();
       }

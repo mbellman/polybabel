@@ -19,7 +19,7 @@ export interface IValidatorError extends IParserError { }
  */
 export const enum TypeExpectation {
   RETURN = 'return type',
-  ASSIGNMENT = 'assigned type',
+  ASSIGNMENT = 'assignment type',
   OPERAND = 'operand type',
   ARGUMENT = 'argument type'
 }

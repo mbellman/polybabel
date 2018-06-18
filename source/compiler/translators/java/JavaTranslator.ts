@@ -22,13 +22,15 @@ export default class JavaTranslator extends AbstractTranslator<JavaSyntax.IJavaS
           const classNode = syntaxNode as JavaSyntax.IJavaClass;
 
           this.emit(`var ${classNode.name} = `)
-            .emitNodeWith(JavaClassTranslator, classNode);
+            .emitNodeWith(JavaClassTranslator, classNode)
+            .emit(';');
           break;
         case JavaSyntax.JavaSyntaxNode.INTERFACE:
           const interfaceNode = syntaxNode as JavaSyntax.IJavaInterface;
 
           this.emit(`var ${interfaceNode.name} = `)
-            .emitNodeWith(JavaInterfaceTranslator, interfaceNode);
+            .emitNodeWith(JavaInterfaceTranslator, interfaceNode)
+            .emit(';');
           break;
       }
 

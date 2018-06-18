@@ -2,7 +2,7 @@ import { IObjectMember } from '../../symbol-resolvers/common/types';
 import { ObjectType } from '../../symbol-resolvers/common/object-type';
 
 /**
- * A class which helps solve the problem of resolving the
+ * A resource which helps solve the problem of resolving the
  * namespaced location of a reference from within the current
  * visited object. For example:
  *
@@ -27,6 +27,10 @@ import { ObjectType } from '../../symbol-resolvers/common/object-type';
  */
 export default class ObjectVisitor {
   private visitedObjectStack: ObjectType.Definition[] = [];
+
+  public currentVisitedObjectHasMember (memberName: string): boolean {
+    return !!this.getCurrentVisitedObject().getObjectMember(memberName);
+  }
 
   public findParentObjectMember (memberName: string): IObjectMember {
     for (let i = this.visitedObjectStack.length - 1; i >= 0; i--) {

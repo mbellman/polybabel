@@ -272,9 +272,6 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
   private emitStaticSide (): this {
     const { fields, methods, classes, interfaces, initializers } = this.partitionedMemberMap.staticMembers;
     const hasInitializers = initializers.length > 0;
-    const hasStaticMethods = methods.length > 0;
-    const hasClasses = classes.length > 0;
-    const hasInterfaces = interfaces.length > 0;
 
     if (this.hasStaticMembers()) {
       this.newlineIf(fields.length > 0)
