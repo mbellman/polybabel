@@ -3,20 +3,30 @@ import JavaBlockValidator from './JavaBlockValidator';
 import { Implements } from 'trampoline-framework';
 import { JavaConstants } from '../../../parser/java/java-constants';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
-import { ObjectCategory, TypeDefinition } from '../../symbol-resolvers/common/types';
+import { ObjectCategory, TypeDefinition, Void } from '../../symbol-resolvers/common/types';
 import { TypeExpectation } from '../common/types';
 import { ValidatorUtils } from '../common/validator-utils';
 import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
-import { TypeValidation } from '../common/type-validation';
 
 export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyntax.IJavaObjectMethod> {
+  private ownReturnTypeDefinition: TypeDefinition;
+
   @Implements public validate (): void {
-    const { type, name, isAbstract, isConstructor, isStatic, block } = this.syntaxNode;
+    const { type, name, isAbstract, isConstructor, block } = this.syntaxNode;
     const parentObjectTypeDefinition = this.context.objectVisitor.getCurrentVisitedObject();
     const isInterfaceMethod = parentObjectTypeDefinition.category === ObjectCategory.INTERFACE;
     const identifier = `${parentObjectTypeDefinition.name}.${name}`;
 
     this.focusToken(type.token);
+
+    this.ownReturnTypeDefinition = this.getReturnTypeDefinition();
+
+    if (isConstructor) {
+      this.check(
+        name === parentObjectTypeDefinition.name,
+        `Constructor '${name}' must match the name of its class, '${parentObjectTypeDefinition.name}'`
+      );
+    }
 
     if (isAbstract) {
       const abstractKeywordToken = ValidatorUtils.findKeywordToken(JavaConstants.Keyword.ABSTRACT, type.token, token => token.previousTextToken);
@@ -45,13 +55,6 @@ export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyn
     }
 
     if (block) {
-      this.setFlags({
-        shouldAllowReturnedValues: !isConstructor,
-        mustReturnValue: !isConstructor && type.namespaceChain.join('.') !== JavaConstants.Type.VOID,
-        shouldAllowReturns: true,
-        shouldAllowInstanceKeywords: !isStatic,
-      });
-
       this.validateMethodBody();
     }
   }
@@ -67,11 +70,19 @@ export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyn
   }
 
   private validateMethodBody (): void {
-    const { parameters, block } = this.syntaxNode;
+    const { isConstructor, isStatic, parameters, block } = this.syntaxNode;
     const { scopeManager } = this.context;
+    const lastStatement = block.nodes[block.nodes.length - 1];
+
+    this.setFlags({
+      shouldAllowReturnValue: !isConstructor,
+      mustReturnValue: !isConstructor && !ValidatorUtils.isSimpleTypeOf(Void, this.ownReturnTypeDefinition),
+      shouldAllowReturn: true,
+      shouldAllowInstanceKeywords: !isStatic
+    });
 
     this.expectType({
-      type: this.getReturnTypeDefinition(),
+      type: this.ownReturnTypeDefinition,
       expectation: TypeExpectation.RETURN
     });
 
@@ -90,6 +101,19 @@ export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyn
 
     this.validateNodeWith(JavaBlockValidator, block);
     this.resetExpectedType();
+
+    if (lastStatement && isConstructor) {
+      this.focusToken(lastStatement.token);
+
+      this.check(
+        // TODO turn this into a utility/create java-validator-utils
+        !!lastStatement.leftSide
+          ? lastStatement.leftSide.node !== JavaSyntax.JavaSyntaxNode.INSTRUCTION
+          : true,
+        `Return statements are not allowed in the top-level block of a constructor`
+      );
+    }
+
     scopeManager.exitScope();
   }
 }

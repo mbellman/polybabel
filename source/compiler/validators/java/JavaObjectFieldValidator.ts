@@ -25,7 +25,7 @@ export default class JavaObjectFieldValidator extends AbstractValidator<JavaSynt
 
     if (value) {
       this.setFlags({
-        shouldAllowReturns: false,
+        shouldAllowReturn: false,
         shouldAllowInstanceKeywords: !isStatic
       });
 

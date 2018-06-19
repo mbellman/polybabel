@@ -76,7 +76,7 @@ export namespace ObjectType {
 
     public getConstructorSignatureIndex (argumentTypes: TypeDefinition[]): number {
       if (this.constructors.length === 0 && argumentTypes.length === 0) {
-        return 0;
+        return null;
       }
 
       for (let constructorIndex = 0; constructorIndex < this.constructors.length; constructorIndex++) {
@@ -117,6 +117,10 @@ export namespace ObjectType {
       }
 
       return null;
+    }
+
+    public getSupertypeByIndex (index: number): TypeDefinition {
+      return this.supertypes[index];
     }
 
     public hasOwnObjectMember (memberName: string): boolean {

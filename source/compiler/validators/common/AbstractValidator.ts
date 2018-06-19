@@ -280,6 +280,10 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     this.report(`Unknown member '${source}.${memberName}'`);
   }
 
+  protected reportUnreachableCode (): void {
+    this.report('Unreachable code detected');
+  }
+
   protected resetExpectedType (): void {
     this.context.expectedTypeStack.pop();
   }

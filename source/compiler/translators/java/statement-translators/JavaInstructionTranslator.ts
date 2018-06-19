@@ -8,7 +8,7 @@ export default class JavaInstructionTranslator extends AbstractTranslator<JavaSy
     switch (this.syntaxNode.type) {
       case JavaSyntax.JavaInstructionType.RETURN:
       case JavaSyntax.JavaInstructionType.THROW:
-        this.emitValuedInstruction();
+        this.emitReturnOrThrow();
         break;
       case JavaSyntax.JavaInstructionType.CONTINUE:
         this.emit('continue');
@@ -19,16 +19,17 @@ export default class JavaInstructionTranslator extends AbstractTranslator<JavaSy
     }
   }
 
-  private emitValuedInstruction (): void {
-    const { type, value } = this.syntaxNode;
-
+  private emitReturnOrThrow (): void {
+    const { type, value, isConstructorReturn } = this.syntaxNode;
     const isReturn = type === JavaSyntax.JavaInstructionType.RETURN;
 
     this.emit(isReturn ? 'return' : 'throw');
 
-    if (value) {
+    if (value && !isConstructorReturn) {
       this.emit(' ')
         .emitNodeWith(JavaStatementTranslator, value);
+    } else if (isReturn && isConstructorReturn) {
+      this.emit(' this');
     }
   }
 }

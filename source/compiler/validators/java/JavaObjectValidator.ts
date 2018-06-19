@@ -5,30 +5,12 @@ import JavaObjectFieldValidator from './JavaObjectFieldValidator';
 import JavaObjectMethodValidator from './JavaObjectMethodValidator';
 import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
-import { ObjectType } from '../../symbol-resolvers/common/object-type';
 
 export default class JavaObjectValidator extends AbstractValidator<JavaSyntax.IJavaObject> {
   @Implements public validate (): void {
-    const { name, members, constructors } = this.syntaxNode;
-    const { scopeManager, objectVisitor } = this.context;
-    const ownTypeDefinition = this.findTypeDefinitionByName(name) as ObjectType.Definition;
+    const { name, members } = this.syntaxNode;
 
-    objectVisitor.visitObject(ownTypeDefinition);
-
-    scopeManager.addToScope(name, {
-      signature: {
-        definition: ownTypeDefinition,
-        isOriginal: true
-      },
-      isConstant: true
-    });
-
-    scopeManager.enterScope();
     this.enterNamespace(name);
-
-    constructors.forEach(constructor => {
-      this.validateNodeWith(JavaObjectMethodValidator, constructor);
-    });
 
     members.forEach(member => {
       switch (member.node) {
@@ -47,15 +29,6 @@ export default class JavaObjectValidator extends AbstractValidator<JavaSyntax.IJ
       }
     });
 
-    scopeManager.exitScope();
-    objectVisitor.leaveObject();
     this.exitNamespace();
-  }
-
-  /**
-   * @todo
-   */
-  private validateObjectField (objectField: JavaSyntax.IJavaObjectField): void {
-    const { type } = objectField;
   }
 }

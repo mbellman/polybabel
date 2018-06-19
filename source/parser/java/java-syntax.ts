@@ -378,6 +378,8 @@ export namespace JavaSyntax {
   export interface IJavaInstruction extends IJavaSyntaxNode, IValued<IJavaStatement> {
     node: JavaSyntaxNode.INSTRUCTION;
     type: JavaInstructionType;
+    // Determined during validation
+    isConstructorReturn?: boolean;
   }
 
   /**

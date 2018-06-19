@@ -24,7 +24,8 @@ export default class JavaObjectMethodTranslator extends AbstractTranslator<JavaS
       .enterBlock();
 
     if (hasVariadicParameter) {
-      this.emitVariadicParameterPolyfill();
+      this.emitVariadicParameterPolyfill()
+        .newline();
     }
 
     this.emitNodeWith(JavaBlockTranslator, block)

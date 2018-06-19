@@ -45,37 +45,20 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
   private lastPropertyIsFinal: boolean = false;
 
   @Implements public validate (): void {
+    const { didReturnInCurrentBlock, didReportUnreachableCode } = this.context.flags;
+
+    if (didReturnInCurrentBlock && !didReportUnreachableCode) {
+      this.reportUnreachableCode();
+
+      this.setFlags({
+        didReportUnreachableCode: true
+      });
+    }
+
     if (this.isReturnStatement()) {
-      this.validateReturnStatement();
+      this.validateAsReturnStatement();
     } else {
-      const statementType = this.getStatementType(this.syntaxNode);
-      const { operator } = this.syntaxNode;
-
-      this.checkIfTypeMatchesExpected(statementType);
-
-      if (this.hasRightSide()) {
-        const { rightSide } = this.syntaxNode;
-        const isAssignment = operator.operation === JavaSyntax.JavaOperation.ASSIGN;
-
-        if (isAssignment) {
-          this.validateAssignment();
-        }
-
-        const expectation = isAssignment
-          ? TypeExpectation.ASSIGNMENT
-          : TypeExpectation.OPERAND;
-
-        this.expectType({
-          type: statementType,
-          expectation
-        });
-
-        this.validateNodeWith(JavaStatementValidator, rightSide);
-        this.resetExpectedType();
-      } else if (operator) {
-        // TODO: Validate that statements with ++ and --
-        // operators are references and number types
-      }
+      this.validateAsNonReturnStatement();
     }
   }
 
@@ -89,19 +72,35 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
     let propertyIndex = 0;
 
     if (typeof firstProperty === 'string') {
-      currentPropertyLookupType = firstProperty === JavaConstants.Keyword.THIS
-        ? this.context.objectVisitor.getCurrentVisitedObject()
-        : this.findTypeDefinitionByName(firstProperty);
+      // TODO: Refactor all of this once single-word properties are references
+      const currentVisitedObject = this.context.objectVisitor.getCurrentVisitedObject();
+
+      switch (firstProperty) {
+        case JavaConstants.Keyword.THIS:
+          this.validateInstanceKeyword(firstProperty);
+
+          currentPropertyLookupType = currentVisitedObject;
+          break;
+        case JavaConstants.Keyword.SUPER:
+          const supertype = currentVisitedObject.getSupertypeByIndex(0);
+
+          this.validateInstanceKeyword(firstProperty);
+
+          this.check(
+            !!supertype,
+            `'${currentVisitedObject.name}' does not have a supertype`
+          );
+
+          currentPropertyLookupType = supertype || TypeUtils.createSimpleType(Dynamic);
+          break;
+        default:
+          currentPropertyLookupType = this.findTypeDefinitionByName(firstProperty);
+      }
     } else {
       currentPropertyLookupType = this.getSyntaxNodeType(firstProperty);
     }
 
     if (TypeValidation.isDynamic(currentPropertyLookupType)) {
-      // If there was any problem getting the initial lookup type, it will
-      // have been reported within one of the previous calls. If the lookup
-      // type was actually resolved and simply corresponds to a dynamic type,
-      // the whole property chain is dynamic. In either case, we return a
-      // dynamic type as a graceful fallback.
       return currentPropertyLookupType;
     }
 
@@ -110,9 +109,6 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
 
     while (incomingProperty) {
       if (!(currentPropertyLookupType instanceof ObjectType.Definition)) {
-        // If the current lookup type isn't an object, we have to report
-        // the invalid property chain usage, and return a dynamic type as
-        // a fallback
         this.report(`'${ValidatorUtils.getTypeDescription(currentPropertyLookupType)}' is not an object`);
 
         return TypeUtils.createSimpleType(Dynamic);
@@ -139,8 +135,7 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
           case JavaSyntax.JavaSyntaxNode.FUNCTION_CALL: {
             // The next lookup type after a function call
             // property is its return type
-            const { name: functionName, arguments: args } = incomingProperty;
-            const functionArgumentTypes = args.map(argument => this.getStatementType(argument));
+            const { name: functionName } = incomingProperty;
 
             this.focusToken(incomingProperty.token);
 
@@ -150,15 +145,13 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
               this.reportUnknownMember(currentPropertyLookupType.name, functionName);
 
               return TypeUtils.createSimpleType(Dynamic);
-            }
-
-            // TODO: Handle overloads
-
-            if (!(currentMember.type instanceof FunctionType.Definition)) {
+            } else if (!(currentMember.type instanceof FunctionType.Definition)) {
               this.reportNonFunctionCalled(`${currentPropertyLookupType.name}.${functionName}`);
 
               return TypeUtils.createSimpleType(Dynamic);
             }
+
+            this.validateFunctionCall(incomingProperty, currentMember.type);
 
             currentPropertyLookupType = currentMember.type.getReturnType();
             break;
@@ -367,7 +360,7 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
     );
   }
 
-  private validateAssignment (): void {
+  private validateOwnAssignment (): void {
     const { leftSide, operator } = this.syntaxNode;
 
     this.focusToken(operator.token);
@@ -380,7 +373,7 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
         const referenceOrMember = this.findReferenceOrMember(value);
 
         this.check(
-          !referenceOrMember.isConstant,
+          referenceOrMember ? !referenceOrMember.isConstant : true,
           `Cannot reassign final value '${value}'`
         );
 
@@ -408,6 +401,13 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
 
   }
 
+  private validateInstanceKeyword (keyword: string): void {
+    this.check(
+      this.context.flags.shouldAllowInstanceKeywords,
+      `'${keyword}' is not allowed in static methods or initializers`
+    );
+  }
+
   private validateInstantiation (instantiation: JavaSyntax.IJavaInstantiation, objectType: TypeDefinition): void {
     const { constructor, arguments: args } = instantiation;
     const constructorName = constructor.namespaceChain.join('.');
@@ -432,34 +432,86 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
     }
   }
 
-  private validateReturnStatement (): void {
-    if (this.context.flags.shouldAllowReturns) {
-      const { value: returnValue } = this.syntaxNode.leftSide as JavaSyntax.IJavaInstruction;
-      const lastExpectedReturnType = this.getLastExpectedTypeFor(TypeExpectation.RETURN);
+  private validateAsNonReturnStatement (): void {
+    const statementType = this.getStatementType(this.syntaxNode);
+    const { operator } = this.syntaxNode;
 
-      if (returnValue) {
-        this.check(
-          this.context.flags.shouldAllowReturnedValues,
-          'Values cannot be returned here'
-        );
+    this.checkIfTypeMatchesExpected(statementType);
 
-        this.expectType({
-          type: lastExpectedReturnType,
-          expectation: TypeExpectation.RETURN
-        });
+    if (this.hasRightSide()) {
+      const { rightSide } = this.syntaxNode;
+      const isAssignment = operator.operation === JavaSyntax.JavaOperation.ASSIGN;
+      const expectation = isAssignment ? TypeExpectation.ASSIGNMENT : TypeExpectation.OPERAND;
 
-        this.validateNodeWith(JavaStatementValidator, returnValue);
-        this.resetExpectedType();
-      } else if (this.context.flags.mustReturnValue) {
-        const returnTypeDescription = ValidatorUtils.getTypeDescription(lastExpectedReturnType);
-
-        this.check(
-          TypeValidation.typeMatches(lastExpectedReturnType, TypeUtils.createSimpleType(Void)),
-          `Expected a '${returnTypeDescription}' return value`
-        );
+      if (isAssignment) {
+        this.validateOwnAssignment();
       }
-    } else {
-      this.report('Return statements are not allowed here');
+
+      this.expectType({
+        type: statementType,
+        expectation
+      });
+
+      this.validateNodeWith(JavaStatementValidator, rightSide);
+      this.resetExpectedType();
+    } else if (operator) {
+      // TODO: Validate that statements with ++ and --
+      // operators are references and number types
     }
+  }
+
+  private validateAsReturnStatement (): void {
+    const { shouldAllowReturn, shouldAllowReturnValue, mustReturnValue } = this.context.flags;
+
+    if (!shouldAllowReturn) {
+      this.report('Return statements are not allowed in fields or initializers');
+
+      return;
+    }
+
+    const returnInstruction = this.syntaxNode.leftSide as JavaSyntax.IJavaInstruction;
+    const { value: returnValue } = returnInstruction;
+    const lastExpectedReturnType = this.getLastExpectedTypeFor(TypeExpectation.RETURN);
+    const isMissingRequiredReturnValue = !returnValue && mustReturnValue;
+    const isConstructorReturn = shouldAllowReturn && !shouldAllowReturnValue;
+    const isDisallowedConstructorReturnValue = isConstructorReturn && returnValue;
+
+    returnInstruction.isConstructorReturn = isConstructorReturn;
+
+    if (isMissingRequiredReturnValue) {
+      const returnTypeDescription = ValidatorUtils.getTypeDescription(lastExpectedReturnType);
+
+      this.report(`Expected a '${returnTypeDescription}' return value`);
+
+      return;
+    }
+
+    if (isDisallowedConstructorReturnValue) {
+      this.report('Constructors cannot return values');
+
+      return;
+    }
+
+    if (returnValue) {
+      this.setFlags({
+        shouldAllowReturn: false
+      });
+
+      this.expectType({
+        type: lastExpectedReturnType,
+        expectation: TypeExpectation.RETURN
+      });
+
+      this.validateNodeWith(JavaStatementValidator, returnValue);
+      this.resetExpectedType();
+
+      this.setFlags({
+        shouldAllowReturn: true
+      });
+    }
+
+    this.setFlags({
+      didReturnInCurrentBlock: true
+    });
   }
 }

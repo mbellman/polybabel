@@ -9,12 +9,22 @@ export default class JavaBlockValidator extends AbstractValidator<JavaSyntax.IJa
 
     this.context.scopeManager.enterScope();
 
+    this.setFlags({
+      didReturnInCurrentBlock: false,
+      didReportUnreachableCode: false
+    });
+
     nodes.forEach(statementNode => {
       this.setFlags({
         shouldAllowAnyType: true
       });
 
       this.validateNodeWith(JavaStatementValidator, statementNode);
+    });
+
+    this.setFlags({
+      didReturnInCurrentBlock: false,
+      didReportUnreachableCode: false
     });
 
     this.context.scopeManager.exitScope();

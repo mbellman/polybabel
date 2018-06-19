@@ -43,8 +43,10 @@ export interface IExpectedType {
  */
 export interface IValidatorContextFlags {
   shouldAllowAnyType: boolean;
-  shouldAllowReturns: boolean;
-  shouldAllowReturnedValues: boolean;
+  shouldAllowReturn: boolean;
+  shouldAllowReturnValue: boolean;
   mustReturnValue: boolean;
+  didReturnInCurrentBlock: boolean;
+  didReportUnreachableCode: boolean;
   shouldAllowInstanceKeywords: boolean;
 }

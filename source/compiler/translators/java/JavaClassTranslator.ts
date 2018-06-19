@@ -50,8 +50,7 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
     this.buildMemberMap();
 
     const { name } = this.syntaxNode;
-    const hasConstructors = this.partitionedMemberMap.constructors.length > 0;
-    const hasClassFunctionBodyContent = this.hasNonMethodInstanceMembers() || hasConstructors || this.hasSuperclass();
+    const hasClassFunctionBodyContent = this.hasNonMethodInstanceMembers() || this.hasSuperclass();
 
     this.emit(`(function(){`)
       .enterBlock()

@@ -49,18 +49,25 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
 
   @Match(JavaUtils.isConstructor)
   protected onConstructor (): void {
+    const openingToken = this.currentToken;
     const access = this.currentMemberAccessModifier;
     const name = this.eat(TokenUtils.isWord);
+    const type = this.createConstructorType(name);
     const method = this.parseNextWith(JavaObjectMethodParser);
+
+    // Since constructor type nodes are synthetic, we have to provide
+    // it with a token to facilitate proper validation-time token focus,
+    // since method validation focuses the type node token by default
+    type.token = openingToken;
 
     this.assert(method.block !== null);
 
     this.parsed.constructors.push({
       ...method,
-      isConstructor: true,
       access,
+      type,
       name,
-      type: this.createConstructorType(name)
+      isConstructor: true
     });
 
     this.resetCurrentMember();

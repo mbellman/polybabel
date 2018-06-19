@@ -5,14 +5,18 @@ import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
 import { ObjectType } from '../../symbol-resolvers/common/object-type';
 import { ValidatorUtils } from '../common/validator-utils';
+import JavaObjectMethodValidator from './JavaObjectMethodValidator';
 
 export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJavaClass> {
   private ownTypeDefinition: ObjectType.Definition;
 
   @Implements public validate (): void {
-    const { name, extended, implemented, constructors, token } = this.syntaxNode;
+    const { objectVisitor } = this.context;
+    const { name, extended, implemented, constructors } = this.syntaxNode;
 
     this.ownTypeDefinition = this.findTypeDefinitionByName(name) as ObjectType.Definition;
+
+    objectVisitor.visitObject(this.ownTypeDefinition);
 
     if (extended.length !== 0) {
       this.validateSuperclass(extended[0]);
@@ -22,19 +26,16 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
       this.validateImplementations(implemented);
     }
 
-    if (constructors.length > 0) {
-      this.validateConstructors(constructors);
-    }
+    constructors.forEach(constructor => {
+      this.validateNodeWith(JavaObjectMethodValidator, constructor);
+    });
 
     this.validateNodeWith(JavaObjectValidator, this.syntaxNode);
+    objectVisitor.leaveObject();
   }
 
   private isAbstractClass (): boolean {
     return this.ownTypeDefinition.requiresImplementation;
-  }
-
-  private validateConstructors (constructors: JavaSyntax.IJavaObjectMethod[]): void {
-    // TODO
   }
 
   private validateImplementations (implementations: JavaSyntax.IJavaType[]): void {
