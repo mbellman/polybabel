@@ -95,31 +95,31 @@ export default class JavaEnumParser extends AbstractParser<JavaSyntax.IJavaClass
       node: JavaSyntax.JavaSyntaxNode.OBJECT_FIELD,
       access: JavaSyntax.JavaAccessModifier.PUBLIC,
       isStatic: true,
-      type: this.getEnumConstructorType(),
+      type: this.createEnumConstructorType(),
       name,
       value: this.createEnumInstantiationStatement(args)
+    };
+  }
+
+  private createEnumConstructorType (): JavaSyntax.IJavaType {
+    return {
+      node: JavaSyntax.JavaSyntaxNode.TYPE,
+      namespaceChain: [ this.parsed.name ],
+      genericTypes: [],
+      arrayDimensions: 0
     };
   }
 
   private createEnumInstantiationStatement (args: JavaSyntax.IJavaStatement[] = []): JavaSyntax.IJavaStatement {
     const instantiation: JavaSyntax.IJavaInstantiation = {
       node: JavaSyntax.JavaSyntaxNode.INSTANTIATION,
-      constructor: this.getEnumConstructorType(),
+      constructor: this.createEnumConstructorType(),
       arguments: args
     };
 
     return {
       node: JavaSyntax.JavaSyntaxNode.STATEMENT,
       leftSide: instantiation
-    };
-  }
-
-  private getEnumConstructorType (): JavaSyntax.IJavaType {
-    return {
-      node: JavaSyntax.JavaSyntaxNode.TYPE,
-      namespaceChain: [ this.parsed.name ],
-      genericTypes: [],
-      arrayDimensions: 0
     };
   }
 

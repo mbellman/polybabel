@@ -6,12 +6,12 @@ import { JavaSyntax } from '../../../parser/java/java-syntax';
 import { ObjectCategory, TypeDefinition } from '../../symbol-resolvers/common/types';
 import { TypeExpectation } from '../common/types';
 import { ValidatorUtils } from '../common/validator-utils';
-import { ArrayType } from '../../symbol-resolvers/common/array-type';
 import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
+import { TypeValidation } from '../common/type-validation';
 
 export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyntax.IJavaObjectMethod> {
   @Implements public validate (): void {
-    const { type, name, isAbstract, block } = this.syntaxNode;
+    const { type, name, isAbstract, isConstructor, isStatic, block } = this.syntaxNode;
     const parentObjectTypeDefinition = this.context.objectVisitor.getCurrentVisitedObject();
     const isInterfaceMethod = parentObjectTypeDefinition.category === ObjectCategory.INTERFACE;
     const identifier = `${parentObjectTypeDefinition.name}.${name}`;
@@ -45,6 +45,13 @@ export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyn
     }
 
     if (block) {
+      this.setFlags({
+        shouldAllowReturnedValues: !isConstructor,
+        mustReturnValue: !isConstructor && type.namespaceChain.join('.') !== JavaConstants.Type.VOID,
+        shouldAllowReturns: true,
+        shouldAllowInstanceKeywords: !isStatic,
+      });
+
       this.validateMethodBody();
     }
   }

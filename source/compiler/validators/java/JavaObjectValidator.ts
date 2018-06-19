@@ -9,7 +9,7 @@ import { ObjectType } from '../../symbol-resolvers/common/object-type';
 
 export default class JavaObjectValidator extends AbstractValidator<JavaSyntax.IJavaObject> {
   @Implements public validate (): void {
-    const { name, members } = this.syntaxNode;
+    const { name, members, constructors } = this.syntaxNode;
     const { scopeManager, objectVisitor } = this.context;
     const ownTypeDefinition = this.findTypeDefinitionByName(name) as ObjectType.Definition;
 
@@ -25,6 +25,10 @@ export default class JavaObjectValidator extends AbstractValidator<JavaSyntax.IJ
 
     scopeManager.enterScope();
     this.enterNamespace(name);
+
+    constructors.forEach(constructor => {
+      this.validateNodeWith(JavaObjectMethodValidator, constructor);
+    });
 
     members.forEach(member => {
       switch (member.node) {

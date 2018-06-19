@@ -59,7 +59,8 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
       ...method,
       isConstructor: true,
       access,
-      name
+      name,
+      type: this.createConstructorType(name)
     });
 
     this.resetCurrentMember();
@@ -105,6 +106,15 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
   @Match('}')
   protected onExit (): void {
     this.finish();
+  }
+
+  private createConstructorType (name: string): JavaSyntax.IJavaType {
+    return {
+      node: JavaSyntax.JavaSyntaxNode.TYPE,
+      namespaceChain: [ name ],
+      genericTypes: [],
+      arrayDimensions: 0
+    };
   }
 
   private resetCurrentMember (): void {

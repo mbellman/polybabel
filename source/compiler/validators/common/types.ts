@@ -35,3 +35,16 @@ export interface IExpectedType {
   type: TypeDefinition;
   expectation: TypeExpectation;
 }
+
+/**
+ * @todo @description
+ *
+ * @internal
+ */
+export interface IValidatorContextFlags {
+  shouldAllowAnyType: boolean;
+  shouldAllowReturns: boolean;
+  shouldAllowReturnedValues: boolean;
+  mustReturnValue: boolean;
+  shouldAllowInstanceKeywords: boolean;
+}

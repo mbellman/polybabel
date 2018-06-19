@@ -3,7 +3,7 @@ import { Callback } from '../../../system/types';
 import { Constructor, IConstructable } from 'trampoline-framework';
 import { Dynamic, TypeDefinition, IScopedReference, IObjectMember } from '../../symbol-resolvers/common/types';
 import { GlobalNativeTypeMap } from '../../native-type-maps/global';
-import { IExpectedType, IValidatorError, TypeExpectation } from './types';
+import { IExpectedType, IValidatorError, TypeExpectation, IValidatorContextFlags } from './types';
 import { ISyntaxNode } from '../../../parser/common/syntax-types';
 import { IToken } from '../../../tokenizer/types';
 import { ObjectType } from '../../symbol-resolvers/common/object-type';
@@ -32,15 +32,6 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
 
   public abstract validate (): void;
 
-  /**
-   * Temporarily allows any type to be checked against the current
-   * expected type without errors. As soon as a type is checked,
-   * the original expected type becomes active again.
-   */
-  protected allowAnyType (): void {
-    this.context.shouldAllowAnyType = true;
-  }
-
   protected assert (condition: boolean, message: string, shouldHalt: boolean = true): void {
     if (!condition) {
       this.report(message);
@@ -60,8 +51,10 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
   }
 
   protected checkIfTypeMatchesExpected (type: TypeDefinition): void {
-    if (this.context.shouldAllowAnyType) {
-      this.context.shouldAllowAnyType = false;
+    if (this.context.flags.shouldAllowAnyType) {
+      this.setFlags({
+        shouldAllowAnyType: false
+      });
 
       return;
     }
@@ -86,11 +79,11 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
   }
 
   protected expectsType (): boolean {
-    return !this.context.shouldAllowAnyType;
+    return !this.context.flags.shouldAllowAnyType;
   }
 
   protected expectType (expectedType: IExpectedType): void {
-    this.context.shouldAllowAnyType = false;
+    this.context.flags.shouldAllowAnyType = false;
 
     this.context.expectedTypeStack.push(expectedType);
   }
@@ -175,6 +168,9 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     }
   }
 
+  /**
+   * @todo @description
+   */
   public findTypeDefinitionByName (name: string): TypeDefinition {
     const nativeType = this.context.nativeTypeMap[name];
 
@@ -246,7 +242,7 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
       }
     }
 
-    return null;
+    return TypeUtils.createSimpleType(Dynamic);
   }
 
   protected getNamespacedIdentifier (identifier: string): string {
@@ -286,6 +282,10 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
 
   protected resetExpectedType (): void {
     this.context.expectedTypeStack.pop();
+  }
+
+  protected setFlags (flags: Partial<IValidatorContextFlags>): void {
+    Object.assign(this.context.flags, flags);
   }
 
   /**

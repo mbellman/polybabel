@@ -8,7 +8,7 @@ import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
 
 export default class JavaObjectFieldValidator extends AbstractValidator<JavaSyntax.IJavaObjectField> {
   @Implements public validate (): void {
-    const { value, isAbstract } = this.syntaxNode;
+    const { value, isAbstract, isStatic } = this.syntaxNode;
     const parentObjectTypeDefinition = this.context.objectVisitor.getCurrentVisitedObject();
 
     if (isAbstract) {
@@ -24,6 +24,11 @@ export default class JavaObjectFieldValidator extends AbstractValidator<JavaSynt
     }
 
     if (value) {
+      this.setFlags({
+        shouldAllowReturns: false,
+        shouldAllowInstanceKeywords: !isStatic
+      });
+
       this.expectType({
         type: this.getFieldTypeDefinition(),
         expectation: TypeExpectation.ASSIGNMENT

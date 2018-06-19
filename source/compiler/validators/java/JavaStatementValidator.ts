@@ -1,6 +1,6 @@
 import AbstractValidator from '../common/AbstractValidator';
 import { ArrayType } from '../../symbol-resolvers/common/array-type';
-import { Dynamic, IObjectMember, ISimpleType, Primitive, TypeDefinition } from '../../symbol-resolvers/common/types';
+import { Dynamic, IObjectMember, ISimpleType, Primitive, TypeDefinition, Void } from '../../symbol-resolvers/common/types';
 import { FunctionType } from '../../symbol-resolvers/common/function-type';
 import { Implements } from 'trampoline-framework';
 import { JavaConstants } from '../../../parser/java/java-constants';
@@ -433,14 +433,33 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
   }
 
   private validateReturnStatement (): void {
-    const { value: returnValue } = this.syntaxNode.leftSide as JavaSyntax.IJavaInstruction;
+    if (this.context.flags.shouldAllowReturns) {
+      const { value: returnValue } = this.syntaxNode.leftSide as JavaSyntax.IJavaInstruction;
+      const lastExpectedReturnType = this.getLastExpectedTypeFor(TypeExpectation.RETURN);
 
-    this.expectType({
-      type: this.getLastExpectedTypeFor(TypeExpectation.RETURN),
-      expectation: TypeExpectation.RETURN
-    });
+      if (returnValue) {
+        this.check(
+          this.context.flags.shouldAllowReturnedValues,
+          'Values cannot be returned here'
+        );
 
-    this.validateNodeWith(JavaStatementValidator, returnValue);
-    this.resetExpectedType();
+        this.expectType({
+          type: lastExpectedReturnType,
+          expectation: TypeExpectation.RETURN
+        });
+
+        this.validateNodeWith(JavaStatementValidator, returnValue);
+        this.resetExpectedType();
+      } else if (this.context.flags.mustReturnValue) {
+        const returnTypeDescription = ValidatorUtils.getTypeDescription(lastExpectedReturnType);
+
+        this.check(
+          TypeValidation.typeMatches(lastExpectedReturnType, TypeUtils.createSimpleType(Void)),
+          `Expected a '${returnTypeDescription}' return value`
+        );
+      }
+    } else {
+      this.report('Return statements are not allowed here');
+    }
   }
 }

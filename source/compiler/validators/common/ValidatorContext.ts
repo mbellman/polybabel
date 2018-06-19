@@ -1,7 +1,7 @@
 import ObjectVisitor from './ObjectVisitor';
 import ScopeManager from '../../ScopeManager';
 import SymbolDictionary from '../../symbol-resolvers/common/SymbolDictionary';
-import { IExpectedType, IValidatorError } from './types';
+import { IExpectedType, IValidatorContextFlags, IValidatorError } from './types';
 import { IHashMap } from 'trampoline-framework';
 import { TypeDefinition } from '../../symbol-resolvers/common/types';
 
@@ -14,12 +14,12 @@ export default class ValidatorContext {
   public readonly file: string;
   public errors: IValidatorError[] = [];
   public expectedTypeStack: IExpectedType[] = [];
+  public flags: Partial<IValidatorContextFlags> = {};
   public namespaceStack: string[] = [];
   public nativeTypeMap: IHashMap<TypeDefinition>;
   public objectVisitor: ObjectVisitor = new ObjectVisitor();
   public scopeManager: ScopeManager = new ScopeManager();
   public symbolDictionary: SymbolDictionary;
-  public shouldAllowAnyType: boolean = false;
 
   public constructor (file: string, symbolDictionary: SymbolDictionary, nativeTypeMap: IHashMap<TypeDefinition> = {}) {
     this.file = file;

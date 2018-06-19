@@ -10,7 +10,10 @@ export default class JavaBlockValidator extends AbstractValidator<JavaSyntax.IJa
     this.context.scopeManager.enterScope();
 
     nodes.forEach(statementNode => {
-      this.allowAnyType();
+      this.setFlags({
+        shouldAllowAnyType: true
+      });
+
       this.validateNodeWith(JavaStatementValidator, statementNode);
     });
 
