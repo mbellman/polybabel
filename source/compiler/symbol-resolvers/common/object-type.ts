@@ -211,6 +211,8 @@ export namespace ObjectType {
     }
 
     public addMember (memberName: string, objectMember: IObjectMember): void {
+      objectMember.originalObject = this;
+
       this.objectMemberMap[memberName] = objectMember;
     }
 

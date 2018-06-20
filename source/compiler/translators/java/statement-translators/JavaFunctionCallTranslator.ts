@@ -5,11 +5,7 @@ import { JavaSyntax } from '../../../../parser/java/java-syntax';
 
 export default class JavaFunctionCallTranslator extends AbstractTranslator<JavaSyntax.IJavaFunctionCall> {
   @Implements protected translate (): void {
-    const { isInstanceFunction, name, arguments: args } = this.syntaxNode;
-
-    if (isInstanceFunction) {
-      this.emit('this.');
-    }
+    const { name, arguments: args } = this.syntaxNode;
 
     this.emit(`${name ? name : ''}(`)
       .emitNodes(

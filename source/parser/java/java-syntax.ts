@@ -253,8 +253,6 @@ export namespace JavaSyntax {
    */
   export interface IJavaReference extends IJavaSyntaxNode, IValued<string> {
     node: JavaSyntaxNode.REFERENCE;
-    // Determined during validation
-    isInstanceFieldReference?: boolean;
   }
 
   /**
@@ -281,8 +279,6 @@ export namespace JavaSyntax {
   export interface IJavaFunctionCall extends IJavaSyntaxNode, INamed, IWithArguments<IJavaStatement> {
     node: JavaSyntaxNode.FUNCTION_CALL;
     genericArguments: IJavaType[];
-    // Determined during validation
-    isInstanceFunction?: boolean;
   }
 
   /**

@@ -1,6 +1,6 @@
 import AbstractValidator from '../common/AbstractValidator';
 import { ArrayType } from '../../symbol-resolvers/common/array-type';
-import { Dynamic, IObjectMember, ISimpleType, Primitive, TypeDefinition, Void } from '../../symbol-resolvers/common/types';
+import { Dynamic, IObjectMember, ISimpleType, Primitive, TypeDefinition, Void, ObjectMemberVisibility } from '../../symbol-resolvers/common/types';
 import { FunctionType } from '../../symbol-resolvers/common/function-type';
 import { Implements } from 'trampoline-framework';
 import { JavaConstants } from '../../../parser/java/java-constants';
@@ -87,14 +87,13 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
         return TypeUtils.createSimpleType(Dynamic);
       }
 
+      this.focusToken(incomingProperty.token);
+
       switch (incomingProperty.node) {
         case JavaSyntax.JavaSyntaxNode.REFERENCE: {
           // The next lookup type after a reference property
           // is the type of the member it accesses
           const { value } = incomingProperty;
-          const propertyNameToken = ValidatorUtils.findKeywordToken(value, propertyChainToken, token => token.nextTextToken);
-
-          this.focusToken(propertyNameToken);
 
           currentMember = currentPropertyLookupType.getObjectMember(value);
 
@@ -102,6 +101,10 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
             this.reportUnknownMember(currentPropertyLookupType.name, value);
 
             return TypeUtils.createSimpleType(Dynamic);
+          } else if (currentMember.isStatic) {
+            // Static members accessed on instances must be prefixed
+            // appropriately to ensure proper value resolution
+            incomingProperty.value = `constructor.${value}`;
           }
 
           currentPropertyLookupType = currentMember.type;
@@ -111,8 +114,6 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
           // The next lookup type after a function call
           // property is its return type
           const { name: functionName } = incomingProperty;
-
-          this.focusToken(incomingProperty.token);
 
           currentMember = currentPropertyLookupType.getObjectMember(functionName);
 
@@ -127,6 +128,12 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
           }
 
           this.validateFunctionCall(incomingProperty, currentMember.type);
+
+          if (currentMember.isStatic) {
+            // Static function properties accessed on instances must be
+            // prefixed appropriately to ensure proper value resolution
+            incomingProperty.name = `constructor.${incomingProperty.name}`;
+          }
 
           currentPropertyLookupType = currentMember.type.getReturnType();
           break;
@@ -147,9 +154,9 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
             return TypeUtils.createSimpleType(Dynamic);
           }
 
-          currentPropertyLookupType = currentMember.type;
+          this.validateInstantiation(incomingProperty, currentMember.type);
 
-          this.validateInstantiation(incomingProperty, currentPropertyLookupType);
+          currentPropertyLookupType = currentMember.type;
           break;
         }
         case JavaSyntax.JavaSyntaxNode.STATEMENT: {
@@ -162,7 +169,7 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
         }
       }
 
-      // TODO: Member visibility checks
+      this.validateMemberAccess(currentMember);
 
       incomingProperty = properties[++propertyIndex];
     }
@@ -230,10 +237,12 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
 
             return supertype || TypeUtils.createSimpleType(Dynamic);
           default:
-            reference.isInstanceFieldReference = (
-              currentVisitedObject.hasOwnObjectMember(value) &&
-              !this.context.scopeManager.isInScope(value)
-            );
+            const referenceMember = currentVisitedObject.getObjectMember(value);
+            const isInScope = this.context.scopeManager.isInScope(value);
+
+            if (referenceMember && !isInScope) {
+              reference.value = this.getTransformedMemberName(value, referenceMember.isStatic);
+            }
 
             return this.findTypeDefinitionByName(value);
         }
@@ -272,13 +281,15 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
         const functionCall = javaSyntaxNode as JavaSyntax.IJavaFunctionCall;
         const { name } = functionCall;
         const functionType = this.findTypeDefinitionByName(name) as FunctionType.Definition;
-
-        // TODO: this.validateFunctionCall(javaSyntax, functionType)
-        // TODO: Determine this information using a new 'find'
-        // API, etc. (see the case above)
-        functionCall.isInstanceFunction = this.context.objectVisitor.currentVisitedObjectHasMember(name);
+        const currentVisitedObject = this.context.objectVisitor.getCurrentVisitedObject();
+        const functionMember = currentVisitedObject.getObjectMember(name);
+        const isInScope = this.context.scopeManager.isInScope(name);
 
         this.validateFunctionCall(functionCall, functionType);
+
+        if (functionMember && !isInScope) {
+          functionCall.name = this.getTransformedMemberName(functionCall.name, functionMember.isStatic);
+        }
 
         return functionType instanceof FunctionType.Definition
           ? functionType.getReturnType()
@@ -314,6 +325,17 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
       default:
         return TypeUtils.createSimpleType(Dynamic);
     }
+  }
+
+  /**
+   * Returns the transformed name of a reference or function prefixed
+   * with instance or constructor keywords to turn the name into an
+   * instance or static member identifier, respectively.
+   */
+  private getTransformedMemberName (name: string, isStatic: boolean) {
+    const prefix = isStatic ? 'this.constructor' : 'this';
+
+    return `${prefix}.${name}`;
   }
 
   private hasRightSide (): boolean {
@@ -354,81 +376,6 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
       node === JavaSyntax.JavaSyntaxNode.INSTRUCTION &&
       type === JavaSyntax.JavaInstructionType.RETURN
     );
-  }
-
-  private validateOwnAssignment (): void {
-    const { leftSide, operator } = this.syntaxNode;
-
-    this.focusToken(operator.token);
-
-    switch (leftSide.node) {
-      case JavaSyntax.JavaSyntaxNode.VARIABLE_DECLARATION:
-        return;
-      case JavaSyntax.JavaSyntaxNode.REFERENCE:
-        const { value } = leftSide as JavaSyntax.IJavaReference;
-        const referenceOrMember = this.findReferenceOrMember(value);
-
-        this.check(
-          referenceOrMember ? !referenceOrMember.isConstant : true,
-          `Cannot reassign final value '${value}'`
-        );
-
-        break;
-      case JavaSyntax.JavaSyntaxNode.PROPERTY_CHAIN:
-        const { properties } = leftSide as JavaSyntax.IJavaPropertyChain;
-        const lastProperty = properties[properties.length - 1];
-
-        if (lastProperty.node === JavaSyntax.JavaSyntaxNode.REFERENCE) {
-          this.check(
-            !this.lastPropertyIsFinal,
-            `Cannot reassign final member '${lastProperty}'`
-          );
-        } else {
-          this.report('Invalid assignment');
-        }
-
-        break;
-      default:
-        this.report('Invalid assignment');
-    }
-  }
-
-  /**
-   * @todo
-   */
-  private validateFunctionCall (functionCall: JavaSyntax.IJavaFunctionCall, functionType: TypeDefinition | TypeDefinition[]): void {
-
-  }
-
-  private validateInstanceKeyword (keyword: string): void {
-    this.check(
-      this.context.flags.shouldAllowInstanceKeywords,
-      `'${keyword}' is not allowed in static methods or initializers`
-    );
-  }
-
-  private validateInstantiation (instantiation: JavaSyntax.IJavaInstantiation, objectType: TypeDefinition): void {
-    const { constructor, arguments: args } = instantiation;
-    const constructorName = constructor.namespaceChain.join('.');
-    const constructorArgumentTypes = args.map(argument => this.getStatementType(argument));
-
-    if (objectType instanceof ObjectType.Definition) {
-      if (!objectType.isConstructable) {
-        this.reportNonConstructableInstantiation(constructorName);
-      }
-
-      const constructorOverloadIndex = objectType.getConstructorSignatureIndex(constructorArgumentTypes);
-
-      if (constructorOverloadIndex === -1) {
-        const constructorArgumentDescriptions = constructorArgumentTypes.map(type => `'${ValidatorUtils.getTypeDescription(type)}'`);
-
-        this.report(`Invalid constructor arguments ${constructorArgumentDescriptions.join(', ')}`);
-      }
-
-      instantiation.overloadIndex = constructorOverloadIndex;
-    } else {
-      this.reportNonConstructor(constructorName);
-    }
   }
 
   private validateAsNonReturnStatement (): void {
@@ -512,5 +459,100 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
     this.setFlags({
       didReturnInCurrentBlock: true
     });
+  }
+
+  /**
+   * @todo
+   */
+  private validateFunctionCall (functionCall: JavaSyntax.IJavaFunctionCall, functionType: TypeDefinition | TypeDefinition[]): void {
+
+  }
+
+  private validateInstanceKeyword (keyword: string): void {
+    this.check(
+      this.context.flags.shouldAllowInstanceKeywords,
+      `'${keyword}' is not allowed in static methods or initializers`
+    );
+  }
+
+  private validateInstantiation (instantiation: JavaSyntax.IJavaInstantiation, objectType: TypeDefinition): void {
+    const { constructor, arguments: args } = instantiation;
+    const constructorName = constructor.namespaceChain.join('.');
+    const constructorArgumentTypes = args.map(argument => this.getStatementType(argument));
+
+    if (objectType instanceof ObjectType.Definition) {
+      if (!objectType.isConstructable) {
+        this.reportNonConstructableInstantiation(constructorName);
+      }
+
+      const constructorOverloadIndex = objectType.getConstructorSignatureIndex(constructorArgumentTypes);
+
+      if (constructorOverloadIndex === -1) {
+        const constructorArgumentDescriptions = constructorArgumentTypes.map(type => `'${ValidatorUtils.getTypeDescription(type)}'`);
+
+        this.report(`Invalid constructor arguments ${constructorArgumentDescriptions.join(', ')}`);
+      }
+
+      instantiation.overloadIndex = constructorOverloadIndex;
+    } else {
+      this.reportNonConstructor(constructorName);
+    }
+  }
+
+  private validateMemberAccess (member: IObjectMember): void {
+    const { objectVisitor } = this.context;
+    const { name, originalObject } = member;
+
+    switch (member.visibility) {
+      case ObjectMemberVisibility.SELF:
+        this.check(
+          objectVisitor.isInsideObject(originalObject),
+          `Private member '${name}' is only visible inside '${originalObject.name}'`
+        );
+        break;
+      case ObjectMemberVisibility.DERIVED:
+        this.check(
+          objectVisitor.isInsideObject(originalObject) || objectVisitor.isInsideSubtypeOf(originalObject),
+          `Protected member '${name}' is only visible inside '${originalObject.name}' and its subclasses`
+        );
+        break;
+    }
+  }
+
+  private validateOwnAssignment (): void {
+    const { leftSide, operator } = this.syntaxNode;
+
+    this.focusToken(operator.token);
+
+    switch (leftSide.node) {
+      case JavaSyntax.JavaSyntaxNode.VARIABLE_DECLARATION:
+        return;
+      case JavaSyntax.JavaSyntaxNode.REFERENCE:
+        const { value } = leftSide as JavaSyntax.IJavaReference;
+        const referenceOrMember = this.findReferenceOrMember(value);
+
+        this.check(
+          referenceOrMember ? !referenceOrMember.isConstant : true,
+          `Cannot reassign final value '${value}'`
+        );
+
+        break;
+      case JavaSyntax.JavaSyntaxNode.PROPERTY_CHAIN:
+        const { properties } = leftSide as JavaSyntax.IJavaPropertyChain;
+        const lastProperty = properties[properties.length - 1];
+
+        if (lastProperty.node === JavaSyntax.JavaSyntaxNode.REFERENCE) {
+          this.check(
+            !this.lastPropertyIsFinal,
+            `Cannot reassign final member '${lastProperty}'`
+          );
+        } else {
+          this.report('Invalid assignment');
+        }
+
+        break;
+      default:
+        this.report('Invalid assignment');
+    }
   }
 }

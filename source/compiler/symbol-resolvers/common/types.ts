@@ -1,4 +1,5 @@
 import AbstractTypeDefinition from './AbstractTypeDefinition';
+import { ObjectType } from './object-type';
 
 /**
  * A map of object member names to their type definitions.
@@ -46,6 +47,7 @@ export interface IObjectMember<T extends TypeDefinition = TypeDefinition> {
   name: string;
   visibility: ObjectMemberVisibility;
   type: T; // TODO: ITypeSignature<T>
+  originalObject?: ObjectType.Definition;
   isConstant?: boolean;
   isStatic?: boolean;
   requiresImplementation?: boolean;

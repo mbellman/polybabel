@@ -61,7 +61,7 @@ export default class ObjectVisitor {
 
   public isInsideSubtypeOf (objectType: ObjectType.Definition): boolean {
     for (let i = this.visitedObjectStack.length - 1; i >= 0; i--) {
-      if (objectType.isSubtypeOf(this.visitedObjectStack[i])) {
+      if (this.visitedObjectStack[i].isSubtypeOf(objectType)) {
         return true;
       }
     }

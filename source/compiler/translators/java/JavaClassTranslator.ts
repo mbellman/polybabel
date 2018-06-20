@@ -226,18 +226,6 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
     return this;
   }
 
-  private emitNestedObjectWith <O extends JavaSyntax.IJavaObject>(Translator: Constructor<AbstractTranslator<O>>, object: O): this {
-    return this.emit('(function(){')
-      .enterBlock()
-      .emit(`var ${object.name} = `)
-      .emitNodeWith(Translator, object)
-      .emit(';')
-      .newline()
-      .emit(`return ${object.name};`)
-      .exitBlock()
-      .emit('})();');
-  }
-
   private emitNestedObjectsWith <O extends JavaSyntax.IJavaObject>(Translator: Constructor<AbstractTranslator<O>>, objects: O[], isInstanceSide: boolean): this {
     return this.emitNodes(
       objects,
@@ -250,7 +238,8 @@ export default class JavaClassTranslator extends AbstractTranslator<JavaSyntax.I
           this.emitStaticMemberKey(name);
         }
 
-        this.emitNestedObjectWith(Translator, object);
+        this.emitNodeWith(Translator, object)
+          .emit(';');
       },
       () => this.newline()
     );

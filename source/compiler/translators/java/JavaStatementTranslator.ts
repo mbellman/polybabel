@@ -1,6 +1,5 @@
 import AbstractTranslator from '../common/AbstractTranslator';
 import JavaAssertionTranslator from './statement-translators/JavaAssertionTranslator';
-import JavaBlockTranslator from './JavaBlockTranslator';
 import JavaClassTranslator from './JavaClassTranslator';
 import JavaDoWhileLoopTranslator from './statement-translators/JavaDoWhileLoopTranslator';
 import JavaForLoopTranslator from './statement-translators/JavaForLoopTranslator';
@@ -61,7 +60,7 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
         this.emitNodeWith(JavaInstructionTranslator, leftSide as JavaSyntax.IJavaInstruction);
         break;
       case JavaSyntax.JavaSyntaxNode.REFERENCE:
-        this.emitReference(leftSide as JavaSyntax.IJavaReference);
+        this.emit((leftSide as JavaSyntax.IJavaReference).value);
         break;
       case JavaSyntax.JavaSyntaxNode.INSTANTIATION:
         this.emitNodeWith(JavaInstantiationTranslator, leftSide as JavaSyntax.IJavaInstantiation);
@@ -109,14 +108,6 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
         this.emitNodeWith(JavaStatementTranslator, leftSide as JavaSyntax.IJavaStatement);
         break;
     }
-  }
-
-  private emitReference ({ isInstanceFieldReference, value }: JavaSyntax.IJavaReference): void {
-    if (isInstanceFieldReference) {
-      this.emit('this.');
-    }
-
-    this.emit(value);
   }
 
   private emitTernary ({ condition, left, right }: JavaSyntax.IJavaTernary): void {
