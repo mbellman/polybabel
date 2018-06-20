@@ -35,4 +35,8 @@ export default class ScopeManager {
 
     return null;
   }
+
+  public isInScope (name: string): boolean {
+    return !!this.getScopedReference(name);
+  }
 }

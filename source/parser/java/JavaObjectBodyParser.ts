@@ -56,8 +56,8 @@ export default class JavaObjectBodyParser extends AbstractParser<JavaSyntax.IJav
     const method = this.parseNextWith(JavaObjectMethodParser);
 
     // Since constructor type nodes are synthetic, we have to provide
-    // it with a token to facilitate proper validation-time token focus,
-    // since method validation focuses the type node token by default
+    // them with a token to facilitate proper validation-time token
+    // focus as method validation focuses type node tokens by default
     type.token = openingToken;
 
     this.assert(method.block !== null);

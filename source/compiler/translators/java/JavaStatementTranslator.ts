@@ -111,10 +111,6 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
     }
   }
 
-  private emitVariableDeclaration ({ name }: JavaSyntax.IJavaVariableDeclaration): void {
-    this.emit(`var ${name}`);
-  }
-
   private emitReference ({ isInstanceFieldReference, value }: JavaSyntax.IJavaReference): void {
     if (isInstanceFieldReference) {
       this.emit('this.');

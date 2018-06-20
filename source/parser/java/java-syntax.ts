@@ -94,7 +94,7 @@ export namespace JavaSyntax {
   /**
    * A property in a Java property chain.
    */
-  export type JavaProperty = string | IJavaStatement | IJavaFunctionCall | IJavaInstantiation | IJavaLiteral | IJavaType;
+  export type JavaProperty = IJavaReference | IJavaStatement | IJavaFunctionCall | IJavaInstantiation | IJavaLiteral | IJavaType;
 
   /**
    * A Java object member.

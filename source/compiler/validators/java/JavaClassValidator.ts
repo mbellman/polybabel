@@ -16,8 +16,6 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
 
     this.ownTypeDefinition = this.findTypeDefinitionByName(name) as ObjectType.Definition;
 
-    objectVisitor.visitObject(this.ownTypeDefinition);
-
     if (extended.length !== 0) {
       this.validateSuperclass(extended[0]);
     }
@@ -26,11 +24,14 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
       this.validateImplementations(implemented);
     }
 
+    objectVisitor.visitObject(this.ownTypeDefinition);
+
     constructors.forEach(constructor => {
       this.validateNodeWith(JavaObjectMethodValidator, constructor);
     });
 
     this.validateNodeWith(JavaObjectValidator, this.syntaxNode);
+
     objectVisitor.leaveObject();
   }
 

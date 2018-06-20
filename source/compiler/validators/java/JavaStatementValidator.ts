@@ -71,34 +71,7 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
     let currentPropertyLookupType: TypeDefinition;
     let propertyIndex = 0;
 
-    if (typeof firstProperty === 'string') {
-      // TODO: Refactor all of this once single-word properties are references
-      const currentVisitedObject = this.context.objectVisitor.getCurrentVisitedObject();
-
-      switch (firstProperty) {
-        case JavaConstants.Keyword.THIS:
-          this.validateInstanceKeyword(firstProperty);
-
-          currentPropertyLookupType = currentVisitedObject;
-          break;
-        case JavaConstants.Keyword.SUPER:
-          const supertype = currentVisitedObject.getSupertypeByIndex(0);
-
-          this.validateInstanceKeyword(firstProperty);
-
-          this.check(
-            !!supertype,
-            `'${currentVisitedObject.name}' does not have a supertype`
-          );
-
-          currentPropertyLookupType = supertype || TypeUtils.createSimpleType(Dynamic);
-          break;
-        default:
-          currentPropertyLookupType = this.findTypeDefinitionByName(firstProperty);
-      }
-    } else {
-      currentPropertyLookupType = this.getSyntaxNodeType(firstProperty);
-    }
+    currentPropertyLookupType = this.getSyntaxNodeType(firstProperty);
 
     if (TypeValidation.isDynamic(currentPropertyLookupType)) {
       return currentPropertyLookupType;
@@ -114,77 +87,78 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
         return TypeUtils.createSimpleType(Dynamic);
       }
 
-      if (typeof incomingProperty === 'string') {
-        // The next lookup type after a string property is the type
-        // of the member it accesses
-        currentMember = currentPropertyLookupType.getObjectMember(incomingProperty);
+      switch (incomingProperty.node) {
+        case JavaSyntax.JavaSyntaxNode.REFERENCE: {
+          // The next lookup type after a reference property
+          // is the type of the member it accesses
+          const { value } = incomingProperty;
+          const propertyNameToken = ValidatorUtils.findKeywordToken(value, propertyChainToken, token => token.nextTextToken);
 
-        const propertyNameToken = ValidatorUtils.findKeywordToken(incomingProperty, propertyChainToken, token => token.nextTextToken);
+          this.focusToken(propertyNameToken);
 
-        this.focusToken(propertyNameToken);
+          currentMember = currentPropertyLookupType.getObjectMember(value);
 
-        if (!currentMember) {
-          this.reportUnknownMember(currentPropertyLookupType.name, incomingProperty);
+          if (!currentMember) {
+            this.reportUnknownMember(currentPropertyLookupType.name, value);
 
-          return TypeUtils.createSimpleType(Dynamic);
-        }
-
-        currentPropertyLookupType = currentMember.type;
-      } else {
-        switch (incomingProperty.node) {
-          case JavaSyntax.JavaSyntaxNode.FUNCTION_CALL: {
-            // The next lookup type after a function call
-            // property is its return type
-            const { name: functionName } = incomingProperty;
-
-            this.focusToken(incomingProperty.token);
-
-            currentMember = currentPropertyLookupType.getObjectMember(functionName);
-
-            if (!currentMember) {
-              this.reportUnknownMember(currentPropertyLookupType.name, functionName);
-
-              return TypeUtils.createSimpleType(Dynamic);
-            } else if (!(currentMember.type instanceof FunctionType.Definition)) {
-              this.reportNonFunctionCalled(`${currentPropertyLookupType.name}.${functionName}`);
-
-              return TypeUtils.createSimpleType(Dynamic);
-            }
-
-            this.validateFunctionCall(incomingProperty, currentMember.type);
-
-            currentPropertyLookupType = currentMember.type.getReturnType();
-            break;
-          }
-          case JavaSyntax.JavaSyntaxNode.INSTANTIATION: {
-            // The next lookup type after an instantiation
-            // property is its constructor type
-            const { constructor } = incomingProperty;
-            const constructorName = constructor.namespaceChain.join('.');
-
-            this.focusToken(constructor.token);
-
-            currentMember = currentPropertyLookupType.getObjectMember(constructorName);
-
-            if (!currentMember) {
-              this.reportUnknownMember(currentPropertyLookupType.name, constructorName);
-
-              return TypeUtils.createSimpleType(Dynamic);
-            }
-
-            currentPropertyLookupType = currentMember.type;
-
-            this.validateInstantiation(incomingProperty, currentPropertyLookupType);
-            break;
-          }
-          case JavaSyntax.JavaSyntaxNode.STATEMENT: {
-            // TODO: Number indexes -> array element type
-            //
-            // We can't know what the computed property name will be,
-            // and since Java doesn't have index types, we just return
-            // a dynamic type as a fallback
             return TypeUtils.createSimpleType(Dynamic);
           }
+
+          currentPropertyLookupType = currentMember.type;
+          break;
+        }
+        case JavaSyntax.JavaSyntaxNode.FUNCTION_CALL: {
+          // The next lookup type after a function call
+          // property is its return type
+          const { name: functionName } = incomingProperty;
+
+          this.focusToken(incomingProperty.token);
+
+          currentMember = currentPropertyLookupType.getObjectMember(functionName);
+
+          if (!currentMember) {
+            this.reportUnknownMember(currentPropertyLookupType.name, functionName);
+
+            return TypeUtils.createSimpleType(Dynamic);
+          } else if (!(currentMember.type instanceof FunctionType.Definition)) {
+            this.reportNonFunctionCalled(`${currentPropertyLookupType.name}.${functionName}`);
+
+            return TypeUtils.createSimpleType(Dynamic);
+          }
+
+          this.validateFunctionCall(incomingProperty, currentMember.type);
+
+          currentPropertyLookupType = currentMember.type.getReturnType();
+          break;
+        }
+        case JavaSyntax.JavaSyntaxNode.INSTANTIATION: {
+          // The next lookup type after an instantiation
+          // property is its constructor type
+          const { constructor } = incomingProperty;
+          const constructorName = constructor.namespaceChain.join('.');
+
+          this.focusToken(constructor.token);
+
+          currentMember = currentPropertyLookupType.getObjectMember(constructorName);
+
+          if (!currentMember) {
+            this.reportUnknownMember(currentPropertyLookupType.name, constructorName);
+
+            return TypeUtils.createSimpleType(Dynamic);
+          }
+
+          currentPropertyLookupType = currentMember.type;
+
+          this.validateInstantiation(incomingProperty, currentPropertyLookupType);
+          break;
+        }
+        case JavaSyntax.JavaSyntaxNode.STATEMENT: {
+          // TODO: Number indexes -> array element type
+          //
+          // We can't know what the computed property name will be,
+          // and since Java doesn't have index types, we just return
+          // a dynamic type as a fallback
+          return TypeUtils.createSimpleType(Dynamic);
         }
       }
 
@@ -234,6 +208,36 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
    */
   private getSyntaxNodeType (javaSyntaxNode: JavaSyntax.IJavaSyntaxNode): TypeDefinition {
     switch (javaSyntaxNode.node) {
+      case JavaSyntax.JavaSyntaxNode.REFERENCE: {
+        const reference = javaSyntaxNode as JavaSyntax.IJavaReference;
+        const { value } = reference;
+        const currentVisitedObject = this.context.objectVisitor.getCurrentVisitedObject();
+
+        switch (value) {
+          case JavaConstants.Keyword.THIS:
+            this.validateInstanceKeyword(value);
+
+            return currentVisitedObject;
+          case JavaConstants.Keyword.SUPER:
+            this.validateInstanceKeyword(value);
+
+            const supertype = currentVisitedObject.getSupertypeByIndex(0);
+
+            this.check(
+              !!supertype,
+              `'${currentVisitedObject.name}' doesn't have any supertypes`
+            );
+
+            return supertype || TypeUtils.createSimpleType(Dynamic);
+          default:
+            reference.isInstanceFieldReference = (
+              currentVisitedObject.hasOwnObjectMember(value) &&
+              !this.context.scopeManager.isInScope(value)
+            );
+
+            return this.findTypeDefinitionByName(value);
+        }
+      }
       case JavaSyntax.JavaSyntaxNode.VARIABLE_DECLARATION: {
         const { type, name, isFinal } = javaSyntaxNode as JavaSyntax.IJavaVariableDeclaration;
         const typeDefinition = this.findTypeDefinition(type.namespaceChain);
@@ -264,18 +268,6 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
           return this.getSimpleLiteralType(literal);
         }
       }
-      case JavaSyntax.JavaSyntaxNode.REFERENCE: {
-        const reference = javaSyntaxNode as JavaSyntax.IJavaReference;
-        const { value: referenceName } = reference;
-        const referenceType = this.findTypeDefinitionByName(referenceName);
-
-        // TODO: Determine this information using a new 'find'
-        // API which returns not only type information, but
-        // the source of the found reference
-        reference.isInstanceFieldReference = this.context.objectVisitor.currentVisitedObjectHasMember(referenceName);
-
-        return referenceType;
-      }
       case JavaSyntax.JavaSyntaxNode.FUNCTION_CALL: {
         const functionCall = javaSyntaxNode as JavaSyntax.IJavaFunctionCall;
         const { name } = functionCall;
@@ -286,7 +278,11 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
         // API, etc. (see the case above)
         functionCall.isInstanceFunction = this.context.objectVisitor.currentVisitedObjectHasMember(name);
 
-        return functionType.getReturnType();
+        this.validateFunctionCall(functionCall, functionType);
+
+        return functionType instanceof FunctionType.Definition
+          ? functionType.getReturnType()
+          : TypeUtils.createSimpleType(Dynamic);
       }
       case JavaSyntax.JavaSyntaxNode.INSTANTIATION: {
         const instantiation = javaSyntaxNode as JavaSyntax.IJavaInstantiation;
@@ -382,7 +378,7 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
         const { properties } = leftSide as JavaSyntax.IJavaPropertyChain;
         const lastProperty = properties[properties.length - 1];
 
-        if (typeof lastProperty === 'string') {
+        if (lastProperty.node === JavaSyntax.JavaSyntaxNode.REFERENCE) {
           this.check(
             !this.lastPropertyIsFinal,
             `Cannot reassign final member '${lastProperty}'`
@@ -397,6 +393,9 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
     }
   }
 
+  /**
+   * @todo
+   */
   private validateFunctionCall (functionCall: JavaSyntax.IJavaFunctionCall, functionType: TypeDefinition | TypeDefinition[]): void {
 
   }
@@ -464,7 +463,7 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
     const { shouldAllowReturn, shouldAllowReturnValue, mustReturnValue } = this.context.flags;
 
     if (!shouldAllowReturn) {
-      this.report('Return statements are not allowed in fields or initializers');
+      this.report('Unexpected return');
 
       return;
     }

@@ -14,10 +14,22 @@ export default class JavaPropertyChainTranslator extends AbstractTranslator<Java
       const property = properties[i];
       const nextProperty = properties[i + 1];
 
-      if (typeof property === 'string') {
-        this.emit(property);
-      } else {
-        this.emitNonStringProperty(property);
+      switch (property.node) {
+        case JavaSyntax.JavaSyntaxNode.REFERENCE:
+          this.emit(property.value);
+          break;
+        case JavaSyntax.JavaSyntaxNode.FUNCTION_CALL:
+          this.emitNodeWith(JavaFunctionCallTranslator, property);
+          break;
+        case JavaSyntax.JavaSyntaxNode.INSTANTIATION:
+          this.emitNodeWith(JavaInstantiationTranslator, property);
+          break;
+        case JavaSyntax.JavaSyntaxNode.LITERAL:
+          this.emitNodeWith(JavaLiteralTranslator, property);
+          break;
+        case JavaSyntax.JavaSyntaxNode.STATEMENT:
+          this.emitNodeWith(JavaStatementTranslator, property);
+          break;
       }
 
       if (!this.isDotDelimitedProperty(property)) {
@@ -31,23 +43,6 @@ export default class JavaPropertyChainTranslator extends AbstractTranslator<Java
       if (nextProperty) {
         this.emitIncomingPropertyDelimiter(nextProperty);
       }
-    }
-  }
-
-  private emitNonStringProperty (property: Exclude<JavaSyntax.JavaProperty, string>): void {
-    switch (property.node) {
-      case JavaSyntax.JavaSyntaxNode.FUNCTION_CALL:
-        this.emitNodeWith(JavaFunctionCallTranslator, property);
-        break;
-      case JavaSyntax.JavaSyntaxNode.INSTANTIATION:
-        this.emitNodeWith(JavaInstantiationTranslator, property);
-        break;
-      case JavaSyntax.JavaSyntaxNode.LITERAL:
-        this.emitNodeWith(JavaLiteralTranslator, property);
-        break;
-      case JavaSyntax.JavaSyntaxNode.STATEMENT:
-        this.emitNodeWith(JavaStatementTranslator, property);
-        break;
     }
   }
 
@@ -76,10 +71,14 @@ export default class JavaPropertyChainTranslator extends AbstractTranslator<Java
    * require [...] bracket delimiters.
    */
   private isDotDelimitedProperty (property: JavaSyntax.JavaProperty): boolean {
-    return (
-      typeof property === 'string' ||
+    const isParentheticalStatement = (
       property.node === JavaSyntax.JavaSyntaxNode.STATEMENT &&
-      (property as JavaSyntax.IJavaStatement).isParenthetical ||
+      property.isParenthetical
+    );
+
+    return (
+      isParentheticalStatement ||
+      property.node === JavaSyntax.JavaSyntaxNode.REFERENCE ||
       property.node === JavaSyntax.JavaSyntaxNode.FUNCTION_CALL ||
       property.node === JavaSyntax.JavaSyntaxNode.INSTANTIATION ||
       property.node === JavaSyntax.JavaSyntaxNode.LITERAL

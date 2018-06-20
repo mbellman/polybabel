@@ -65,7 +65,7 @@ export default class JavaPropertyChainParser extends AbstractParser<JavaSyntax.I
     } else if (this.currentTokenMatches(JavaUtils.isType)) {
       this.parseTypeProperty();
     } else {
-      this.parseWordProperty();
+      this.parseReferenceProperty();
     }
   }
 
@@ -126,15 +126,15 @@ export default class JavaPropertyChainParser extends AbstractParser<JavaSyntax.I
   /**
    * Types can exist on a property chain if the properties
    * correspond to nested namespaces, though the previous
-   * properties must all be strings, and the act of adding
-   * the type property immediately stops the parser and
-   * terminates the chain.
+   * properties must all be single-word references, and the
+   * act of adding the type property immediately stops the
+   * parser and terminates the chain.
    */
   private parseTypeProperty (): void {
-    const nonStringProperties = this.parsed.properties
-      .filter(property => typeof property !== 'string');
+    const nonReferenceProperties = this.parsed.properties
+      .filter(({ node }) => node !== JavaSyntax.JavaSyntaxNode.REFERENCE);
 
-    this.assert(nonStringProperties.length === 0);
+    this.assert(nonReferenceProperties.length === 0);
 
     const type = this.parseNextWith(JavaTypeParser);
 
@@ -142,7 +142,10 @@ export default class JavaPropertyChainParser extends AbstractParser<JavaSyntax.I
     this.stop();
   }
 
-  private parseWordProperty (): void {
-    this.parsed.properties.push(this.currentToken.value);
+  private parseReferenceProperty (): void {
+    this.parsed.properties.push({
+      node: JavaSyntax.JavaSyntaxNode.REFERENCE,
+      value: this.currentToken.value
+    });
   }
 }

@@ -184,7 +184,7 @@ export default class JavaTypeParser extends AbstractParser<JavaSyntax.IJavaType>
    * property chain is retroactively turned into the type side
    * of a variable declaration.
    *
-   * See: JavaPropertyChainParser.parseTypeProperty()
+   * @see JavaPropertyChainParser.parseTypeProperty()
    */
   private parseTypeNamespaceChain (): void {
     while (!this.isEOF()) {

@@ -162,11 +162,7 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
 
     const propertyChain = this.parseNextWith(JavaPropertyChainParser);
     const lastProperty = propertyChain.properties.slice(-1).pop();
-
-    const isNamespacedType = (
-      typeof lastProperty !== 'string' &&
-      lastProperty.node === JavaSyntax.JavaSyntaxNode.TYPE
-    );
+    const isNamespacedType = lastProperty.node === JavaSyntax.JavaSyntaxNode.TYPE;
 
     if (isNamespacedType) {
       // If the last property in the chain is a type, we need
@@ -176,9 +172,9 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
       // property is a type, so we can safely combine the string
       // properties and the type name to define the type's full
       // namespace chain.
-      const { properties } = propertyChain;
       const { namespaceChain, genericTypes, arrayDimensions } = lastProperty as JavaSyntax.IJavaType;
-      const stringProperties = properties.slice(0, -1) as string[];
+      const referenceProperties = propertyChain.properties.slice(0, -1) as JavaSyntax.IJavaReference[];
+      const namespaces = referenceProperties.map(({ value }) => value);
       const typeName = namespaceChain[0];
 
       // Variable name must be a word! Normally this would be
@@ -188,7 +184,7 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
 
       const type: JavaSyntax.IJavaType = {
         node: JavaSyntax.JavaSyntaxNode.TYPE,
-        namespaceChain: [ ...stringProperties, typeName ],
+        namespaceChain: [ ...namespaces, typeName ],
         genericTypes,
         arrayDimensions
       };
