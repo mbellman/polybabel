@@ -1,13 +1,17 @@
 import AbstractValidator from '../common/AbstractValidator';
+import JavaObjectMethodValidator from './JavaObjectMethodValidator';
 import JavaObjectValidator from './JavaObjectValidator';
 import { Dynamic } from '../../symbol-resolvers/common/types';
 import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
 import { ObjectType } from '../../symbol-resolvers/common/object-type';
 import { ValidatorUtils } from '../common/validator-utils';
-import JavaObjectMethodValidator from './JavaObjectMethodValidator';
 
 export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJavaClass> {
+  /**
+   * Keeps track of the class' object type definition so it
+   * needn't be searched again by name.
+   */
   private ownTypeDefinition: ObjectType.Definition;
 
   @Implements public validate (): void {
@@ -43,16 +47,19 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
     for (const implementation of implementations) {
       this.focusToken(implementation.token);
 
-      const type = this.findTypeDefinition(implementation.namespaceChain);
-      const name = implementation.namespaceChain.join('.');
+      const interfaceTypeDefinition = this.findTypeDefinition(implementation.namespaceChain) as ObjectType.Definition;
+      const interfaceName = implementation.namespaceChain.join('.');
 
-      this.check(
-        ValidatorUtils.isSimpleTypeOf(Dynamic, type) ||
-        ValidatorUtils.isInterfaceType(type),
-        `Class '${this.syntaxNode.name}' cannot implement non-interface '${name}'`
-      );
-
-      // TODO: Verify that non-default interface members have implementations
+      if (ValidatorUtils.isInterfaceType(interfaceTypeDefinition)) {
+        interfaceTypeDefinition.forEachMember(interfaceMember => {
+          this.check(
+            this.ownTypeDefinition.hasEquivalentMember(interfaceMember),
+            `Class '${this.syntaxNode.name}' does not correctly implement '${interfaceName}.${interfaceMember.name}'`
+          );
+        });
+      } else {
+        this.report(`Class '${this.syntaxNode.name}' cannot implement non-interface '${interfaceName}'`);
+      }
     }
   }
 
@@ -60,7 +67,7 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
     this.focusToken(superclassType.token);
 
     const superTypeDefinition = this.findTypeDefinition(superclassType.namespaceChain);
-    const name = superclassType.namespaceChain.join('.');
+    const supertypeName = superclassType.namespaceChain.join('.');
     const supertypeIsClass = ValidatorUtils.isClassType(superTypeDefinition);
 
     this.check(
@@ -70,14 +77,14 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
 
     this.check(
       ValidatorUtils.isSimpleTypeOf(Dynamic, superTypeDefinition) || supertypeIsClass,
-      `Class '${this.syntaxNode.name}' cannot extend non-class '${name}'`
+      `Class '${this.syntaxNode.name}' cannot extend non-class '${supertypeName}'`
     );
 
     this.check(
       supertypeIsClass
         ? (superTypeDefinition as ObjectType.Definition).isExtensible
         : true,
-      `Class '${name}' is not extensible`
+      `Class '${supertypeName}' is not extensible`
     );
 
     if (supertypeIsClass) {
@@ -85,14 +92,14 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
         if (superObjectMember.requiresImplementation && !this.isAbstractClass()) {
           this.check(
             this.ownTypeDefinition.hasOwnObjectMember(memberName),
-            `Class '${this.syntaxNode.name}' must implement abstract member '${name}.${memberName}'`
+            `Class '${this.syntaxNode.name}' must implement abstract member '${supertypeName}.${memberName}'`
           );
         }
 
         if (superObjectMember.isConstant) {
           this.check(
             !this.ownTypeDefinition.hasOwnObjectMember(memberName),
-            `Class '${this.syntaxNode.name}' cannot override final member '${name}.${memberName}'`
+            `Class '${this.syntaxNode.name}' cannot override final member '${supertypeName}.${memberName}'`
           );
         }
       });

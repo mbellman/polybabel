@@ -150,6 +150,17 @@ export namespace ObjectType {
       return this.constructors.length > 0;
     }
 
+    public hasEquivalentMember (objectMember: IObjectMember): boolean {
+      const ownMember = this.objectMemberMap[objectMember.name];
+
+      return (
+        !!ownMember &&
+        TypeValidation.typeMatches(ownMember.type, objectMember.type) &&
+        ownMember.isStatic === objectMember.isStatic &&
+        ownMember.visibility >= objectMember.visibility
+      );
+    }
+
     public hasMember (memberName: string): boolean {
       return !!this.getObjectMember(memberName);
     }

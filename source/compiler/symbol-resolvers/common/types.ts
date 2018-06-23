@@ -2,15 +2,6 @@ import AbstractTypeDefinition from './AbstractTypeDefinition';
 import { ObjectType } from './object-type';
 
 /**
- * A map of object member names to their type definitions.
- *
- * @internal
- */
-interface IMemberTypeMap {
-  [memberName: string]: IObjectMember;
-}
-
-/**
  * Generalizes object member access modifiers in a manner
  * reconcilable by all languages.
  */

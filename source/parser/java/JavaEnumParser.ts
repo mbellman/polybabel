@@ -10,8 +10,8 @@ import { TokenUtils } from '../../tokenizer/token-utils';
 /**
  * Parses Java enums, finishing upon encountering the final
  * closing brace. In a break from convention, enums are parsed
- * as classes, because they are conceptually just a type of
- * class with certain syntactic conditions.
+ * into class nodes, because they are conceptually just a type
+ * of class with certain syntactic conditions.
  *
  * @example
  *

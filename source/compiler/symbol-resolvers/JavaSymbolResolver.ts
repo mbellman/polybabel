@@ -50,7 +50,7 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
         ? DERIVED :
       access === JavaSyntax.JavaAccessModifier.PRIVATE
         ? SELF :
-      null
+      ALL
     );
   }
 
@@ -228,7 +228,7 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
   }
 
   private resolveInterfaceSymbol (interfaceNode: JavaSyntax.IJavaInterface): ISymbol {
-    const { name, members } = interfaceNode;
+    const { name, members, extended } = interfaceNode;
     const identifier = this.createSymbolIdentifier(name);
     const objectTypeDefiner = this.createTypeDefiner(ObjectType.Definer);
 
@@ -237,6 +237,12 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
     objectTypeDefiner.category = ObjectCategory.INTERFACE;
     objectTypeDefiner.isExtensible = true;
     objectTypeDefiner.isConstructable = false;
+
+    if (extended.length > 0) {
+      extended.forEach(superType => {
+        objectTypeDefiner.addSupertype(this.javaTypeToTypeDefinition(superType));
+      });
+    }
 
     this.enterNamespace(name);
     this.resolveAndAddObjectMembers(members, objectTypeDefiner);

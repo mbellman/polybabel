@@ -81,12 +81,13 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
 
     const { name: functionName, arguments: args } = functionCall;
     const argumentTypes = args.map(argument => this.getStatementType(argument));
-    const scopedReference = this.context.scopeManager.getScopedReference(functionName);
 
     if (!sourceObjectType) {
       // If no source object is provided, we first have to attempt
       // to resolve the function as a scoped reference, since scoped
       // references take priority over current visited object members
+      const scopedReference = this.context.scopeManager.getScopedReference(functionName);
+
       if (scopedReference) {
         const { signature } = scopedReference;
 

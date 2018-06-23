@@ -22,8 +22,8 @@ export default class JavaObjectValidator extends AbstractValidator<JavaSyntax.IJ
         case JavaSyntax.JavaSyntaxNode.OBJECT_METHOD:
           const method = member as JavaSyntax.IJavaObjectMethod;
 
-          this.trackMethodOverloads(method);
           this.validateNodeWith(JavaObjectMethodValidator, member as JavaSyntax.IJavaObjectMethod);
+          this.trackMethodOverloads(method);
           break;
         case JavaSyntax.JavaSyntaxNode.CLASS:
           this.validateNodeWith(JavaClassValidator, member as JavaSyntax.IJavaClass);
