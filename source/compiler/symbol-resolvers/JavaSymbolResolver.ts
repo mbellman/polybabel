@@ -134,6 +134,12 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
           resolvedObjectMember.requiresImplementation = !!isAbstract;
           resolvedObjectMember.type = functionTypeDefiner;
 
+          if (definer.hasOwnObjectMember(name)) {
+            definer.addMethodOverload(resolvedObjectMember as IObjectMember<FunctionType.Definition>);
+
+            return;
+          }
+
           break;
         }
         case JavaSyntax.JavaSyntaxNode.CLASS:
@@ -157,8 +163,7 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
         }
       }
 
-      // TODO: Differentiate method overloads
-      definer.addMember(member.name, resolvedObjectMember as IObjectMember);
+      definer.addMember(resolvedObjectMember as IObjectMember);
     });
   }
 

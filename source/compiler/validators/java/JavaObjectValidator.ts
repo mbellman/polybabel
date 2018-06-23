@@ -3,10 +3,12 @@ import JavaClassValidator from './JavaClassValidator';
 import JavaInterfaceValidator from './JavaInterfaceValidator';
 import JavaObjectFieldValidator from './JavaObjectFieldValidator';
 import JavaObjectMethodValidator from './JavaObjectMethodValidator';
-import { Implements } from 'trampoline-framework';
+import { Implements, IHashMap } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
 
 export default class JavaObjectValidator extends AbstractValidator<JavaSyntax.IJavaObject> {
+  private methodOverloadTrackerMap: IHashMap<number> = {};
+
   @Implements public validate (): void {
     const { name, members } = this.syntaxNode;
 
@@ -18,6 +20,9 @@ export default class JavaObjectValidator extends AbstractValidator<JavaSyntax.IJ
           this.validateNodeWith(JavaObjectFieldValidator, member as JavaSyntax.IJavaObjectField);
           break;
         case JavaSyntax.JavaSyntaxNode.OBJECT_METHOD:
+          const method = member as JavaSyntax.IJavaObjectMethod;
+
+          this.trackMethodOverloads(method);
           this.validateNodeWith(JavaObjectMethodValidator, member as JavaSyntax.IJavaObjectMethod);
           break;
         case JavaSyntax.JavaSyntaxNode.CLASS:
@@ -30,5 +35,15 @@ export default class JavaObjectValidator extends AbstractValidator<JavaSyntax.IJ
     });
 
     this.exitNamespace();
+  }
+
+  private trackMethodOverloads (method: JavaSyntax.IJavaObjectMethod): void {
+    let totalOverloads = this.methodOverloadTrackerMap[method.name] || 0;
+
+    this.methodOverloadTrackerMap[method.name] = ++totalOverloads;
+
+    if (totalOverloads > 1) {
+      method.name += `_${totalOverloads - 1}`;
+    }
   }
 }

@@ -62,6 +62,106 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
     }
   }
 
+  /**
+   * Returns the transformed name of a reference or function prefixed
+   * with instance or constructor keywords to turn the name into an
+   * instance or static member identifier, respectively.
+   */
+  private getClassPrefixedMemberName (name: string, isStatic: boolean) {
+    const prefix = isStatic ? 'this.constructor' : 'this';
+
+    return `${prefix}.${name}`;
+  }
+
+  /**
+   * @todo
+   */
+  private getFunctionCallReturnType (functionCall: JavaSyntax.IJavaFunctionCall, sourceObjectType?: ObjectType.Definition): TypeDefinition {
+    this.focusToken(functionCall.token);
+
+    const { name: functionName, arguments: args } = functionCall;
+    const argumentTypes = args.map(argument => this.getStatementType(argument));
+    const scopedReference = this.context.scopeManager.getScopedReference(functionName);
+
+    if (!sourceObjectType) {
+      // If no source object is provided, we first have to attempt
+      // to resolve the function as a scoped reference, since scoped
+      // references take priority over current visited object members
+      if (scopedReference) {
+        const { signature } = scopedReference;
+
+        if (signature.definition instanceof FunctionType.Definition) {
+          this.check(
+            !signature.isOriginal,
+            `Invalid call to original function type definition '${functionName}'`
+          );
+
+          if (!TypeValidation.allTypesMatch(argumentTypes, signature.definition.getParameterTypes())) {
+            this.reportInvalidFunctionArguments(functionName, argumentTypes);
+
+            return TypeUtils.createSimpleType(Dynamic);
+          }
+
+          return signature.definition.getReturnType();
+        } else {
+          this.reportNonFunctionCalled(functionName);
+        }
+      }
+    }
+
+    // Next, we try to find the function as a method on the provided
+    // source object, or the current visited object if no source
+    // object is provided
+    const lookupType = sourceObjectType || this.context.objectVisitor.getCurrentVisitedObject();
+    const matchingMethodMember = lookupType.getMatchingMethodMember(functionName, argumentTypes);
+
+    if (matchingMethodMember) {
+      // We need to transform overloaded function call names to that
+      // of the matching method member. If a plain, non-overloaded
+      // signature is matched, the name will not actually change.
+      functionCall.name = matchingMethodMember.name;
+
+      if (!sourceObjectType) {
+        // Furthermore, we need to prefix the function call name with
+        // 'this' or 'this.constructor' if it was called by itself and
+        // ended up matching a current visited object method overload
+        functionCall.name = this.getClassPrefixedMemberName(functionCall.name, matchingMethodMember.isStatic);
+
+        console.log(this.context.flags.shouldAllowInstanceKeywords);
+
+        this.check(
+          !this.context.flags.shouldAllowInstanceKeywords
+            ? matchingMethodMember.isStatic
+            : true,
+          `Instance methods cannot be called in static methods or initializers`
+        );
+      }
+
+      return matchingMethodMember.type.getReturnType();
+    }
+
+    // If we get to this point, the function call signature was incorrect,
+    // so an error is guaranteed. However, we still need to determine the
+    // cause of the error to accurately report it.
+    const objectMember = lookupType.getObjectMember(functionName);
+
+    if (objectMember) {
+      if (objectMember.type instanceof FunctionType.Definition) {
+        this.reportInvalidFunctionArguments(functionName, argumentTypes);
+
+        return objectMember.type.getReturnType();
+      } else {
+        this.reportNonFunctionCalled(functionName);
+
+        return TypeUtils.createSimpleType(Dynamic);
+      }
+    }
+
+    this.reportUnknownIdentifier(functionName);
+
+    return TypeUtils.createSimpleType(Dynamic);
+  }
+
   private getPropertyChainType (propertyChain: JavaSyntax.IJavaPropertyChain): TypeDefinition {
     const { token: propertyChainToken, properties } = propertyChain;
 
@@ -121,13 +221,9 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
             this.reportUnknownMember(currentPropertyLookupType.name, functionName);
 
             return TypeUtils.createSimpleType(Dynamic);
-          } else if (!(currentMember.type instanceof FunctionType.Definition)) {
-            this.reportNonFunctionCalled(`${currentPropertyLookupType.name}.${functionName}`);
-
-            return TypeUtils.createSimpleType(Dynamic);
           }
 
-          this.validateFunctionCall(incomingProperty, currentMember.type);
+          currentPropertyLookupType = this.getFunctionCallReturnType(incomingProperty, currentPropertyLookupType);
 
           if (currentMember.isStatic) {
             // Static function properties accessed on instances must be
@@ -135,7 +231,6 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
             incomingProperty.name = `constructor.${incomingProperty.name}`;
           }
 
-          currentPropertyLookupType = currentMember.type.getReturnType();
           break;
         }
         case JavaSyntax.JavaSyntaxNode.INSTANTIATION: {
@@ -241,7 +336,7 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
             const isInScope = this.context.scopeManager.isInScope(value);
 
             if (referenceMember && !isInScope) {
-              reference.value = this.getTransformedMemberName(value, referenceMember.isStatic);
+              reference.value = this.getClassPrefixedMemberName(value, referenceMember.isStatic);
             }
 
             return this.findTypeDefinitionByName(value);
@@ -278,22 +373,7 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
         }
       }
       case JavaSyntax.JavaSyntaxNode.FUNCTION_CALL: {
-        const functionCall = javaSyntaxNode as JavaSyntax.IJavaFunctionCall;
-        const { name } = functionCall;
-        const functionType = this.findTypeDefinitionByName(name) as FunctionType.Definition;
-        const currentVisitedObject = this.context.objectVisitor.getCurrentVisitedObject();
-        const functionMember = currentVisitedObject.getObjectMember(name);
-        const isInScope = this.context.scopeManager.isInScope(name);
-
-        this.validateFunctionCall(functionCall, functionType);
-
-        if (functionMember && !isInScope) {
-          functionCall.name = this.getTransformedMemberName(functionCall.name, functionMember.isStatic);
-        }
-
-        return functionType instanceof FunctionType.Definition
-          ? functionType.getReturnType()
-          : TypeUtils.createSimpleType(Dynamic);
+        return this.getFunctionCallReturnType(javaSyntaxNode as JavaSyntax.IJavaFunctionCall);
       }
       case JavaSyntax.JavaSyntaxNode.INSTANTIATION: {
         const instantiation = javaSyntaxNode as JavaSyntax.IJavaInstantiation;
@@ -325,17 +405,6 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
       default:
         return TypeUtils.createSimpleType(Dynamic);
     }
-  }
-
-  /**
-   * Returns the transformed name of a reference or function prefixed
-   * with instance or constructor keywords to turn the name into an
-   * instance or static member identifier, respectively.
-   */
-  private getTransformedMemberName (name: string, isStatic: boolean) {
-    const prefix = isStatic ? 'this.constructor' : 'this';
-
-    return `${prefix}.${name}`;
   }
 
   private hasRightSide (): boolean {
@@ -461,13 +530,6 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
     });
   }
 
-  /**
-   * @todo
-   */
-  private validateFunctionCall (functionCall: JavaSyntax.IJavaFunctionCall, functionType: TypeDefinition | TypeDefinition[]): void {
-
-  }
-
   private validateInstanceKeyword (keyword: string): void {
     this.check(
       this.context.flags.shouldAllowInstanceKeywords,
@@ -475,25 +537,27 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
     );
   }
 
-  private validateInstantiation (instantiation: JavaSyntax.IJavaInstantiation, objectType: TypeDefinition): void {
+  private validateInstantiation (instantiation: JavaSyntax.IJavaInstantiation, constructorType: TypeDefinition): void {
     const { constructor, arguments: args } = instantiation;
     const constructorName = constructor.namespaceChain.join('.');
     const constructorArgumentTypes = args.map(argument => this.getStatementType(argument));
 
-    if (objectType instanceof ObjectType.Definition) {
-      if (!objectType.isConstructable) {
+    if (constructorType instanceof ObjectType.Definition) {
+      if (!constructorType.isConstructable) {
         this.reportNonConstructableInstantiation(constructorName);
       }
 
-      const constructorOverloadIndex = objectType.getConstructorSignatureIndex(constructorArgumentTypes);
+      if (constructorType.hasConstructors()) {
+        const constructorOverloadIndex = constructorType.getMatchingConstructorIndex(constructorArgumentTypes);
 
-      if (constructorOverloadIndex === -1) {
-        const constructorArgumentDescriptions = constructorArgumentTypes.map(type => `'${ValidatorUtils.getTypeDescription(type)}'`);
+        if (constructorOverloadIndex === -1) {
+          const constructorArgumentDescriptions = constructorArgumentTypes.map(type => `'${ValidatorUtils.getTypeDescription(type)}'`);
 
-        this.report(`Invalid constructor arguments ${constructorArgumentDescriptions.join(', ')}`);
+          this.report(`Invalid constructor arguments ${constructorArgumentDescriptions.join(', ')}`);
+        }
+
+        instantiation.overloadIndex = constructorOverloadIndex;
       }
-
-      instantiation.overloadIndex = constructorOverloadIndex;
     } else {
       this.reportNonConstructor(constructorName);
     }

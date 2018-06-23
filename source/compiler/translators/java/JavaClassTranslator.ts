@@ -3,7 +3,7 @@ import JavaBlockTranslator from './JavaBlockTranslator';
 import JavaInterfaceTranslator from './JavaInterfaceTranslator';
 import JavaObjectMethodTranslator from './JavaObjectMethodTranslator';
 import JavaStatementTranslator from './JavaStatementTranslator';
-import { Constructor, Implements } from 'trampoline-framework';
+import { Constructor, Implements, IHashMap } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
 import { JavaTranslatorUtils } from './java-translator-utils';
 

@@ -2,6 +2,14 @@ import { IParserError } from '../../../parser/common/parser-types';
 import { TypeDefinition } from '../../symbol-resolvers/common/types';
 
 /**
+ * A function which determines whether a source type matches
+ * a comparison type.
+ *
+ * @see type-validation.ts
+ */
+export type TypeMatcher = (sourceType: TypeDefinition, comparisonType: TypeDefinition) => void;
+
+/**
  * @todo @description
  */
 export interface IValidatorError extends IParserError { }

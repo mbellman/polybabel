@@ -256,6 +256,12 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     });
   }
 
+  protected reportInvalidFunctionArguments (functionName: string, argumentTypes: TypeDefinition[]): void {
+    const argumentTypeDescriptions = argumentTypes.map(argumentType => `'${ValidatorUtils.getTypeDescription(argumentType)}'`);
+
+    this.report(`'${functionName}' called with invalid arguments ${argumentTypeDescriptions.join(', ')}`);
+  }
+
   protected reportNonConstructableInstantiation (name: string): void {
     this.report(`Object '${name}' cannot be constructed`);
   }

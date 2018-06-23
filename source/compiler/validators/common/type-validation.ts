@@ -24,6 +24,33 @@ export namespace TypeValidation {
   }
 
   /**
+   * @todo @description
+   */
+  export function allTypesMatch (sourceTypes: TypeDefinition[], comparisonTypes: TypeDefinition[]): boolean {
+    if (sourceTypes.length !== comparisonTypes.length) {
+      return false;
+    }
+
+    for (let i = 0; i < comparisonTypes.length; i++) {
+      if (!typeMatches(sourceTypes[i], comparisonTypes[i])) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * @todo @description
+   */
+  export function functionTypeMatches (sourceFunctionType: FunctionType.Definition, comparisonFunctionType: FunctionType.Definition): boolean {
+    return (
+      typeMatches(sourceFunctionType.getReturnType(), comparisonFunctionType.getReturnType()) &&
+      allTypesMatch(sourceFunctionType.getParameterTypes(), comparisonFunctionType.getParameterTypes())
+    );
+  }
+
+  /**
    * Perhaps the most important function in the entire program;
    * determines whether a provided source type matches a provided
    * comparison type. Matching is not determined by equivalence,
@@ -39,10 +66,10 @@ export namespace TypeValidation {
    *  2. C is a dynamic type
    *  3. S and C are equivalent simple types
    *  4. S and C are both objects, and S subtypes C (e.g. has a supertype identical to C)
-   *  5. S and C are both array types, and the element type of S matches the element type of C
+   *  5. S and C are both function types, and S matches the function type of C
+   *  6. S and C are both array types, and the element type of S matches the element type of C
    *
    * @todo individual object member comparison as a fallback for nominally non-matching types
-   * @todo function type matching
    */
   export function typeMatches (sourceType: TypeDefinition, comparisonType: TypeDefinition): boolean {
     if (sourceType === comparisonType) {
@@ -84,10 +111,16 @@ export namespace TypeValidation {
       return true;
     }
 
+    if (sourceType instanceof FunctionType.Definition) {
+      // If the source type is a function type which matches a
+      // comparison function type, the source type matches (#5)
+      return functionTypeMatches(sourceType, comparisonType as FunctionType.Definition);
+    }
+
     if (sourceType instanceof ArrayType.Definition) {
       // If the source type is an array of a given type which
       // matches the element type of the comparison array type,
-      // the source type matches (#5)
+      // the source type matches (#6)
       return typeMatches(sourceType.getElementType(), (comparisonType as ArrayType.Definition).getElementType());
     }
 

@@ -140,7 +140,7 @@ export default class JavaInstantiationTranslator extends AbstractTranslator<Java
     const { constructor, overloadIndex } = this.syntaxNode;
     const lastConstructorNamespace = constructor.namespaceChain[constructor.namespaceChain.length - 1];
 
-    if (overloadIndex !== null) {
+    if (overloadIndex) {
       this.emit(`.${lastConstructorNamespace}_${overloadIndex}(`)
         .emitConstructorArguments()
         .emit(')');

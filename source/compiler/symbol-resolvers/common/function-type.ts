@@ -4,8 +4,9 @@ import { Implements } from 'trampoline-framework';
 
 export namespace FunctionType {
   export class Definition extends AbstractTypeDefinition implements IConstrainable {
-    protected parameterTypes: TypeDefinition[] = [];
     protected genericParameters: string[] = [];
+    protected overloads: FunctionType.Definition[] = [];
+    protected parameterTypes: TypeDefinition[] = [];
     protected returnType: TypeDefinition;
     private didResolveArgumentTypes: boolean = false;
 
@@ -14,6 +15,10 @@ export namespace FunctionType {
      */
     @Implements public constrain (genericParameterTypes: TypeDefinition[]): FunctionType.Definition {
       return null;
+    }
+
+    public getOverloads (): FunctionType.Definition[] {
+      return this.overloads;
     }
 
     public getParameterTypes (): TypeDefinition[] {
@@ -37,22 +42,30 @@ export namespace FunctionType {
 
       return this.returnType;
     }
+
+    public hasOverloads (): boolean {
+      return this.overloads.length > 0;
+    }
   }
 
   /**
    * A FunctionType.Definition's definer subclass.
    */
   export class Definer extends Definition {
-    public addParameterType (argumentType: TypeDefinition): void {
-      this.parameterTypes.push(argumentType);
-    }
-
     public addGenericParameter (name: string): void {
       this.genericParameters.push(name);
     }
 
+    public addParameterType (argumentType: TypeDefinition): void {
+      this.parameterTypes.push(argumentType);
+    }
+
     public defineReturnType (returnType: TypeDefinition): void {
       this.returnType = returnType;
+    }
+
+    public overload (functionType: FunctionType.Definition): void {
+      this.overloads.push(functionType);
     }
   }
 }
