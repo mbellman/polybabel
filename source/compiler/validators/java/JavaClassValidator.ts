@@ -6,6 +6,7 @@ import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
 import { ObjectType } from '../../symbol-resolvers/common/object-type';
 import { ValidatorUtils } from '../common/validator-utils';
+import { FunctionType } from '../../symbol-resolvers/common/function-type';
 
 export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJavaClass> {
   /**
@@ -51,10 +52,12 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
       const interfaceName = implementation.namespaceChain.join('.');
 
       if (ValidatorUtils.isInterfaceType(interfaceTypeDefinition)) {
-        interfaceTypeDefinition.forEachMember(interfaceMember => {
+        interfaceTypeDefinition.forEachMemberWhere(
+          ({ type }) => type instanceof FunctionType.Definition,
+          interfaceMethodMember => {
           this.check(
-            this.ownTypeDefinition.hasEquivalentMember(interfaceMember),
-            `Class '${this.syntaxNode.name}' does not correctly implement '${interfaceName}.${interfaceMember.name}'`
+            this.ownTypeDefinition.hasEquivalentMember(interfaceMethodMember),
+            `Class '${this.syntaxNode.name}' does not correctly implement '${interfaceName}.${interfaceMethodMember.name}'`
           );
         });
       } else {
@@ -66,29 +69,30 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
   private validateSuperclass (superclassType: JavaSyntax.IJavaType): void {
     this.focusToken(superclassType.token);
 
-    const superTypeDefinition = this.findTypeDefinition(superclassType.namespaceChain);
+    const supertypeDefinition = this.findTypeDefinition(superclassType.namespaceChain) as ObjectType.Definition;
     const supertypeName = superclassType.namespaceChain.join('.');
-    const supertypeIsClass = ValidatorUtils.isClassType(superTypeDefinition);
+    const supertypeIsClass = ValidatorUtils.isClassType(supertypeDefinition);
+
+    if (supertypeDefinition === this.ownTypeDefinition) {
+      this.report(`Class '${this.syntaxNode.name}' cannot extend itself`);
+
+      return;
+    }
 
     this.check(
-      this.ownTypeDefinition !== superTypeDefinition,
-      `Class '${this.syntaxNode.name}' cannot extend itself`
-    );
-
-    this.check(
-      ValidatorUtils.isSimpleTypeOf(Dynamic, superTypeDefinition) || supertypeIsClass,
+      ValidatorUtils.isSimpleTypeOf(Dynamic, supertypeDefinition) || supertypeIsClass,
       `Class '${this.syntaxNode.name}' cannot extend non-class '${supertypeName}'`
     );
 
-    this.check(
-      supertypeIsClass
-        ? (superTypeDefinition as ObjectType.Definition).isExtensible
-        : true,
-      `Class '${supertypeName}' is not extensible`
-    );
-
     if (supertypeIsClass) {
-      (superTypeDefinition as ObjectType.Definition).forEachMember((superObjectMember, memberName) => {
+      this.check(
+        supertypeDefinition.isExtensible,
+        `Class '${supertypeName}' cannot be extended`
+      );
+
+      supertypeDefinition.forEachMember((superObjectMember) => {
+        const { name: memberName } = superObjectMember;
+
         if (superObjectMember.requiresImplementation && !this.isAbstractClass()) {
           this.check(
             this.ownTypeDefinition.hasOwnObjectMember(memberName),

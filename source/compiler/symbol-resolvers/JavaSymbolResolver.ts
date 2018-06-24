@@ -98,18 +98,18 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
 
   private resolveAndAddObjectMembers (members: JavaSyntax.JavaObjectMember[], definer: ObjectType.Definer): void {
     members.forEach(member => {
-      const resolvedObjectMember: Partial<IObjectMember> = {};
-
       switch (member.node) {
         case JavaSyntax.JavaSyntaxNode.OBJECT_FIELD: {
           const { name, access, type: fieldType, isStatic, isFinal, isAbstract } = member as JavaSyntax.IJavaObjectField;
 
-          resolvedObjectMember.name = name;
-          resolvedObjectMember.visibility = this.getObjectMemberVisibility(access);
-          resolvedObjectMember.isStatic = !!isStatic;
-          resolvedObjectMember.isConstant = !!isFinal;
-          resolvedObjectMember.requiresImplementation = !!isAbstract;
-          resolvedObjectMember.type = this.javaTypeToTypeDefinition(fieldType);
+          definer.addMember({
+            name,
+            visibility: this.getObjectMemberVisibility(access),
+            isConstant: !!isFinal,
+            isStatic: !!isStatic,
+            requiresImplementation: !!isAbstract,
+            type: this.javaTypeToTypeDefinition(fieldType)
+          });
 
           break;
         }
@@ -127,17 +127,19 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
           // TODO: Add generic parameters
           functionTypeDefiner.defineReturnType(returnTypeDefinition);
 
-          resolvedObjectMember.name = name;
-          resolvedObjectMember.visibility = this.getObjectMemberVisibility(access);
-          resolvedObjectMember.isConstant = !!isFinal;
-          resolvedObjectMember.isStatic = !!isStatic;
-          resolvedObjectMember.requiresImplementation = !!isAbstract;
-          resolvedObjectMember.type = functionTypeDefiner;
+          const methodMember: IObjectMember = {
+            name,
+            visibility: this.getObjectMemberVisibility(access),
+            isConstant: !!isFinal,
+            isStatic: !!isStatic,
+            requiresImplementation: !!isAbstract,
+            type: functionTypeDefiner
+          };
 
           if (definer.hasOwnObjectMember(name)) {
-            definer.addMethodOverload(resolvedObjectMember as IObjectMember<FunctionType.Definition>);
-
-            return;
+            definer.addMethodOverload(methodMember as IObjectMember<FunctionType.Definition>);
+          } else {
+            definer.addMember(methodMember);
           }
 
           break;
@@ -148,22 +150,22 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
           const isClass = node === JavaSyntax.JavaSyntaxNode.CLASS;
 
           const nestedObjectSymbol = isClass
-              ? this.resolveClassSymbol(member as JavaSyntax.IJavaClass)
-              : this.resolveInterfaceSymbol(member as JavaSyntax.IJavaInterface);
+            ? this.resolveClassSymbol(member as JavaSyntax.IJavaClass)
+            : this.resolveInterfaceSymbol(member as JavaSyntax.IJavaInterface);
 
-          resolvedObjectMember.name = name;
-          resolvedObjectMember.visibility = this.getObjectMemberVisibility(access);
-          resolvedObjectMember.isStatic = isStatic;
-          resolvedObjectMember.isConstant = isFinal;
-          resolvedObjectMember.type = nestedObjectSymbol.type;
+          definer.addMember({
+            name,
+            visibility: this.getObjectMemberVisibility(access),
+            isConstant: !!isFinal,
+            isStatic: !!isStatic,
+            type: nestedObjectSymbol.type
+          });
 
           this.symbolDictionary.addSymbol(nestedObjectSymbol);
 
           break;
         }
       }
-
-      definer.addMember(resolvedObjectMember as IObjectMember);
     });
   }
 

@@ -1,8 +1,8 @@
 import AbstractTypeDefinition from './AbstractTypeDefinition';
+import { Callback } from '../../../system/types';
 import { FunctionType } from './function-type';
 import { IConstrainable, IObjectMember, ObjectCategory, TypeDefinition } from './types';
 import { IHashMap, Implements } from 'trampoline-framework';
-import { TypeMatcher } from '../../validators/common/types';
 import { TypeValidation } from '../../validators/common/type-validation';
 
 export namespace ObjectType {
@@ -40,25 +40,26 @@ export namespace ObjectType {
      * contain members already defined and iterated over on subtypes,
      * the supertype members are skipped.
      */
-    public forEachMember (callback: (objectMember: IObjectMember, memberName: string) => void): void {
+    public forEachMember (objectMemberHandler: Callback<IObjectMember>): void {
       const iteratedMembers: IHashMap<boolean> = {};
 
-      // Wraps the provided callback in a method which prevents
-      // duplicate iteration over both subtype and supertype
-      // members, e.g. in the case of overrides
-      const handleMember = (objectMember: IObjectMember, memberName: string) => {
-        if (memberName in iteratedMembers) {
+      // Wraps the provided object member handler callback in
+      // callback in a method which prevents duplicate iteration
+      // over both subtype and supertype members, e.g. in the
+      // case of overrides
+      const handleMember = (objectMember: IObjectMember) => {
+        const { name } = objectMember;
+
+        if (name in iteratedMembers) {
           return;
         }
 
-        callback(objectMember, memberName);
+        objectMemberHandler(objectMember);
 
-        iteratedMembers[memberName] = true;
+        iteratedMembers[name] = true;
       };
 
-      Object.keys(this.objectMemberMap).forEach(key => {
-        handleMember(this.objectMemberMap[key], key);
-      });
+      Object.keys(this.objectMemberMap).forEach(key => handleMember(this.objectMemberMap[key]));
 
       if (this.supertypes.length > 0) {
         // Iterate backward over the supertypes so that last-added
@@ -74,6 +75,19 @@ export namespace ObjectType {
           }
         }
       }
+    }
+
+    /**
+     * Similar to forEachMember(), but takes a predicate function for
+     * determining which members should handled by the provided object
+     * member handler.
+     */
+    public forEachMemberWhere (objectMemberPredicate: Callback<IObjectMember, boolean>, objectMemberHandler: Callback<IObjectMember>): void {
+      this.forEachMember(objectMember => {
+        if (objectMemberPredicate(objectMember)) {
+          objectMemberHandler(objectMember);
+        }
+      });
     }
 
     /**
