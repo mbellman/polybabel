@@ -55,11 +55,11 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
         interfaceTypeDefinition.forEachMemberWhere(
           ({ type }) => type instanceof FunctionType.Definition,
           interfaceMethodMember => {
-          this.check(
-            this.ownTypeDefinition.hasEquivalentMember(interfaceMethodMember),
-            `Class '${this.syntaxNode.name}' does not correctly implement '${interfaceName}.${interfaceMethodMember.name}'`
-          );
-        });
+            this.check(
+              this.ownTypeDefinition.hasEquivalentMember(interfaceMethodMember),
+              `Class '${this.syntaxNode.name}' does not correctly implement '${interfaceName}.${interfaceMethodMember.name}'`
+            );
+          });
       } else {
         this.report(`Class '${this.syntaxNode.name}' cannot implement non-interface '${interfaceName}'`);
       }
