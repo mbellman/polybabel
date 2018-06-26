@@ -284,11 +284,15 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
   }
 
   private getSimpleLiteralTypeConstraint (literal: JavaSyntax.IJavaLiteral): ITypeConstraint {
+    let constraint: ITypeConstraint;
+
     switch (literal.type) {
       case JavaSyntax.JavaLiteralType.NUMBER:
-        return NumberTypeConstraint;
+        constraint = NumberTypeConstraint;
+        break;
       case JavaSyntax.JavaLiteralType.STRING:
-        return StringTypeConstraint;
+        constraint = StringTypeConstraint;
+        break;
       case JavaSyntax.JavaLiteralType.KEYWORD:
         const isBooleanKeyword = (
           literal.value === JavaConstants.Keyword.TRUE ||
@@ -296,10 +300,15 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
         );
 
         // The only valid keyword literals are 'true', 'false', and 'null'
-        return isBooleanKeyword ? BooleanTypeConstraint : NullTypeConstraint;
+        constraint = isBooleanKeyword ? BooleanTypeConstraint : NullTypeConstraint;
+        break;
       default:
-        return DynamicTypeConstraint;
+        constraint = DynamicTypeConstraint;
     }
+
+    return {
+      typeDefinition: constraint.typeDefinition
+    };
   }
 
   private getStatementTypeConstraint (statement: JavaSyntax.IJavaStatement): ITypeConstraint {
@@ -439,17 +448,25 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
    * via its preceding operator operation.
    */
   private inferTypeConstraintFromLeftOperation (operation: JavaSyntax.JavaOperation): ITypeConstraint {
+    let constraint: ITypeConstraint;
+
     switch (operation) {
       case JavaSyntax.JavaOperation.NEGATE:
       case JavaSyntax.JavaOperation.DOUBLE_NOT:
-        return BooleanTypeConstraint;
+        constraint = BooleanTypeConstraint;
+        break;
       case JavaSyntax.JavaOperation.INCREMENT:
       case JavaSyntax.JavaOperation.DECREMENT:
       case JavaSyntax.JavaOperation.BITWISE_COMPLEMENT:
-        return NumberTypeConstraint;
+        constraint = NumberTypeConstraint;
+        break;
       default:
-        return DynamicTypeConstraint;
+        constraint = DynamicTypeConstraint;
     }
+
+    return {
+      typeDefinition: constraint.typeDefinition
+    };
   }
 
   private isReturnStatement (): boolean {

@@ -176,13 +176,11 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
       }
 
       return DynamicTypeConstraint;
+    } else if (!outerTypeConstraint.isOriginal) {
+      this.reportNonType(outerName);
+
+      return DynamicTypeConstraint;
     } else {
-      if (!outerTypeConstraint.isOriginal) {
-        this.reportNonType(outerName);
-
-        return DynamicTypeConstraint;
-      }
-
       return outerTypeConstraint;
     }
   }

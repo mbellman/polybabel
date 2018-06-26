@@ -134,14 +134,17 @@ export namespace ObjectType {
           }
         }
       } else {
-        const methodMember = this.objectMemberMap[methodName] as IObjectMember<FunctionType.Constraint>;
-        const { typeDefinition } = methodMember.constraint;
+        const methodMember = this.getObjectMember(methodName) as IObjectMember<FunctionType.Constraint>;
 
-        if (
-          typeDefinition instanceof FunctionType.Definition &&
-          TypeValidation.allTypeConstraintsMatch(argumentTypeConstraints, typeDefinition.getParameterTypeConstraints())
-        ) {
-          return methodMember;
+        if (methodMember) {
+          const { typeDefinition } = methodMember.constraint;
+
+          if (
+            typeDefinition instanceof FunctionType.Definition &&
+            TypeValidation.allTypeConstraintsMatch(argumentTypeConstraints, typeDefinition.getParameterTypeConstraints())
+          ) {
+            return methodMember;
+          }
         }
       }
 
