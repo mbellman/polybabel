@@ -220,7 +220,7 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
         // that this operator is only !, +, -, or ~, which
         // represent the only valid operator tokens for
         // an absent left-side statement
-        : /[!+-~]/.test(this.currentToken.value)
+        : /[!+~-]/.test(this.currentToken.value)
     );
 
     if (this.currentTokenMatches(JavaUtils.isTernary)) {

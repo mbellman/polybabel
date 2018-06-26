@@ -58,7 +58,8 @@ export namespace JavaUtils {
     JavaConstants.Keyword.RETURN,
     JavaConstants.Keyword.THROW,
     JavaConstants.Keyword.CASE,
-    JavaConstants.Keyword.ASSERT
+    JavaConstants.Keyword.ASSERT,
+    JavaConstants.Keyword.ELSE
   ];
 
   /**

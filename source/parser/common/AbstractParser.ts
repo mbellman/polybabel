@@ -383,6 +383,7 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
       this.next();
     }
 
+    this.handleSanitizers();
     this.onFirstToken();
     this.handleStarterMatchers();
 
