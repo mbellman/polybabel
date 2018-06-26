@@ -526,7 +526,7 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
     const lastExpectedReturnTypeConstraint = this.getLastExpectedTypeConstraintFor(TypeExpectation.RETURN);
     const isMissingRequiredReturnValue = !returnValue && mustReturnValue;
     const isConstructorReturn = shouldAllowReturn && !shouldAllowReturnValue;
-    const isDisallowedConstructorReturnValue = isConstructorReturn && returnValue;
+    const isDisallowedConstructorReturnValue = isConstructorReturn && !!returnValue;
 
     returnInstruction.isConstructorReturn = isConstructorReturn;
 
@@ -600,13 +600,13 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
     }
   }
 
-  private validateMemberAccess (member: IObjectMember, sourceTypeConstraint: ITypeConstraint): void {
+  private validateMemberAccess (member: IObjectMember, sourceObjectTypeConstraint: ITypeConstraint): void {
     const { objectVisitor } = this.context;
     const { name, parent: parentTypeConstraint } = member;
     const { typeDefinition: parentTypeDefinition } = parentTypeConstraint;
 
-    if (sourceTypeConstraint.isOriginal) {
-      const { typeDefinition } = sourceTypeConstraint as ObjectType.Constraint;
+    if (sourceObjectTypeConstraint.isOriginal) {
+      const { typeDefinition } = sourceObjectTypeConstraint as ObjectType.Constraint;
 
       this.check(
         member.isStatic,

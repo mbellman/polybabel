@@ -40,7 +40,7 @@ export namespace ValidatorUtils {
       description += `${elementTypeDescription}[]`;
     } else if (typeDefinition instanceof FunctionType.Definition) {
       const parameterTypeConstraints = typeDefinition.getParameterTypeConstraints();
-      const parameterTypeDescriptions = parameterTypeConstraints.map(constraint => `'${getTypeConstraintDescription(constraint)}'`);
+      const parameterTypeDescriptions = parameterTypeConstraints.map(getTypeConstraintDescription);
       const returnTypeDescription = getTypeConstraintDescription(typeDefinition.getReturnTypeConstraint());
 
       description += `(${parameterTypeDescriptions.join(', ')}) => ${returnTypeDescription}`;

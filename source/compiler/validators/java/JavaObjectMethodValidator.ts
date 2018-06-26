@@ -62,14 +62,12 @@ export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyn
   private getReturnTypeConstraint (): ITypeConstraint {
     const { type } = this.syntaxNode;
     const { symbolDictionary } = this.context;
-    const returnTypeConstraint = this.findOriginalTypeConstraint(type.namespaceChain);
+    const { typeDefinition } = this.findOriginalTypeConstraint(type.namespaceChain);
 
     if (type.arrayDimensions > 0) {
-      return TypeUtils.createArrayTypeConstraint(symbolDictionary, returnTypeConstraint, type.arrayDimensions);
+      return TypeUtils.createArrayTypeConstraint(symbolDictionary, { typeDefinition }, type.arrayDimensions);
     } else {
-      return {
-        typeDefinition: returnTypeConstraint.typeDefinition
-      };
+      return { typeDefinition };
     }
   }
 

@@ -227,6 +227,13 @@ export namespace ObjectType {
      */
     private getSuperObjectMember (memberName: string): IObjectMember {
       for (const superTypeConstraint of this.superTypeConstraints) {
+        if (superTypeConstraint.typeDefinition === this) {
+          // If a type is mistakenly written to extend or implement
+          // itself, errors will be reported elsewhere, but we still
+          // need to safeguard against infinite recursion here
+          continue;
+        }
+
         this.ensureConstraintHasDefinition(superTypeConstraint);
 
         const { typeDefinition } = superTypeConstraint;
