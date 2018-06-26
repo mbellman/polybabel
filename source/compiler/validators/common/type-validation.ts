@@ -1,6 +1,6 @@
 import AbstractTypeDefinition from '../../symbol-resolvers/common/AbstractTypeDefinition';
 import { ArrayType } from '../../symbol-resolvers/common/array-type';
-import { Dynamic, ISimpleType, TypeDefinition } from '../../symbol-resolvers/common/types';
+import { Dynamic, ISimpleType, TypeDefinition, ITypeConstraint } from '../../symbol-resolvers/common/types';
 import { FunctionType } from '../../symbol-resolvers/common/function-type';
 import { ObjectType } from '../../symbol-resolvers/common/object-type';
 
@@ -26,13 +26,13 @@ export namespace TypeValidation {
   /**
    * @todo @description
    */
-  export function allTypesMatch (sourceTypes: TypeDefinition[], comparisonTypes: TypeDefinition[]): boolean {
-    if (sourceTypes.length !== comparisonTypes.length) {
+  export function allTypeConstraintsMatch (sources: ITypeConstraint[], comparisons: ITypeConstraint[]): boolean {
+    if (sources.length !== comparisons.length) {
       return false;
     }
 
-    for (let i = 0; i < comparisonTypes.length; i++) {
-      if (!typeMatches(sourceTypes[i], comparisonTypes[i])) {
+    for (let i = 0; i < comparisons.length; i++) {
+      if (!typeConstraintMatches(sources[i], comparisons[i])) {
         return false;
       }
     }
@@ -43,49 +43,61 @@ export namespace TypeValidation {
   /**
    * @todo @description
    */
-  export function functionTypeMatches (sourceFunctionType: FunctionType.Definition, comparisonFunctionType: FunctionType.Definition): boolean {
+  export function functionTypeMatches (source: FunctionType.Definition, comparison: FunctionType.Definition): boolean {
     return (
-      typeMatches(sourceFunctionType.getReturnType(), comparisonFunctionType.getReturnType()) &&
-      allTypesMatch(sourceFunctionType.getParameterTypes(), comparisonFunctionType.getParameterTypes())
+      typeConstraintMatches(source.getReturnTypeConstraint(), comparison.getReturnTypeConstraint()) &&
+      allTypeConstraintsMatch(source.getParameterTypeConstraints(), comparison.getParameterTypeConstraints())
     );
   }
 
   /**
    * Perhaps the most important function in the entire program;
-   * determines whether a provided source type matches a provided
-   * comparison type. Matching is not determined by equivalence,
-   * but by a condition of one-way substitutability. For example,
-   * a source type might be a subtype of the comparison type, and
-   * would thus satisfy the comparison's type constraint, though
-   * the inverse would not apply.
+   * determines whether a provided source type constraint matches
+   * a provided comparison type constraint. A match doesn't imply
+   * type equivalence, but a condition of one-way substitutability.
+   * For example, a source type constraint might be a subtype of
+   * the comparison type constraint, and would thus 'match' the
+   * comparison, though the inverse would not apply.
    *
    * Matches are qualified if any of the following conditions are
-   * met, given a source type S and a comparison type C:
+   * met, given a source type constraint S and a comparison type
+   * constraint C:
    *
-   *  1. S and C are identical
-   *  2. C is a dynamic type
-   *  3. S and C are equivalent simple types
-   *  4. S and C are both objects, and S subtypes C (e.g. has a supertype identical to C)
-   *  5. S and C are both function types, and S matches the function type of C
-   *  6. S and C are both array types, and the element type of S matches the element type of C
+   *  1. S and C are identical, or have identical type definitions where S is not an original type
+   *  2. C's type definition is dynamic
+   *  3. S and C are constraints of equal simple types
+   *  4. S and C are both object type constraints, and S subtypes C (e.g. has a supertype identical to C)
+   *  5. S and C are both function type constraints, and S and C share parameter type and return type constraints
+   *  6. S and C are both array type constraints, and S's element type constraint matches C's
    *
    * @todo individual object member comparison as a fallback for nominally non-matching types
    */
-  export function typeMatches (sourceType: TypeDefinition, comparisonType: TypeDefinition): boolean {
-    if (sourceType === comparisonType) {
-      // If the source and compared types are equal, the
-      // source type trivially matches (#1)
+  export function typeConstraintMatches (source: ITypeConstraint, comparison: ITypeConstraint): boolean {
+    if (
+      source === comparison || (
+        source.typeDefinition === comparison.typeDefinition &&
+        !source.isOriginal
+      )
+    ) {
+      // If the source and comparison are identical, the
+      // source trivially matches the comparison. If the
+      // source has an identical type definition to the
+      // comparison and is not original (e.g. an instance
+      // of an original class type constraint), the source
+      // is also considered to match the comparison. (#1)
       return true;
     }
 
-    if (isDynamic(comparisonType)) {
-      // If the comparison type is dynamic, the source type
-      // automatically matches (#2)
+    if (isDynamic(comparison.typeDefinition)) {
+      // If the comparison's type definition is dynamic, the
+      // source automatically matches the comparison (#2)
       return true;
     }
 
-    const sourceAsSimpleType = sourceType as ISimpleType;
-    const comparisonAsSimpleType = comparisonType as ISimpleType;
+    const { typeDefinition: sourceTypeDefinition } = source;
+    const { typeDefinition: comparisonTypeDefinition } = comparison;
+    const sourceAsSimpleType = sourceTypeDefinition as ISimpleType;
+    const comparisonAsSimpleType = comparisonTypeDefinition as ISimpleType;
 
     if (sourceAsSimpleType.type && comparisonAsSimpleType.type) {
       // If the source and comparison types are both simple
@@ -94,16 +106,20 @@ export namespace TypeValidation {
       return sourceAsSimpleType.type === comparisonAsSimpleType.type;
     }
 
-    if (!typesHaveSameTypeDefinitionClass(sourceType as AbstractTypeDefinition, comparisonType as AbstractTypeDefinition)) {
+    if (
+      !typesHaveSameTypeDefinitionClass(sourceTypeDefinition as AbstractTypeDefinition, comparisonTypeDefinition as AbstractTypeDefinition) ||
+      source.isOriginal && !comparison.isOriginal
+    ) {
       // If the source and comparison types are not of the
-      // same class of type definition, the source cannot
-      // match the comparison type
+      // same class of type definition, or if the source is
+      // an original type constraint while the comparison
+      // is not, the source cannot match the comparison type
       return false;
     }
 
     if (
-      sourceType instanceof ObjectType.Definition &&
-      sourceType.isSubtypeOf(comparisonType as ObjectType.Definition)
+      sourceTypeDefinition instanceof ObjectType.Definition &&
+      sourceTypeDefinition.isSubtypeOf(comparison.typeDefinition)
     ) {
       // If the source type subtypes the comparison type, the
       // comparison type may be substituted with the source
@@ -111,17 +127,20 @@ export namespace TypeValidation {
       return true;
     }
 
-    if (sourceType instanceof FunctionType.Definition) {
+    if (sourceTypeDefinition instanceof FunctionType.Definition) {
       // If the source type is a function type which matches a
       // comparison function type, the source type matches (#5)
-      return functionTypeMatches(sourceType, comparisonType as FunctionType.Definition);
+      return functionTypeMatches(sourceTypeDefinition, comparisonTypeDefinition as FunctionType.Definition);
     }
 
-    if (sourceType instanceof ArrayType.Definition) {
+    if (sourceTypeDefinition instanceof ArrayType.Definition) {
       // If the source type is an array of a given type which
       // matches the element type of the comparison array type,
       // the source type matches (#6)
-      return typeMatches(sourceType.getElementType(), (comparisonType as ArrayType.Definition).getElementType());
+      const sourceElementTypeConstraint = sourceTypeDefinition.getElementTypeConstraint();
+      const comparisonElementTypeConstraint = (comparisonTypeDefinition as ArrayType.Definition).getElementTypeConstraint();
+
+      return typeConstraintMatches(sourceElementTypeConstraint, comparisonElementTypeConstraint);
     }
 
     return false;

@@ -1,5 +1,5 @@
 import { IParserError } from '../../../parser/common/parser-types';
-import { TypeDefinition } from '../../symbol-resolvers/common/types';
+import { TypeDefinition, ITypeConstraint } from '../../symbol-resolvers/common/types';
 
 /**
  * A function which determines whether a source type matches
@@ -10,7 +10,8 @@ import { TypeDefinition } from '../../symbol-resolvers/common/types';
 export type TypeMatcher = (sourceType: TypeDefinition, comparisonType: TypeDefinition) => void;
 
 /**
- * @todo @description
+ * An error raised during validation. Aliased from IParserError
+ * for contextual purposes.
  */
 export interface IValidatorError extends IParserError { }
 
@@ -33,14 +34,14 @@ export const enum TypeExpectation {
 }
 
 /**
- * An object containing an expected type definition queued up
+ * An object containing an expected type constraint queued up
  * for validation at some future point, and a TypeExpectation
- * constant describing the nature of the type.
+ * constant describing the nature of the type constraint.
  *
- * @see AbstractValidator.expectType()
+ * @see AbstractValidator.expectTypeConstraint()
  */
-export interface IExpectedType {
-  type: TypeDefinition;
+export interface IExpectedTypeConstraint {
+  constraint: ITypeConstraint;
   expectation: TypeExpectation;
 }
 

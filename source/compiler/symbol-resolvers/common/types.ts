@@ -34,11 +34,11 @@ export enum ObjectCategory {
 /**
  * An object member definition.
  */
-export interface IObjectMember<T extends TypeDefinition = TypeDefinition> {
+export interface IObjectMember<T extends ITypeConstraint = ITypeConstraint> {
   name: string;
   visibility: ObjectMemberVisibility;
-  type: T; // TODO: ITypeSignature<T>
-  originalObject?: ObjectType.Definition;
+  constraint: T;
+  parent?: ObjectType.Constraint;
   isConstant?: boolean;
   isStatic?: boolean;
   requiresImplementation?: boolean;
@@ -46,11 +46,11 @@ export interface IObjectMember<T extends TypeDefinition = TypeDefinition> {
 
 /**
  * An in-scope reference containing information about the
- * reference's type signature and whether or not it can be
+ * reference's type constraint and whether or not it can be
  * reassigned.
  */
 export interface IScopedReference {
-  signature: ITypeSignature;
+  constraint: ITypeConstraint;
   isConstant?: boolean;
 }
 
@@ -59,12 +59,12 @@ export interface IScopedReference {
  * containing information about its actual type definition and
  * whether or not the symbol or identifier is the original
  * symbol which defined the type. For example, original type
- * signatures might correspond to the static side of a class,
+ * constraints might correspond to the static side of a class,
  * or an original function type definition rather than a
  * function matching the type definition's constraint.
  */
-export interface ITypeSignature<T extends TypeDefinition = TypeDefinition> {
-  definition: T;
+export interface ITypeConstraint<T extends TypeDefinition = TypeDefinition> {
+  typeDefinition: T;
   isOriginal?: boolean;
 }
 
@@ -78,7 +78,7 @@ export const Dynamic = 'dynamic';
 
 /**
  * A constant representing a void type (i.e., one without an
- * actual type signature). Providing both a type form and
+ * actual type constraint). Providing both a type form and
  * string form allows us to use the constant as either a
  * type or a value.
  */
@@ -145,5 +145,5 @@ export interface IConstrainable {
 export interface ISymbol<T extends TypeDefinition = TypeDefinition> {
   identifier: SymbolIdentifier;
   name: string;
-  type: T;
+  constraint: ITypeConstraint<T>;
 }

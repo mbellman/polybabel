@@ -1,11 +1,13 @@
 import AbstractTypeDefinition from './AbstractTypeDefinition';
 import { Callback } from '../../../system/types';
 import { FunctionType } from './function-type';
-import { IConstrainable, IObjectMember, ObjectCategory, TypeDefinition } from './types';
+import { IConstrainable, IObjectMember, ObjectCategory, TypeDefinition, ITypeConstraint } from './types';
 import { IHashMap, Implements } from 'trampoline-framework';
 import { TypeValidation } from '../../validators/common/type-validation';
 
 export namespace ObjectType {
+  export type Constraint = ITypeConstraint<ObjectType.Definition>;
+
   /**
    * An object type definition describing symbols with members,
    * such as interfaces or classes. Objects can be more broadly
@@ -17,11 +19,11 @@ export namespace ObjectType {
     public readonly isExtensible: boolean;
     public readonly name: string;
     public readonly requiresImplementation: boolean;
-    protected constructors: IObjectMember<FunctionType.Definition>[] = [];
+    protected constructors: IObjectMember<FunctionType.Constraint>[] = [];
     protected genericParameters: string[] = [];
     protected objectMemberMap: IHashMap<IObjectMember> = {};
-    protected overloadedMethodMap: IHashMap<IObjectMember<FunctionType.Definition>[]> = {};
-    protected supertypes: TypeDefinition[] = [];
+    protected overloadedMethodMap: IHashMap<IObjectMember<FunctionType.Constraint>[]> = {};
+    protected superTypeConstraints: ITypeConstraint[] = [];
 
     /**
      * @todo
@@ -61,17 +63,17 @@ export namespace ObjectType {
 
       Object.keys(this.objectMemberMap).forEach(key => handleMember(this.objectMemberMap[key]));
 
-      if (this.supertypes.length > 0) {
+      if (this.superTypeConstraints.length > 0) {
         // Iterate backward over the supertypes so that last-added
         // supertype members take precedence over earlier ones, e.g.
         // in the case of identically-named members
-        for (let i = this.supertypes.length - 1; i >= 0; i--) {
-          this.ensureSupertypeHasDefinition(i);
+        for (const superTypeConstraint of this.superTypeConstraints) {
+          this.ensureConstraintHasDefinition(superTypeConstraint);
 
-          const supertype = this.supertypes[i];
+          const { typeDefinition } = superTypeConstraint;
 
-          if (supertype instanceof ObjectType.Definition && supertype !== this) {
-            supertype.forEachMember(handleMember);
+          if (typeDefinition instanceof ObjectType.Definition && typeDefinition !== this) {
+            typeDefinition.forEachMember(handleMember);
           }
         }
       }
@@ -91,16 +93,18 @@ export namespace ObjectType {
     }
 
     /**
-     * Finds a defined constructor with a signature corresponding to
+     * Finds a defined constructor with a constraint corresponding to
      * a set of instantiation argument types and returns its index.
      * If the provided argument types match no explicit constructor
-     * signatures, or if arguments are specified when no explicit
+     * constraints, or if arguments are specified when no explicit
      * constructors exist, we return -1 to indicate an erroneous
      * instantiation.
      */
-    public getMatchingConstructorIndex (argumentTypes: TypeDefinition[]): number {
+    public getMatchingConstructorIndex (argumentTypeConstraints: ITypeConstraint[]): number {
       for (let i = 0; i < this.constructors.length; i++) {
-        if (TypeValidation.allTypesMatch(argumentTypes, this.constructors[i].type.getParameterTypes())) {
+        const constructorParameterTypeConstraints = this.constructors[i].constraint.typeDefinition.getParameterTypeConstraints();
+
+        if (TypeValidation.allTypeConstraintsMatch(argumentTypeConstraints, constructorParameterTypeConstraints)) {
           return i;
         }
       }
@@ -118,24 +122,26 @@ export namespace ObjectType {
      * method is found matching the name and provided argument types,
      * we return null.
      */
-    public getMatchingMethodMember (methodName: string, argumentTypes: TypeDefinition[]): IObjectMember<FunctionType.Definition> {
+    public getMatchingMethodMember (methodName: string, argumentTypeConstraints: ITypeConstraint[]): IObjectMember<FunctionType.Constraint> {
       const methodOverloads = this.overloadedMethodMap[methodName];
 
       if (methodOverloads) {
         for (const methodOverload of methodOverloads) {
-          if (TypeValidation.allTypesMatch(argumentTypes, methodOverload.type.getParameterTypes())) {
+          const methodParameterTypeConstraints = methodOverload.constraint.typeDefinition.getParameterTypeConstraints();
+
+          if (TypeValidation.allTypeConstraintsMatch(argumentTypeConstraints, methodParameterTypeConstraints)) {
             return methodOverload;
           }
         }
       } else {
-        const methodMember = this.objectMemberMap[methodName];
-        const { type } = methodMember;
+        const methodMember = this.objectMemberMap[methodName] as IObjectMember<FunctionType.Constraint>;
+        const { typeDefinition } = methodMember.constraint;
 
         if (
-          type instanceof FunctionType.Definition &&
-          TypeValidation.allTypesMatch(argumentTypes, type.getParameterTypes())
+          typeDefinition instanceof FunctionType.Definition &&
+          TypeValidation.allTypeConstraintsMatch(argumentTypeConstraints, typeDefinition.getParameterTypeConstraints())
         ) {
-          return methodMember as IObjectMember<FunctionType.Definition>;
+          return methodMember;
         }
       }
 
@@ -146,18 +152,18 @@ export namespace ObjectType {
       const objectMember = this.objectMemberMap[memberName];
 
       if (objectMember) {
-        this.ensureObjectMemberHasDefinition(objectMember);
+        this.ensureConstraintHasDefinition(objectMember.constraint);
 
         return objectMember;
-      } else if (this.supertypes.length > 0) {
+      } else if (this.superTypeConstraints.length > 0) {
         return this.getSuperObjectMember(memberName);
       }
 
       return null;
     }
 
-    public getSupertypeByIndex (index: number): TypeDefinition {
-      return this.supertypes[index];
+    public getSuperTypeConstraintByIndex (index: number): ITypeConstraint {
+      return this.superTypeConstraints[index];
     }
 
     public hasConstructors (): boolean {
@@ -165,11 +171,11 @@ export namespace ObjectType {
     }
 
     public hasEquivalentMember (objectMember: IObjectMember): boolean {
-      const ownMember = this.objectMemberMap[objectMember.name];
+      const ownMember = this.getObjectMember(objectMember.name);
 
       return (
         !!ownMember &&
-        TypeValidation.typeMatches(ownMember.type, objectMember.type) &&
+        TypeValidation.typeConstraintMatches(ownMember.constraint, objectMember.constraint) &&
         ownMember.isStatic === objectMember.isStatic &&
         ownMember.visibility >= objectMember.visibility
       );
@@ -185,38 +191,27 @@ export namespace ObjectType {
 
     /**
      * Determines whether this object type definition contains a
-     * provided target supertype in its inheritance hierarchy.
+     * provided target super type in its inheritance hierarchy.
      */
-    public isSubtypeOf (targetSupertype: ObjectType.Definition): boolean {
-      for (let i = 0; i < this.supertypes.length; i++) {
-        this.ensureSupertypeHasDefinition(i);
+    public isSubtypeOf (targetSuperType: TypeDefinition): boolean {
+      for (const superTypeConstraint of this.superTypeConstraints) {
+        this.ensureConstraintHasDefinition(superTypeConstraint);
 
-        const supertype = this.supertypes[i];
-
-        if (supertype === targetSupertype) {
+        if (superTypeConstraint.typeDefinition === targetSuperType) {
           return true;
         }
 
-        if (supertype instanceof ObjectType.Definition && supertype.isSubtypeOf(targetSupertype)) {
+        const { typeDefinition } = superTypeConstraint;
+
+        if (
+          typeDefinition instanceof ObjectType.Definition &&
+          typeDefinition.isSubtypeOf(targetSuperType)
+        ) {
           return true;
         }
       }
 
       return false;
-    }
-
-    private ensureObjectMemberHasDefinition (objectMember: IObjectMember): void {
-      if (objectMember.type instanceof Array) {
-        objectMember.type = this.symbolDictionary.getFirstDefinedSymbol(objectMember.type).type;
-      }
-    }
-
-    private ensureSupertypeHasDefinition (index: number): void {
-      const supertype = this.supertypes[index];
-
-      if (supertype instanceof Array) {
-        this.supertypes[index] = this.symbolDictionary.getFirstDefinedSymbol(supertype).type;
-      }
     }
 
     /**
@@ -228,17 +223,15 @@ export namespace ObjectType {
      * are obtained first.
      */
     private getSuperObjectMember (memberName: string): IObjectMember {
-      for (let i = this.supertypes.length - 1; i >= 0; i--) {
-        this.ensureSupertypeHasDefinition(i);
+      for (const superTypeConstraint of this.superTypeConstraints) {
+        this.ensureConstraintHasDefinition(superTypeConstraint);
 
-        const supertype = this.supertypes[i];
+        const { typeDefinition } = superTypeConstraint;
 
-        if (supertype instanceof ObjectType.Definition) {
-          const objectMember = supertype.getObjectMember(memberName);
+        if (typeDefinition instanceof ObjectType.Definition) {
+          const objectMember = typeDefinition.getObjectMember(memberName);
 
           if (objectMember) {
-            this.ensureObjectMemberHasDefinition(objectMember);
-
             return objectMember;
           }
         }
@@ -258,49 +251,61 @@ export namespace ObjectType {
     public name: string;
     public requiresImplementation: boolean;
 
-    public addConstructor (constructor: IObjectMember<FunctionType.Definition>): void {
+    private ownTypeConstraint: ObjectType.Constraint = {
+      typeDefinition: this,
+      isOriginal: true
+    };
+
+    public addConstructor (constructor: IObjectMember<FunctionType.Constraint>): void {
       this.constructors.push(constructor);
     }
 
+    /**
+     * @todo create an IGenericParameter interface for controlling
+     * generic parameter names, constraints, etc.
+     */
     public addGenericParameter (name: string): void {
       this.genericParameters.push(name);
     }
 
     public addMember (objectMember: IObjectMember): void {
-      this.setOriginalObject(objectMember);
+      objectMember.parent = this.ownTypeConstraint;
 
       this.objectMemberMap[objectMember.name] = objectMember;
     }
 
-    public addMethodOverload (objectMember: IObjectMember<FunctionType.Definition>): void {
-      this.setOriginalObject(objectMember);
+    public addMethodOverload (overloadMember: IObjectMember<FunctionType.Constraint>): void {
+      overloadMember.parent = this.ownTypeConstraint;
 
-      const { name } = objectMember;
-      const existingMember = this.objectMemberMap[name] as IObjectMember<FunctionType.Definition>;
+      const { name } = overloadMember;
+      const existingMember = this.objectMemberMap[name] as IObjectMember<FunctionType.Constraint>;
+
+      if (!existingMember) {
+        return;
+      }
+
+      const { typeDefinition: existingMemberType } = existingMember.constraint;
+      const { typeDefinition: overloadType } = overloadMember.constraint;
 
       if (
-        !(existingMember.type instanceof FunctionType.Definition) ||
-        !(objectMember.type instanceof FunctionType.Definition)
+        !(existingMemberType instanceof FunctionType.Definition) ||
+        !(overloadType instanceof FunctionType.Definition)
       ) {
         return;
       }
 
       const existingOverloads = this.overloadedMethodMap[name] || [ existingMember ];
 
-      objectMember.name += `_${existingOverloads.length}`;
+      overloadMember.name += `_${existingOverloads.length}`;
 
       this.overloadedMethodMap[name] = [
         ...existingOverloads,
-        objectMember
+        overloadMember
       ];
     }
 
-    public addSupertype (supertype: TypeDefinition): void {
-      this.supertypes.push(supertype);
-    }
-
-    private setOriginalObject (objectMember: IObjectMember): void {
-      objectMember.originalObject = this;
+    public addSuper (constraint: ITypeConstraint): void {
+      this.superTypeConstraints.push(constraint);
     }
   }
 }

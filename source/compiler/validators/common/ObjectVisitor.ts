@@ -1,4 +1,4 @@
-import { IObjectMember } from '../../symbol-resolvers/common/types';
+import { IObjectMember, ITypeConstraint } from '../../symbol-resolvers/common/types';
 import { ObjectType } from '../../symbol-resolvers/common/object-type';
 
 /**

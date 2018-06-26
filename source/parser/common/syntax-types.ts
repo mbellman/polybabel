@@ -49,7 +49,7 @@ export interface IValued<V> {
 /**
  * A syntactic construct which has associated parameters, such
  * as a class method or function. The provided generic parameter
- * P should be a type signature for a language-specific parameter
+ * P should be a type constraint for a language-specific parameter
  * syntax node.
  */
 export interface IWithParameters<P extends ISyntaxNode> {
@@ -58,7 +58,7 @@ export interface IWithParameters<P extends ISyntaxNode> {
 
 /**
  * A syntactic construct which has arguments, such as a function
- * call. The provided generic parameter A should be a type signature
+ * call. The provided generic parameter A should be a type constraint
  * for a language-specific expression syntax node.
  */
 export interface IWithArguments<A extends ISyntaxNode> {

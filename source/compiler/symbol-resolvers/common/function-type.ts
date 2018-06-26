@@ -1,13 +1,18 @@
 import AbstractTypeDefinition from './AbstractTypeDefinition';
-import { IConstrainable, TypeDefinition } from './types';
+import { IConstrainable, TypeDefinition, ITypeConstraint } from './types';
 import { Implements } from 'trampoline-framework';
 
 export namespace FunctionType {
+  export type Constraint = ITypeConstraint<FunctionType.Definition>;
+
+  /**
+   * @todo @description
+   */
   export class Definition extends AbstractTypeDefinition implements IConstrainable {
     protected genericParameters: string[] = [];
-    protected overloads: FunctionType.Definition[] = [];
-    protected parameterTypes: TypeDefinition[] = [];
-    protected returnType: TypeDefinition;
+    protected overloads: FunctionType.Constraint[] = [];
+    protected parameterTypeConstraints: ITypeConstraint[] = [];
+    protected returnTypeConstraint: ITypeConstraint;
     private didResolveArgumentTypes: boolean = false;
 
     /**
@@ -17,30 +22,24 @@ export namespace FunctionType {
       return null;
     }
 
-    public getOverloads (): FunctionType.Definition[] {
+    public getOverloads (): FunctionType.Constraint[] {
       return this.overloads;
     }
 
-    public getParameterTypes (): TypeDefinition[] {
+    public getParameterTypeConstraints (): ITypeConstraint[] {
       if (!this.didResolveArgumentTypes) {
-        this.parameterTypes.forEach((argumentType, index) => {
-          if (argumentType instanceof Array) {
-            this.parameterTypes[index] = this.symbolDictionary.getFirstDefinedSymbol(argumentType).type;
-          }
-        });
+        this.parameterTypeConstraints.forEach(constraint => this.ensureConstraintHasDefinition(constraint));
 
         this.didResolveArgumentTypes = true;
       }
 
-      return this.parameterTypes;
+      return this.parameterTypeConstraints;
     }
 
-    public getReturnType (): TypeDefinition {
-      if (this.returnType instanceof Array) {
-        this.returnType = this.symbolDictionary.getFirstDefinedSymbol(this.returnType).type;
-      }
+    public getReturnTypeConstraint (): ITypeConstraint {
+      this.ensureConstraintHasDefinition(this.returnTypeConstraint);
 
-      return this.returnType;
+      return this.returnTypeConstraint;
     }
 
     public hasOverloads (): boolean {
@@ -56,16 +55,16 @@ export namespace FunctionType {
       this.genericParameters.push(name);
     }
 
-    public addParameterType (argumentType: TypeDefinition): void {
-      this.parameterTypes.push(argumentType);
+    public addParameterTypeConstraint (constraint: ITypeConstraint): void {
+      this.parameterTypeConstraints.push(constraint);
     }
 
-    public defineReturnType (returnType: TypeDefinition): void {
-      this.returnType = returnType;
+    public defineReturnTypeConstraint (constraint: ITypeConstraint): void {
+      this.returnTypeConstraint = constraint;
     }
 
-    public overload (functionType: FunctionType.Definition): void {
-      this.overloads.push(functionType);
+    public overload (constraint: FunctionType.Constraint): void {
+      this.overloads.push(constraint);
     }
   }
 }

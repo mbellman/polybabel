@@ -1,7 +1,7 @@
 import AbstractValidator from '../common/AbstractValidator';
 import JavaObjectMethodValidator from './JavaObjectMethodValidator';
 import JavaObjectValidator from './JavaObjectValidator';
-import { Dynamic } from '../../symbol-resolvers/common/types';
+import { Dynamic, ITypeConstraint } from '../../symbol-resolvers/common/types';
 import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
 import { ObjectType } from '../../symbol-resolvers/common/object-type';
@@ -18,8 +18,9 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
   @Implements public validate (): void {
     const { objectVisitor } = this.context;
     const { name, extended, implemented, constructors } = this.syntaxNode;
+    const { typeDefinition } = this.findTypeConstraintByName(name) as ObjectType.Constraint;
 
-    this.ownTypeDefinition = this.findTypeDefinitionByName(name) as ObjectType.Definition;
+    this.ownTypeDefinition = typeDefinition;
 
     if (extended.length !== 0) {
       this.validateSuperclass(extended[0]);
@@ -48,12 +49,12 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
     for (const implementation of implementations) {
       this.focusToken(implementation.token);
 
-      const interfaceTypeDefinition = this.findTypeDefinition(implementation.namespaceChain) as ObjectType.Definition;
+      const { typeDefinition: interfaceTypeDefinition } = this.findOriginalTypeConstraint(implementation.namespaceChain) as ObjectType.Constraint;
       const interfaceName = implementation.namespaceChain.join('.');
 
       if (ValidatorUtils.isInterfaceType(interfaceTypeDefinition)) {
         interfaceTypeDefinition.forEachMemberWhere(
-          ({ type }) => type instanceof FunctionType.Definition,
+          ({ constraint }) => constraint.typeDefinition instanceof FunctionType.Definition,
           interfaceMethodMember => {
             this.check(
               this.ownTypeDefinition.hasEquivalentMember(interfaceMethodMember),
@@ -66,31 +67,31 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
     }
   }
 
-  private validateSuperclass (superclassType: JavaSyntax.IJavaType): void {
-    this.focusToken(superclassType.token);
+  private validateSuperclass (superclass: JavaSyntax.IJavaType): void {
+    this.focusToken(superclass.token);
 
-    const supertypeDefinition = this.findTypeDefinition(superclassType.namespaceChain) as ObjectType.Definition;
-    const supertypeName = superclassType.namespaceChain.join('.');
-    const supertypeIsClass = ValidatorUtils.isClassType(supertypeDefinition);
+    const { typeDefinition: superTypeDefinition } = this.findOriginalTypeConstraint(superclass.namespaceChain) as ObjectType.Constraint;
+    const supertypeName = superclass.namespaceChain.join('.');
+    const supertypeIsClass = ValidatorUtils.isClassType(superTypeDefinition);
 
-    if (supertypeDefinition === this.ownTypeDefinition) {
+    if (superTypeDefinition === this.ownTypeDefinition) {
       this.report(`Class '${this.syntaxNode.name}' cannot extend itself`);
 
       return;
     }
 
     this.check(
-      ValidatorUtils.isSimpleTypeOf(Dynamic, supertypeDefinition) || supertypeIsClass,
+      ValidatorUtils.isSimpleTypeOf(Dynamic, superTypeDefinition) || supertypeIsClass,
       `Class '${this.syntaxNode.name}' cannot extend non-class '${supertypeName}'`
     );
 
     if (supertypeIsClass) {
       this.check(
-        supertypeDefinition.isExtensible,
+        superTypeDefinition.isExtensible,
         `Class '${supertypeName}' cannot be extended`
       );
 
-      supertypeDefinition.forEachMember((superObjectMember) => {
+      superTypeDefinition.forEachMember(superObjectMember => {
         const { name: memberName } = superObjectMember;
 
         if (superObjectMember.requiresImplementation && !this.isAbstractClass()) {

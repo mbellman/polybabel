@@ -3,7 +3,7 @@ import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
 import { TypeExpectation } from '../common/types';
 import JavaStatementValidator from './JavaStatementValidator';
-import { TypeDefinition } from '../../symbol-resolvers/common/types';
+import { TypeDefinition, ITypeConstraint } from '../../symbol-resolvers/common/types';
 import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
 
 export default class JavaObjectFieldValidator extends AbstractValidator<JavaSyntax.IJavaObjectField> {
@@ -30,7 +30,7 @@ export default class JavaObjectFieldValidator extends AbstractValidator<JavaSynt
       });
 
       this.expectType({
-        type: this.getFieldTypeDefinition(),
+        constraint: this.getFieldTypeConstraint(),
         expectation: TypeExpectation.ASSIGNMENT
       });
 
@@ -39,13 +39,13 @@ export default class JavaObjectFieldValidator extends AbstractValidator<JavaSynt
     }
   }
 
-  private getFieldTypeDefinition (): TypeDefinition {
+  private getFieldTypeConstraint (): ITypeConstraint {
     const { type } = this.syntaxNode;
     const { symbolDictionary } = this.context;
-    const fieldType = this.findTypeDefinition(type.namespaceChain);
+    const typeConstraint = this.findOriginalTypeConstraint(type.namespaceChain);
 
     return type.arrayDimensions > 0
-      ? TypeUtils.createArrayType(symbolDictionary, fieldType, type.arrayDimensions)
-      : fieldType;
+      ? TypeUtils.createArrayTypeConstraint(symbolDictionary, typeConstraint, type.arrayDimensions)
+      : typeConstraint;
   }
 }

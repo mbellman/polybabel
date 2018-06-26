@@ -1,20 +1,20 @@
 import AbstractTypeDefinition from './AbstractTypeDefinition';
-import { TypeDefinition } from './types';
+import { ITypeConstraint } from './types';
 
 export namespace ArrayType {
+  export type Constraint = ITypeConstraint<ArrayType.Definition>;
+
   /**
    * An array type definition, denoting a list of elements
    * of a given type.
    */
   export class Definition extends AbstractTypeDefinition {
-    protected elementType: TypeDefinition;
+    protected elementTypeConstraint: ITypeConstraint;
 
-    public getElementType (): TypeDefinition {
-      if (this.elementType instanceof Array) {
-        this.elementType = this.symbolDictionary.getFirstDefinedSymbol(this.elementType).type;
-      }
+    public getElementTypeConstraint (): ITypeConstraint {
+      this.ensureConstraintHasDefinition(this.elementTypeConstraint);
 
-      return this.elementType;
+      return this.elementTypeConstraint;
     }
   }
 
@@ -22,8 +22,8 @@ export namespace ArrayType {
    * An ArrayType.Definition's definer subclass.
    */
   export class Definer extends Definition {
-    public defineElementType (elementType: TypeDefinition): void {
-      this.elementType = elementType;
+    public defineElementTypeConstraint (constraint: ITypeConstraint): void {
+      this.elementTypeConstraint = constraint;
     }
   }
 }

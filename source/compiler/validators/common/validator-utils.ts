@@ -1,6 +1,6 @@
 import { ArrayType } from '../../symbol-resolvers/common/array-type';
 import { Callback } from '../../../system/types';
-import { Dynamic, ISimpleType, ObjectCategory, Primitive, TypeDefinition, Void } from '../../symbol-resolvers/common/types';
+import { Dynamic, ISimpleType, ObjectCategory, Primitive, TypeDefinition, Void, ITypeConstraint } from '../../symbol-resolvers/common/types';
 import { FunctionType } from '../../symbol-resolvers/common/function-type';
 import { IToken } from '../../../tokenizer/types';
 import { ObjectType } from '../../symbol-resolvers/common/object-type';
@@ -29,21 +29,26 @@ export namespace ValidatorUtils {
     );
   }
 
-  export function getTypeDescription (typeDefinition: TypeDefinition): string {
+  export function getTypeConstraintDescription ({ typeDefinition, isOriginal }: ITypeConstraint): string {
+    let description = isOriginal ? 'Type: ' : '';
+
     if (typeDefinition instanceof ObjectType.Definition) {
-      return typeDefinition.name || 'Object';
+      description += typeDefinition.name || 'Object';
     } else if (typeDefinition instanceof ArrayType.Definition) {
-      const elementTypeDescription = getTypeDescription(typeDefinition.getElementType());
+      const elementTypeDescription = getTypeConstraintDescription(typeDefinition.getElementTypeConstraint());
 
-      return `${elementTypeDescription}[]`;
+      description += `${elementTypeDescription}[]`;
     } else if (typeDefinition instanceof FunctionType.Definition) {
-      const returnTypeDescription = getTypeDescription(typeDefinition.getReturnType());
+      const parameterTypeConstraints = typeDefinition.getParameterTypeConstraints();
+      const parameterTypeDescriptions = parameterTypeConstraints.map(constraint => `'${getTypeConstraintDescription(constraint)}'`);
+      const returnTypeDescription = getTypeConstraintDescription(typeDefinition.getReturnTypeConstraint());
 
-      // TODO: Output function argument types
-      return `Function => ${returnTypeDescription}`;
+      description += `(${parameterTypeDescriptions.join(', ')}) => ${returnTypeDescription}`;
     } else {
-      return (typeDefinition as ISimpleType).type;
+      description += (typeDefinition as ISimpleType).type;
     }
+
+    return description;
   }
 
   /**

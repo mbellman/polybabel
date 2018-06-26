@@ -1,4 +1,4 @@
-import { Dynamic, ISimpleType, Primitive, Void, TypeDefinition } from './types';
+import { Dynamic, ISimpleType, Primitive, Void, TypeDefinition, ITypeConstraint } from './types';
 import { ArrayType } from './array-type';
 import SymbolDictionary from './SymbolDictionary';
 
@@ -7,17 +7,19 @@ export namespace TypeUtils {
     return { type };
   }
 
-  export function createArrayType (symbolDictionary: SymbolDictionary, elementType: TypeDefinition, dimensions: number = 1): ArrayType.Definition {
-    let type = elementType;
+  export function createArrayTypeConstraint (symbolDictionary: SymbolDictionary, elementTypeConstraint: ITypeConstraint, dimensions: number = 1): ArrayType.Constraint {
+    let constraint = elementTypeConstraint;
 
     while (dimensions-- > 0) {
       const arrayType = new ArrayType.Definer(symbolDictionary);
 
-      arrayType.defineElementType(type);
+      arrayType.defineElementTypeConstraint(constraint);
 
-      type = arrayType;
+      constraint = {
+        typeDefinition: arrayType
+      };
     }
 
-    return type as ArrayType.Definition;
+    return constraint as ArrayType.Constraint;
   }
 }

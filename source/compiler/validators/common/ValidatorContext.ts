@@ -1,9 +1,9 @@
 import ObjectVisitor from './ObjectVisitor';
 import ScopeManager from '../../ScopeManager';
 import SymbolDictionary from '../../symbol-resolvers/common/SymbolDictionary';
-import { IExpectedType, IValidatorContextFlags, IValidatorError } from './types';
+import { IExpectedTypeConstraint, IValidatorContextFlags, IValidatorError } from './types';
 import { IHashMap } from 'trampoline-framework';
-import { TypeDefinition } from '../../symbol-resolvers/common/types';
+import { ITypeConstraint } from '../../symbol-resolvers/common/types';
 
 /**
  * A container providing access to essential validation APIs
@@ -13,17 +13,17 @@ import { TypeDefinition } from '../../symbol-resolvers/common/types';
 export default class ValidatorContext {
   public readonly file: string;
   public errors: IValidatorError[] = [];
-  public expectedTypeStack: IExpectedType[] = [];
+  public expectedTypeConstraintStack: IExpectedTypeConstraint[] = [];
   public flags: Partial<IValidatorContextFlags> = {};
   public namespaceStack: string[] = [];
-  public nativeTypeMap: IHashMap<TypeDefinition>;
+  public nativeTypeConstraintMap: IHashMap<ITypeConstraint>;
   public objectVisitor: ObjectVisitor = new ObjectVisitor();
   public scopeManager: ScopeManager = new ScopeManager();
   public symbolDictionary: SymbolDictionary;
 
-  public constructor (file: string, symbolDictionary: SymbolDictionary, nativeTypeMap: IHashMap<TypeDefinition> = {}) {
+  public constructor (file: string, symbolDictionary: SymbolDictionary, nativeTypeConstraintMap: IHashMap<ITypeConstraint> = {}) {
     this.file = file;
     this.symbolDictionary = symbolDictionary;
-    this.nativeTypeMap = nativeTypeMap;
+    this.nativeTypeConstraintMap = nativeTypeConstraintMap;
   }
 }

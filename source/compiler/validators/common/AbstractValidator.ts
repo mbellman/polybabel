@@ -1,9 +1,10 @@
 import ValidatorContext from './ValidatorContext';
 import { Callback } from '../../../system/types';
 import { Constructor, IConstructable } from 'trampoline-framework';
-import { Dynamic, TypeDefinition, IScopedReference, IObjectMember } from '../../symbol-resolvers/common/types';
-import { GlobalNativeTypeMap } from '../../native-type-maps/global';
-import { IExpectedType, IValidatorError, TypeExpectation, IValidatorContextFlags } from './types';
+import { Dynamic, IObjectMember, IScopedReference, ITypeConstraint, TypeDefinition } from '../../symbol-resolvers/common/types';
+import { DynamicTypeConstraint } from '../../native-type-constraints/common';
+import { GlobalTypeConstraintMap } from '../../native-type-constraints/global';
+import { IExpectedTypeConstraint, IValidatorContextFlags, IValidatorError, TypeExpectation } from './types';
 import { ISyntaxNode } from '../../../parser/common/syntax-types';
 import { IToken } from '../../../tokenizer/types';
 import { ObjectType } from '../../symbol-resolvers/common/object-type';
@@ -50,7 +51,7 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     this.assert(condition, message, false);
   }
 
-  protected checkIfTypeMatchesExpected (type: TypeDefinition): void {
+  protected checkIfTypeConstraintMatchesExpected (constraint: ITypeConstraint): void {
     if (this.context.flags.shouldAllowAnyType) {
       this.setFlags({
         shouldAllowAnyType: false
@@ -59,13 +60,13 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
       return;
     }
 
-    const { expectedTypeStack } = this.context;
-    const { type: expectedTypeDefinition, expectation } = expectedTypeStack[expectedTypeStack.length - 1];
-    const typeDescription = ValidatorUtils.getTypeDescription(type);
-    const expectedTypeDescription = ValidatorUtils.getTypeDescription(expectedTypeDefinition);
+    const { expectedTypeConstraintStack } = this.context;
+    const { constraint: expectedTypeconstraint, expectation } = expectedTypeConstraintStack[expectedTypeConstraintStack.length - 1];
+    const typeDescription = ValidatorUtils.getTypeConstraintDescription(constraint);
+    const expectedTypeDescription = ValidatorUtils.getTypeConstraintDescription(expectedTypeconstraint);
 
     this.check(
-      TypeValidation.typeMatches(type, expectedTypeDefinition),
+      TypeValidation.typeConstraintMatches(constraint, expectedTypeconstraint),
       `Expected ${expectation} '${expectedTypeDescription}'; got '${typeDescription}' instead`
     );
   }
@@ -82,10 +83,10 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     return !this.context.flags.shouldAllowAnyType;
   }
 
-  protected expectType (expectedType: IExpectedType): void {
+  protected expectType (expectedTypeConstraint: IExpectedTypeConstraint): void {
     this.context.flags.shouldAllowAnyType = false;
 
-    this.context.expectedTypeStack.push(expectedType);
+    this.context.expectedTypeConstraintStack.push(expectedTypeConstraint);
   }
 
   public findReferenceOrMember (name: string): IScopedReference | IObjectMember {
@@ -96,89 +97,107 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
   }
 
   /**
-   * Attempts to find and return the type definition for a given
-   * symbol or construct identified by namespace chain. The outer
-   * name in the chain represents the top-level object or namespace
-   * within which the desired symbol or construct can be found.
-   * If the namespace chain contains only one value, the type of
-   * that top-level object or namespace is returned. Otherwise, the
-   * chain is traversed until either an invalid lookup terminates
+   * Attempts to find and return the original type constraint for a
+   * given symbol or namespaced type. The outer name in the namespace
+   * chain represents the top-level object or namespace within which
+   * the desired symbol or namespaced type should be found. If the
+   * namespace chain contains only one value, the constraint of that
+   * of that top-level object or namespace is returned. Otherwise,
+   * the chain is traversed until either an invalid lookup terminates
    * the search, or the desired symbol or construct is found.
    *
-   * When the outer name is an unknown identifier, or if invalid
-   * lookups occur, we report the error and return a dynamic type
-   * to gracefully recover and accommodate checks dependent on the
-   * found type definition.
+   * If the found symbol or namespaced type is in fact not an original
+   * type constraint, but merely a construct matching some constraint,
+   * we report an error. This helps enforce that type annotations use
+   * actual types and not just random constructs.
+   *
+   * When the outer name is an unknown identifier, or if invalid lookups
+   * lookups occur, we report the error and return a dynamic constraint
+   * as a graceful fallback.
    */
-  public findTypeDefinition (namespaceChain: string[]): TypeDefinition {
+  public findOriginalTypeConstraint (namespaceChain: string[]): ITypeConstraint {
     const outerName = namespaceChain[0];
-    const outerType = this.findTypeDefinitionByName(namespaceChain[0]);
+    const outerTypeConstraint = this.findTypeConstraintByName(namespaceChain[0]);
     const shouldSearchDeep = namespaceChain.length > 1;
 
     if (shouldSearchDeep) {
-      if (ValidatorUtils.isSimpleTypeOf(Dynamic, outerType)) {
+      if (ValidatorUtils.isSimpleTypeOf(Dynamic, outerTypeConstraint.typeDefinition)) {
         // If the outer type of the namespace chain is already
-        // dynamic, simply return a new dynamic type, since
+        // dynamic, simply return a dynamic type constraint, since
         // dynamic types permit arbitrarily deep member chains
-        return TypeUtils.createSimpleType(Dynamic);
+        return DynamicTypeConstraint;
       }
 
       const currentNamespaceChain = [ outerName ];
-      let nextType = outerType;
+      let nextConstraint = outerTypeConstraint;
       let chainIndex = 0;
 
-      while (nextType) {
-        if (!(nextType instanceof ObjectType.Definition)) {
+      while (nextConstraint) {
+        if (!(nextConstraint.typeDefinition instanceof ObjectType.Definition)) {
           // If the next type in the deep search isn't an object
           // type, we can't go any further in the chain.
           this.reportNonObjectMemberAccess(`${currentNamespaceChain.join('.')}'`);
 
-          return TypeUtils.createSimpleType(Dynamic);
+          return DynamicTypeConstraint;
         }
 
         const nextMemberName = namespaceChain[++chainIndex];
-        const nextObjectMember = nextType.getObjectMember(nextMemberName);
+        const nextObjectMember = nextConstraint.typeDefinition.getObjectMember(nextMemberName);
 
         if (!nextObjectMember) {
           this.reportUnknownMember(`${currentNamespaceChain.join('.')}`, nextMemberName);
 
-          return TypeUtils.createSimpleType(Dynamic);
+          return DynamicTypeConstraint;
         }
 
         if (chainIndex === namespaceChain.length - 1) {
-          // End of namespace chain reached; return the type definition
-          return nextObjectMember.type;
+          // End of namespace chain reached!
+          const { constraint } = nextObjectMember;
+
+          if (!constraint.isOriginal) {
+            this.reportNonType(namespaceChain.join('.'));
+
+            return DynamicTypeConstraint;
+          }
+
+          return constraint;
         }
 
-        if (ValidatorUtils.isSimpleTypeOf(Dynamic, nextObjectMember.type)) {
+        if (ValidatorUtils.isSimpleTypeOf(Dynamic, nextObjectMember.constraint.typeDefinition)) {
           // If the next member in the chain is dynamic, return
           // a new dynamic type immediately, since dynamic types
           // can have any of the remaining deep members
-          return TypeUtils.createSimpleType(Dynamic);
+          return DynamicTypeConstraint;
         }
 
         currentNamespaceChain.push(nextMemberName);
 
-        nextType = nextObjectMember.type;
+        nextConstraint = nextObjectMember.constraint;
       }
 
-      return TypeUtils.createSimpleType(Dynamic);
+      return DynamicTypeConstraint;
     } else {
-      return outerType;
+      if (!outerTypeConstraint.isOriginal) {
+        this.reportNonType(outerName);
+
+        return DynamicTypeConstraint;
+      }
+
+      return outerTypeConstraint;
     }
   }
 
   /**
    * @todo @description
    */
-  public findTypeDefinitionByName (name: string): TypeDefinition {
-    const nativeType = this.context.nativeTypeMap[name];
+  public findTypeConstraintByName (name: string): ITypeConstraint {
+    const nativeTypeConstraint = this.context.nativeTypeConstraintMap[name];
 
-    if (nativeType) {
+    if (nativeTypeConstraint) {
       // If the name corresponds to a native type as specified
       // by a language-native type map, return that before
       // anything else
-      return nativeType;
+      return nativeTypeConstraint;
     }
 
     const { scopeManager, objectVisitor, symbolDictionary, file } = this.context;
@@ -187,17 +206,15 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     if (scopedReference) {
       // If the name is in scope, the scoped type definition
       // value should take precedence over other references
-      //
-      // TODO: Return full signature
-      return scopedReference.signature.definition;
+      return scopedReference.constraint;
     }
 
     const parentObjectMember = objectVisitor.findParentObjectMember(name);
 
     if (parentObjectMember) {
       // If the name is a parent object member, we return
-      // its type
-      return parentObjectMember.type;
+      // its type constraint
+      return parentObjectMember.constraint;
     }
 
     const symbol = symbolDictionary.getDefinedSymbol(file + name);
@@ -205,20 +222,20 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     if (symbol) {
       // If the name is a symbol in the current file, we
       // return its type
-      return symbol.type;
+      return symbol.constraint;
     }
 
-    const globalNativeType = GlobalNativeTypeMap[name];
+    const globalTypeConstraint = GlobalTypeConstraintMap[name];
 
-    if (globalNativeType) {
-      // If the name is a global native type (i.e. to JavaScript)
-      // we return its mapped type
-      return globalNativeType;
+    if (globalTypeConstraint) {
+      // If the name is a global type constraint (i.e. native
+      // to JavaScript) we return its mapped type
+      return globalTypeConstraint;
     }
 
     this.reportUnknownIdentifier(name);
 
-    return TypeUtils.createSimpleType(Dynamic);
+    return DynamicTypeConstraint;
   }
 
   protected focusToken (token: IToken): void {
@@ -231,18 +248,18 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     return namespaceStack[namespaceStack.length - 1];
   }
 
-  protected getLastExpectedTypeFor (typeExpectation: TypeExpectation): TypeDefinition {
-    const { expectedTypeStack } = this.context;
+  protected getLastExpectedTypeConstraintFor (typeExpectation: TypeExpectation): ITypeConstraint {
+    const { expectedTypeConstraintStack } = this.context;
 
-    for (let i = expectedTypeStack.length - 1; i >= 0; i--) {
-      const { expectation, type } = expectedTypeStack[i];
+    for (let i = expectedTypeConstraintStack.length - 1; i >= 0; i--) {
+      const { expectation, constraint } = expectedTypeConstraintStack[i];
 
       if (expectation === typeExpectation) {
-        return type;
+        return constraint;
       }
     }
 
-    return TypeUtils.createSimpleType(Dynamic);
+    return DynamicTypeConstraint;
   }
 
   protected getNamespacedIdentifier (identifier: string): string {
@@ -256,8 +273,8 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     });
   }
 
-  protected reportInvalidFunctionArguments (functionName: string, argumentTypes: TypeDefinition[]): void {
-    const argumentTypeDescriptions = argumentTypes.map(argumentType => `'${ValidatorUtils.getTypeDescription(argumentType)}'`);
+  protected reportInvalidFunctionArguments (functionName: string, argumentTypeConstraints: ITypeConstraint[]): void {
+    const argumentTypeDescriptions = argumentTypeConstraints.map(argumentTypeConstraint => `'${ValidatorUtils.getTypeConstraintDescription(argumentTypeConstraint)}'`);
 
     this.report(`'${functionName}' called with invalid arguments ${argumentTypeDescriptions.join(', ')}`);
   }
@@ -278,6 +295,10 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     this.report(`Identifier '${name}' does not have any members`);
   }
 
+  protected reportNonType (name: string): void {
+    this.report(`'${name}' is not a type`);
+  }
+
   protected reportUnknownIdentifier (name: string): void {
     this.report(`Unknown identifier '${name}'`);
   }
@@ -291,7 +312,7 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
   }
 
   protected resetExpectedType (): void {
-    this.context.expectedTypeStack.pop();
+    this.context.expectedTypeConstraintStack.pop();
   }
 
   protected setFlags (flags: Partial<IValidatorContextFlags>): void {

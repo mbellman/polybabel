@@ -10,27 +10,22 @@ export default class JavaImportValidator extends AbstractValidator<JavaSyntax.IJ
     this.focusToken(token);
 
     if (defaultImport) {
-      this.handleImport(defaultImport, sourceFile);
+      this.handleImportName(defaultImport, sourceFile);
     } else if (nonDefaultImports.length > 1) {
-      nonDefaultImports.forEach(nonDefaultImport => this.handleImport(nonDefaultImport, sourceFile));
+      nonDefaultImports.forEach(nonDefaultImport => this.handleImportName(nonDefaultImport, sourceFile));
     }
   }
 
-  private handleImport (importName: string, sourceFile: string): void {
+  private handleImportName (importName: string, sourceFile: string): void {
     this.check(
       !/[^\w]/.test(importName),
       `Invalid import name: '${importName}'`
     );
 
-    // TODO: Once SymbolDictionary stores type signatures, supply
-    // the scoped reference with the looked-up signature
-    const importTypeDefinition = this.context.symbolDictionary.getSymbolType(sourceFile + importName);
+    const importConstraint = this.context.symbolDictionary.getSymbolConstraint(sourceFile + importName);
 
     this.context.scopeManager.addToScope(importName, {
-      signature: {
-        definition: importTypeDefinition,
-        isOriginal: true
-      },
+      constraint: importConstraint,
       isConstant: true
     });
   }

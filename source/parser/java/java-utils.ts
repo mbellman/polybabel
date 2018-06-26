@@ -101,7 +101,7 @@ export namespace JavaUtils {
    * Determines whether a token corresponds to the beginning of a
    * generic block. Walks through the token sequence following the
    * provided token until either a token indicating or not indicating
-   * a generic block 'signature' is encountered, or the end of the
+   * a generic block 'constraint' is encountered, or the end of the
    * token stream is reached.
    *
    * During statement parsing, consideration must be made for whether
@@ -317,7 +317,7 @@ export namespace JavaUtils {
 
     if (token.value !== '(' && !nextTextTokenIsOpenParenthesis) {
       // Optimize for tokens which can't possibly match a
-      // function call signature, e.g. those not equal to
+      // function call constraint, e.g. those not equal to
       // or followed by (
       return false;
     }

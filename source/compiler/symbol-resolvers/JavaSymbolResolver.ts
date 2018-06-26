@@ -1,10 +1,10 @@
 import AbstractSymbolResolver from './common/AbstractSymbolResolver';
-import { ArrayType } from './common/array-type';
 import { FunctionType } from './common/function-type';
 import { Implements } from 'trampoline-framework';
-import { IObjectMember, ISymbol, ObjectCategory, ObjectMemberVisibility, TypeDefinition } from './common/types';
+import { IObjectMember, ISymbol, ObjectCategory, ObjectMemberVisibility, TypeDefinition, ITypeConstraint } from './common/types';
 import { JavaSyntax } from '../../parser/java/java-syntax';
 import { ObjectType } from './common/object-type';
+import { TypeUtils } from './common/type-utils';
 
 export default class JavaSymbolResolver extends AbstractSymbolResolver {
   @Implements public resolve (javaSyntaxTree: JavaSyntax.IJavaSyntaxTree): void {
@@ -25,13 +25,11 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
           });
           break;
         case JavaSyntax.JavaSyntaxNode.CLASS:
-          const classNode = syntaxNode as JavaSyntax.IJavaClass;
-          const classSymbol = this.resolveClassSymbol(classNode);
+          const classSymbol = this.resolveClassSymbol(syntaxNode as JavaSyntax.IJavaClass);
 
           this.symbolDictionary.addSymbol(classSymbol);
           break;
         case JavaSyntax.JavaSyntaxNode.INTERFACE:
-          const interfaceNode = syntaxNode as JavaSyntax.IJavaInterface;
           const interfaceSymbol = this.resolveInterfaceSymbol(syntaxNode as JavaSyntax.IJavaInterface);
 
           this.symbolDictionary.addSymbol(interfaceSymbol);
@@ -55,60 +53,39 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
   }
 
   /**
-   * Creates and returns an array type definition, using recursion
-   * to define the element type of the array as the original type
-   * with one less array dimension on each cycle until the array
-   * dimensions reach 0.
-   */
-  private createArrayTypeDefinition (type: JavaSyntax.IJavaType): TypeDefinition {
-    const { arrayDimensions } = type;
-
-    if (arrayDimensions > 0) {
-      const arrayTypeDefiner = this.createTypeDefiner(ArrayType.Definer);
-
-      const elementTypeDefinition = this.createArrayTypeDefinition({
-        ...type,
-        arrayDimensions: arrayDimensions - 1
-      });
-
-      arrayTypeDefiner.defineElementType(elementTypeDefinition);
-
-      return arrayTypeDefiner;
-    } else {
-      return this.javaTypeToTypeDefinition(type);
-    }
-  }
-
-  /**
    * @todo @description
    */
-  private javaTypeToTypeDefinition (type: JavaSyntax.IJavaType): TypeDefinition {
+  private javaTypeToConstraint (type: JavaSyntax.IJavaType): ITypeConstraint {
     const { namespaceChain, arrayDimensions } = type;
     const typeName = namespaceChain.join('.');
+    const nativeTypeConstraint = this.nativeTypeConstraintMap[typeName];
 
-    if (arrayDimensions > 0) {
-      return this.createArrayTypeDefinition(type);
-    }
+    const typeDefinition = !!nativeTypeConstraint
+      ? nativeTypeConstraint.typeDefinition
+      : this.getPossibleSymbolIdentifiers(typeName);
 
-    return (
-      this.nativeTypeMap[typeName] ||
-      this.getPossibleSymbolIdentifiers(typeName)
-    );
+    const typeConstraint: ITypeConstraint = {
+      typeDefinition
+    };
+
+    return arrayDimensions > 0
+      ? TypeUtils.createArrayTypeConstraint(this.symbolDictionary, typeConstraint, arrayDimensions)
+      : typeConstraint;
   }
 
-  private resolveAndAddObjectMembers (members: JavaSyntax.JavaObjectMember[], definer: ObjectType.Definer): void {
+  private resolveAndAddObjectMembers (members: JavaSyntax.JavaObjectMember[], objectDefiner: ObjectType.Definer): void {
     members.forEach(member => {
       switch (member.node) {
         case JavaSyntax.JavaSyntaxNode.OBJECT_FIELD: {
           const { name, access, type: fieldType, isStatic, isFinal, isAbstract } = member as JavaSyntax.IJavaObjectField;
 
-          definer.addMember({
+          objectDefiner.addMember({
             name,
             visibility: this.getObjectMemberVisibility(access),
             isConstant: !!isFinal,
             isStatic: !!isStatic,
             requiresImplementation: !!isAbstract,
-            type: this.javaTypeToTypeDefinition(fieldType)
+            constraint: this.javaTypeToConstraint(fieldType)
           });
 
           break;
@@ -116,16 +93,16 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
         case JavaSyntax.JavaSyntaxNode.OBJECT_METHOD: {
           const { name, access, isFinal, isStatic, isAbstract, genericTypes, type: returnType, parameters } = member as JavaSyntax.IJavaObjectMethod;
           const functionTypeDefiner = this.createTypeDefiner(FunctionType.Definer);
-          const returnTypeDefinition = this.javaTypeToTypeDefinition(returnType);
+          const returnTypeConstraint = this.javaTypeToConstraint(returnType);
 
           parameters.forEach(({ type }) => {
-            const parameterTypeDefinition = this.javaTypeToTypeDefinition(type);
+            const parameterTypeConstraint = this.javaTypeToConstraint(type);
 
-            functionTypeDefiner.addParameterType(parameterTypeDefinition);
+            functionTypeDefiner.addParameterTypeConstraint(parameterTypeConstraint);
           });
 
           // TODO: Add generic parameters
-          functionTypeDefiner.defineReturnType(returnTypeDefinition);
+          functionTypeDefiner.defineReturnTypeConstraint(returnTypeConstraint);
 
           const methodMember: IObjectMember = {
             name,
@@ -133,13 +110,15 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
             isConstant: !!isFinal,
             isStatic: !!isStatic,
             requiresImplementation: !!isAbstract,
-            type: functionTypeDefiner
+            constraint: {
+              typeDefinition: functionTypeDefiner
+            }
           };
 
-          if (definer.hasOwnObjectMember(name)) {
-            definer.addMethodOverload(methodMember as IObjectMember<FunctionType.Definition>);
+          if (objectDefiner.hasOwnObjectMember(name)) {
+            objectDefiner.addMethodOverload(methodMember as IObjectMember<FunctionType.Constraint>);
           } else {
-            definer.addMember(methodMember);
+            objectDefiner.addMember(methodMember);
           }
 
           break;
@@ -153,12 +132,12 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
             ? this.resolveClassSymbol(member as JavaSyntax.IJavaClass)
             : this.resolveInterfaceSymbol(member as JavaSyntax.IJavaInterface);
 
-          definer.addMember({
+          objectDefiner.addMember({
             name,
             visibility: this.getObjectMemberVisibility(access),
             isConstant: !!isFinal,
             isStatic: !!isStatic,
-            type: nestedObjectSymbol.type
+            constraint: nestedObjectSymbol.constraint
           });
 
           this.symbolDictionary.addSymbol(nestedObjectSymbol);
@@ -172,88 +151,88 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
   private resolveClassSymbol (classNode: JavaSyntax.IJavaClass): ISymbol {
     const { name, extended, implemented, members, access, isFinal, isAbstract, constructors } = classNode;
     const identifier = this.createSymbolIdentifier(name);
-    const classType = this.createTypeDefiner(ObjectType.Definer);
+    const classTypeDefiner = this.createTypeDefiner(ObjectType.Definer);
+
+    const classTypeConstraint: ITypeConstraint = {
+      typeDefinition: classTypeDefiner,
+      isOriginal: true
+    };
 
     // TODO: Add generic parameters
-    classType.name = name;
-    classType.category = ObjectCategory.CLASS;
-    classType.isConstructable = !isAbstract;
-    classType.isExtensible = !isFinal;
-    classType.requiresImplementation = isAbstract;
-
-    classType.isConstructable = (
-      access === JavaSyntax.JavaAccessModifier.PUBLIC ||
-      !isAbstract
-    );
+    classTypeDefiner.name = name;
+    classTypeDefiner.category = ObjectCategory.CLASS;
+    classTypeDefiner.isConstructable = !isAbstract;
+    classTypeDefiner.isExtensible = !isFinal;
+    classTypeDefiner.requiresImplementation = isAbstract;
+    classTypeDefiner.isConstructable = !isAbstract;
 
     if (extended.length === 1) {
-      const superclassName = extended[0].namespaceChain.join('.');
-      const possibleSuperclassSymbolIdentifiers = this.getPossibleSymbolIdentifiers(superclassName);
-
-      classType.addSupertype(possibleSuperclassSymbolIdentifiers);
+      classTypeDefiner.addSuper(this.javaTypeToConstraint(extended[0]));
     }
 
     if (implemented.length > 0) {
       for (const implementation of implemented) {
-        const interfaceName = implementation.namespaceChain.join('.');
-        const possibleInterfaceSymbolIdentifiers = this.getPossibleSymbolIdentifiers(interfaceName);
-
-        classType.addSupertype(possibleInterfaceSymbolIdentifiers);
+        classTypeDefiner.addSuper(this.javaTypeToConstraint(implementation));
       }
     }
 
     constructors.forEach(({ parameters, access: constructorAccess }) => {
-      const constructorType = this.createTypeDefiner(FunctionType.Definer);
+      const constructorFunctionDefiner = this.createTypeDefiner(FunctionType.Definer);
 
-      constructorType.defineReturnType(classType);
+      constructorFunctionDefiner.defineReturnTypeConstraint(classTypeConstraint);
 
       parameters.forEach(parameter => {
-        constructorType.addParameterType(this.javaTypeToTypeDefinition(parameter.type));
+        constructorFunctionDefiner.addParameterTypeConstraint(this.javaTypeToConstraint(parameter.type));
       });
 
-      classType.addConstructor({
+      classTypeDefiner.addConstructor({
         name,
-        type: constructorType,
+        constraint: {
+          typeDefinition: constructorFunctionDefiner
+        },
         visibility: this.getObjectMemberVisibility(constructorAccess)
       });
     });
 
     this.enterNamespace(name);
-    this.resolveAndAddObjectMembers(members, classType);
+    this.resolveAndAddObjectMembers(members, classTypeDefiner);
     this.exitNamespace();
 
     return {
       identifier,
       name,
-      type: classType
+      constraint: classTypeConstraint
     };
   }
 
   private resolveInterfaceSymbol (interfaceNode: JavaSyntax.IJavaInterface): ISymbol {
     const { name, members, extended } = interfaceNode;
     const identifier = this.createSymbolIdentifier(name);
-    const objectTypeDefiner = this.createTypeDefiner(ObjectType.Definer);
+    const interfaceTypeDefiner = this.createTypeDefiner(ObjectType.Definer);
 
     // TODO: Add generic parameters
-    objectTypeDefiner.name = name;
-    objectTypeDefiner.category = ObjectCategory.INTERFACE;
-    objectTypeDefiner.isExtensible = true;
-    objectTypeDefiner.isConstructable = false;
+    interfaceTypeDefiner.name = name;
+    interfaceTypeDefiner.category = ObjectCategory.INTERFACE;
+    interfaceTypeDefiner.isExtensible = true;
+    interfaceTypeDefiner.isConstructable = false;
 
     if (extended.length > 0) {
       extended.forEach(superType => {
-        objectTypeDefiner.addSupertype(this.javaTypeToTypeDefinition(superType));
+        interfaceTypeDefiner.addSuper(this.javaTypeToConstraint(superType));
       });
     }
 
     this.enterNamespace(name);
-    this.resolveAndAddObjectMembers(members, objectTypeDefiner);
+    this.resolveAndAddObjectMembers(members, interfaceTypeDefiner);
     this.exitNamespace();
 
     return {
       identifier,
       name,
-      type: objectTypeDefiner
+      constraint: {
+        typeDefinition: interfaceTypeDefiner,
+        isOriginal: true
+      }
     };
   }
 }

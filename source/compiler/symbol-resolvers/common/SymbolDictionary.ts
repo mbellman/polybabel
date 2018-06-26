@@ -1,6 +1,7 @@
-import { Dynamic, ISymbol, SymbolIdentifier, TypeDefinition } from './types';
+import { Dynamic, ISymbol, SymbolIdentifier, ITypeConstraint } from './types';
 import { IHashMap } from 'trampoline-framework';
 import { TypeUtils } from './type-utils';
+import { DynamicTypeConstraint } from '../../native-type-constraints/common';
 
 /**
  * A symbol dictionary containing type definitions for the
@@ -58,15 +59,15 @@ export default class SymbolDictionary {
    * validation failures. Validators should, however, verify
    * that the searched identifier is in scope.
    */
-  public getSymbolType (symbolIdentifier: SymbolIdentifier): TypeDefinition {
-    return this.getSymbol(symbolIdentifier).type;
+  public getSymbolConstraint (symbolIdentifier: SymbolIdentifier): ITypeConstraint {
+    return this.getSymbol(symbolIdentifier).constraint;
   }
 
   private createDynamicSymbol (name?: string): ISymbol {
     return {
       identifier: name,
       name,
-      type: TypeUtils.createSimpleType(Dynamic)
+      constraint: DynamicTypeConstraint
     };
   }
 }

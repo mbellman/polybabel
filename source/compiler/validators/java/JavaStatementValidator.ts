@@ -1,15 +1,15 @@
 import AbstractValidator from '../common/AbstractValidator';
 import { ArrayType } from '../../symbol-resolvers/common/array-type';
-import { Dynamic, IObjectMember, ISimpleType, Primitive, TypeDefinition, Void, ObjectMemberVisibility } from '../../symbol-resolvers/common/types';
+import { BooleanTypeConstraint, DynamicTypeConstraint, NullTypeConstraint, NumberTypeConstraint, StringTypeConstraint } from '../../native-type-constraints/common';
 import { FunctionType } from '../../symbol-resolvers/common/function-type';
 import { Implements } from 'trampoline-framework';
+import { IObjectMember, ITypeConstraint, ObjectMemberVisibility, TypeDefinition } from '../../symbol-resolvers/common/types';
 import { JavaConstants } from '../../../parser/java/java-constants';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
 import { ObjectType } from '../../symbol-resolvers/common/object-type';
-import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
-import { ValidatorUtils } from '../common/validator-utils';
-import { TypeValidation } from '../common/type-validation';
 import { TypeExpectation } from '../common/types';
+import { TypeValidation } from '../common/type-validation';
+import { ValidatorUtils } from '../common/validator-utils';
 
 /**
  * Validates Java statements. The fundamental qualifications for
@@ -76,11 +76,11 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
   /**
    * @todo
    */
-  private getFunctionCallReturnType (functionCall: JavaSyntax.IJavaFunctionCall, sourceObjectType?: ObjectType.Definition): TypeDefinition {
+  private getFunctionCallReturnTypeConstraint (functionCall: JavaSyntax.IJavaFunctionCall, sourceObjectType?: ObjectType.Definition): ITypeConstraint {
     this.focusToken(functionCall.token);
 
     const { name: functionName, arguments: args } = functionCall;
-    const argumentTypes = args.map(argument => this.getStatementType(argument));
+    const argumentTypeConstraints = args.map(argument => this.getStatementTypeConstraint(argument));
 
     if (!sourceObjectType) {
       // If no source object is provided, we first have to attempt
@@ -89,46 +89,46 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
       const scopedReference = this.context.scopeManager.getScopedReference(functionName);
 
       if (scopedReference) {
-        const { signature } = scopedReference;
+        const { typeDefinition, isOriginal } = scopedReference.constraint;
 
-        if (signature.definition instanceof FunctionType.Definition) {
+        if (typeDefinition instanceof FunctionType.Definition) {
           this.check(
-            !signature.isOriginal,
+            !isOriginal,
             `Invalid call to original function type definition '${functionName}'`
           );
 
-          if (!TypeValidation.allTypesMatch(argumentTypes, signature.definition.getParameterTypes())) {
-            this.reportInvalidFunctionArguments(functionName, argumentTypes);
+          if (!TypeValidation.allTypeConstraintsMatch(argumentTypeConstraints, typeDefinition.getParameterTypeConstraints())) {
+            this.reportInvalidFunctionArguments(functionName, argumentTypeConstraints);
 
-            return TypeUtils.createSimpleType(Dynamic);
+            return DynamicTypeConstraint;
           }
 
-          return signature.definition.getReturnType();
+          return typeDefinition.getReturnTypeConstraint();
         } else {
           this.reportNonFunctionCalled(functionName);
         }
       }
     }
 
-    // Next, we try to find the function as a method on the provided
-    // source object, or the current visited object if no source
-    // object is provided
+    // Next, we try to find the function name as a method on the
+    // provided source object, or the current visited object if
+    // no source object is provided
     const lookupType = sourceObjectType || this.context.objectVisitor.getCurrentVisitedObject();
-    const matchingMethodMember = lookupType.getMatchingMethodMember(functionName, argumentTypes);
+    const matchingMethodMember = lookupType.getMatchingMethodMember(functionName, argumentTypeConstraints);
 
     if (matchingMethodMember) {
+      const { name, isStatic, constraint } = matchingMethodMember;
+
       // We need to transform overloaded function call names to that
       // of the matching method member. If a plain, non-overloaded
-      // signature is matched, the name will not actually change.
-      functionCall.name = matchingMethodMember.name;
+      // constraint is matched, the name will not actually change.
+      functionCall.name = name;
 
       if (!sourceObjectType) {
         // Furthermore, we need to prefix the function call name with
         // 'this' or 'this.constructor' if it was called by itself and
-        // ended up matching a current visited object method overload
-        functionCall.name = this.getClassPrefixedMemberName(functionCall.name, matchingMethodMember.isStatic);
-
-        console.log(this.context.flags.shouldAllowInstanceKeywords);
+        // ended up matching a current visited object method or overload
+        functionCall.name = this.getClassPrefixedMemberName(functionCall.name, isStatic);
 
         this.check(
           !this.context.flags.shouldAllowInstanceKeywords
@@ -138,54 +138,62 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
         );
       }
 
-      return matchingMethodMember.type.getReturnType();
+      return constraint.typeDefinition.getReturnTypeConstraint();
     }
 
-    // If we get to this point, the function call signature was incorrect,
+    // If we get to this point, the function call constraint was incorrect,
     // so an error is guaranteed. However, we still need to determine the
     // cause of the error to accurately report it.
     const objectMember = lookupType.getObjectMember(functionName);
 
     if (objectMember) {
-      if (objectMember.type instanceof FunctionType.Definition) {
-        this.reportInvalidFunctionArguments(functionName, argumentTypes);
+      const { typeDefinition } = objectMember.constraint;
 
-        return objectMember.type.getReturnType();
+      if (typeDefinition instanceof FunctionType.Definition) {
+        this.reportInvalidFunctionArguments(functionName, argumentTypeConstraints);
+
+        return typeDefinition.getReturnTypeConstraint();
       } else {
         this.reportNonFunctionCalled(functionName);
 
-        return TypeUtils.createSimpleType(Dynamic);
+        return DynamicTypeConstraint;
       }
     }
 
     this.reportUnknownIdentifier(functionName);
 
-    return TypeUtils.createSimpleType(Dynamic);
+    return DynamicTypeConstraint;
   }
 
-  private getPropertyChainType (propertyChain: JavaSyntax.IJavaPropertyChain): TypeDefinition {
+  private getPropertyChainTypeConstraint (propertyChain: JavaSyntax.IJavaPropertyChain): ITypeConstraint {
     const { token: propertyChainToken, properties } = propertyChain;
 
     this.focusToken(propertyChainToken);
 
     const firstProperty = properties[0];
-    let currentPropertyLookupType: TypeDefinition;
+    let currentLookupTypeConstraint: ITypeConstraint;
     let propertyIndex = 0;
 
-    currentPropertyLookupType = this.getSyntaxNodeType(firstProperty);
+    currentLookupTypeConstraint = this.getSyntaxNodeTypeConstraint(firstProperty);
 
-    if (TypeValidation.isDynamic(currentPropertyLookupType)) {
-      return currentPropertyLookupType;
+    if (TypeValidation.isDynamic(currentLookupTypeConstraint.typeDefinition)) {
+      // We can't verify whether any of the additional properties are
+      // valid or what their type constraints are, so we simply return
+      // a dynamic type constraint
+      return DynamicTypeConstraint;
     }
 
     let incomingProperty = properties[++propertyIndex];
     let currentMember: IObjectMember;
 
     while (incomingProperty) {
-      if (!(currentPropertyLookupType instanceof ObjectType.Definition)) {
-        this.report(`'${ValidatorUtils.getTypeDescription(currentPropertyLookupType)}' is not an object`);
+      const { typeDefinition: lookupTypeDefinition } = currentLookupTypeConstraint;
+      const previousLookupTypeConstraint = currentLookupTypeConstraint;
 
-        return TypeUtils.createSimpleType(Dynamic);
+      if (!(lookupTypeDefinition instanceof ObjectType.Definition)) {
+        this.report(`'${ValidatorUtils.getTypeConstraintDescription(currentLookupTypeConstraint)}' is not an object`);
+
+        return DynamicTypeConstraint;
       }
 
       this.focusToken(incomingProperty.token);
@@ -196,19 +204,19 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
           // is the type of the member it accesses
           const { value } = incomingProperty;
 
-          currentMember = currentPropertyLookupType.getObjectMember(value);
+          currentMember = lookupTypeDefinition.getObjectMember(value);
 
           if (!currentMember) {
-            this.reportUnknownMember(currentPropertyLookupType.name, value);
+            this.reportUnknownMember(lookupTypeDefinition.name, value);
 
-            return TypeUtils.createSimpleType(Dynamic);
-          } else if (currentMember.isStatic) {
+            return DynamicTypeConstraint;
+          } else if (currentMember.isStatic && !previousLookupTypeConstraint.isOriginal) {
             // Static members accessed on instances must be prefixed
             // appropriately to ensure proper value resolution
             incomingProperty.value = `constructor.${value}`;
           }
 
-          currentPropertyLookupType = currentMember.type;
+          currentLookupTypeConstraint = currentMember.constraint;
           break;
         }
         case JavaSyntax.JavaSyntaxNode.FUNCTION_CALL: {
@@ -216,17 +224,17 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
           // property is its return type
           const { name: functionName } = incomingProperty;
 
-          currentMember = currentPropertyLookupType.getObjectMember(functionName);
+          currentMember = lookupTypeDefinition.getObjectMember(functionName);
 
           if (!currentMember) {
-            this.reportUnknownMember(currentPropertyLookupType.name, functionName);
+            this.reportUnknownMember(lookupTypeDefinition.name, functionName);
 
-            return TypeUtils.createSimpleType(Dynamic);
+            return DynamicTypeConstraint;
           }
 
-          currentPropertyLookupType = this.getFunctionCallReturnType(incomingProperty, currentPropertyLookupType);
+          currentLookupTypeConstraint = this.getFunctionCallReturnTypeConstraint(incomingProperty, lookupTypeDefinition);
 
-          if (currentMember.isStatic) {
+          if (currentMember.isStatic && !previousLookupTypeConstraint.isOriginal) {
             // Static function properties accessed on instances must be
             // prefixed appropriately to ensure proper value resolution
             incomingProperty.name = `constructor.${incomingProperty.name}`;
@@ -242,17 +250,17 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
 
           this.focusToken(constructor.token);
 
-          currentMember = currentPropertyLookupType.getObjectMember(constructorName);
+          currentMember = lookupTypeDefinition.getObjectMember(constructorName);
 
           if (!currentMember) {
-            this.reportUnknownMember(currentPropertyLookupType.name, constructorName);
+            this.reportUnknownMember(lookupTypeDefinition.name, constructorName);
 
-            return TypeUtils.createSimpleType(Dynamic);
+            return DynamicTypeConstraint;
           }
 
-          this.validateInstantiation(incomingProperty, currentMember.type);
+          this.validateInstantiation(incomingProperty, currentMember.constraint.typeDefinition);
 
-          currentPropertyLookupType = currentMember.type;
+          currentLookupTypeConstraint = currentMember.constraint;
           break;
         }
         case JavaSyntax.JavaSyntaxNode.STATEMENT: {
@@ -261,26 +269,26 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
           // We can't know what the computed property name will be,
           // and since Java doesn't have index types, we just return
           // a dynamic type as a fallback
-          return TypeUtils.createSimpleType(Dynamic);
+          return DynamicTypeConstraint;
         }
       }
 
-      this.validateMemberAccess(currentMember);
+      this.validateMemberAccess(currentMember, previousLookupTypeConstraint);
 
       incomingProperty = properties[++propertyIndex];
     }
 
     this.lastPropertyIsFinal = currentMember.isConstant;
 
-    return currentPropertyLookupType;
+    return currentLookupTypeConstraint;
   }
 
-  private getSimpleLiteralType (literal: JavaSyntax.IJavaLiteral): ISimpleType {
+  private getSimpleLiteralTypeConstraint (literal: JavaSyntax.IJavaLiteral): ITypeConstraint {
     switch (literal.type) {
       case JavaSyntax.JavaLiteralType.NUMBER:
-        return TypeUtils.createSimpleType(Primitive.NUMBER);
+        return NumberTypeConstraint;
       case JavaSyntax.JavaLiteralType.STRING:
-        return TypeUtils.createSimpleType(Primitive.STRING);
+        return StringTypeConstraint;
       case JavaSyntax.JavaLiteralType.KEYWORD:
         const isBooleanKeyword = (
           literal.value === JavaConstants.Keyword.TRUE ||
@@ -288,28 +296,28 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
         );
 
         // The only valid keyword literals are 'true', 'false', and 'null'
-        return isBooleanKeyword
-          ? TypeUtils.createSimpleType(Primitive.BOOLEAN)
-          : TypeUtils.createSimpleType(Primitive.NULL);
+        return isBooleanKeyword ? BooleanTypeConstraint : NullTypeConstraint;
+      default:
+        return DynamicTypeConstraint;
     }
   }
 
-  private getStatementType (statement: JavaSyntax.IJavaStatement): TypeDefinition {
+  private getStatementTypeConstraint (statement: JavaSyntax.IJavaStatement): ITypeConstraint {
     const { isParenthetical, leftSide, operator } = statement;
 
     if (isParenthetical) {
-      return this.getStatementType(leftSide as JavaSyntax.IJavaStatement);
+      return this.getStatementTypeConstraint(leftSide as JavaSyntax.IJavaStatement);
     } else if (!!leftSide) {
-      return this.getSyntaxNodeType(leftSide);
+      return this.getSyntaxNodeTypeConstraint(leftSide);
     } else if (operator) {
-      return this.inferTypeFromLeftOperation(operator.operation);
+      return this.inferTypeConstraintFromLeftOperation(operator.operation);
     }
   }
 
   /**
    * Returns the type of a Java syntax node.
    */
-  private getSyntaxNodeType (javaSyntaxNode: JavaSyntax.IJavaSyntaxNode): TypeDefinition {
+  private getSyntaxNodeTypeConstraint (javaSyntaxNode: JavaSyntax.IJavaSyntaxNode): ITypeConstraint {
     switch (javaSyntaxNode.node) {
       case JavaSyntax.JavaSyntaxNode.REFERENCE: {
         const reference = javaSyntaxNode as JavaSyntax.IJavaReference;
@@ -320,18 +328,20 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
           case JavaConstants.Keyword.THIS:
             this.validateInstanceKeyword(value);
 
-            return currentVisitedObject;
+            return {
+              typeDefinition: currentVisitedObject
+            };
           case JavaConstants.Keyword.SUPER:
             this.validateInstanceKeyword(value);
 
-            const supertype = currentVisitedObject.getSupertypeByIndex(0);
+            const superTypeConstraint = currentVisitedObject.getSuperTypeConstraintByIndex(0);
 
             this.check(
-              !!supertype,
+              !!superTypeConstraint,
               `'${currentVisitedObject.name}' doesn't have any supertypes`
             );
 
-            return supertype || TypeUtils.createSimpleType(Dynamic);
+            return superTypeConstraint || DynamicTypeConstraint;
           default:
             const referenceMember = currentVisitedObject.getObjectMember(value);
             const isInScope = this.context.scopeManager.isInScope(value);
@@ -340,71 +350,78 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
               reference.value = this.getClassPrefixedMemberName(value, referenceMember.isStatic);
             }
 
-            return this.findTypeDefinitionByName(value);
+            return this.findTypeConstraintByName(value);
         }
       }
       case JavaSyntax.JavaSyntaxNode.VARIABLE_DECLARATION: {
         const { type, name, isFinal } = javaSyntaxNode as JavaSyntax.IJavaVariableDeclaration;
-        const typeDefinition = this.findTypeDefinition(type.namespaceChain);
+        const { typeDefinition } = this.findOriginalTypeConstraint(type.namespaceChain);
+        const constraint: ITypeConstraint = { typeDefinition };
 
         this.context.scopeManager.addToScope(name, {
-          signature: {
-            definition: typeDefinition
-          },
+          constraint,
           isConstant: isFinal
         });
 
-        return typeDefinition;
+        return constraint;
       }
       case JavaSyntax.JavaSyntaxNode.STATEMENT: {
-        return this.getStatementType(javaSyntaxNode as JavaSyntax.IJavaStatement);
+        return this.getStatementTypeConstraint(javaSyntaxNode as JavaSyntax.IJavaStatement);
       }
       case JavaSyntax.JavaSyntaxNode.LITERAL: {
         const literal = javaSyntaxNode as JavaSyntax.IJavaLiteral;
 
         if (literal.type === JavaSyntax.JavaLiteralType.ARRAY) {
           const arrayTypeDefiner = new ArrayType.Definer(this.context.symbolDictionary);
-          const firstElementType = this.getStatementType(literal.value[0] as JavaSyntax.IJavaStatement);
+          const firstElementTypeConstraint = this.getStatementTypeConstraint(literal.value[0] as JavaSyntax.IJavaStatement);
 
-          arrayTypeDefiner.defineElementType(firstElementType);
+          arrayTypeDefiner.defineElementTypeConstraint(firstElementTypeConstraint);
 
-          return arrayTypeDefiner;
+          return {
+            typeDefinition: arrayTypeDefiner
+          };
         } else {
-          return this.getSimpleLiteralType(literal);
+          return this.getSimpleLiteralTypeConstraint(literal);
         }
       }
       case JavaSyntax.JavaSyntaxNode.FUNCTION_CALL: {
-        return this.getFunctionCallReturnType(javaSyntaxNode as JavaSyntax.IJavaFunctionCall);
+        return this.getFunctionCallReturnTypeConstraint(javaSyntaxNode as JavaSyntax.IJavaFunctionCall);
       }
       case JavaSyntax.JavaSyntaxNode.INSTANTIATION: {
         const instantiation = javaSyntaxNode as JavaSyntax.IJavaInstantiation;
         const { constructor } = instantiation;
         const isArrayInstantiation = !!instantiation.arrayAllocationSize || !!instantiation.arrayLiteral;
-        const constructorType = this.findTypeDefinition(constructor.namespaceChain);
 
         this.focusToken(constructor.token);
+
+        const constructorTypeConstraint = this.findOriginalTypeConstraint(constructor.namespaceChain);
 
         if (isArrayInstantiation) {
           const arrayTypeDefiner = new ArrayType.Definer(this.context.symbolDictionary);
 
-          arrayTypeDefiner.defineElementType(constructorType);
+          arrayTypeDefiner.defineElementTypeConstraint(constructorTypeConstraint);
 
-          return arrayTypeDefiner;
+          return {
+            typeDefinition: arrayTypeDefiner
+          };
         } else {
           const isAnonymousObjectInstantiation = !!instantiation.anonymousObjectBody;
+          const { typeDefinition: constructorTypeDefinition } = constructorTypeConstraint;
 
           // TODO: Resolve anonymous object type for anonymous object instantiations
           // TODO: Resolve constrained generic types
-          this.validateInstantiation(instantiation, constructorType);
+          this.validateInstantiation(instantiation, constructorTypeDefinition);
 
-          return constructorType;
+          return {
+            typeDefinition: constructorTypeDefinition
+          };
         }
       }
       case JavaSyntax.JavaSyntaxNode.PROPERTY_CHAIN: {
-        return this.getPropertyChainType(javaSyntaxNode as JavaSyntax.IJavaPropertyChain);
+        return this.getPropertyChainTypeConstraint(javaSyntaxNode as JavaSyntax.IJavaPropertyChain);
       }
       default:
-        return TypeUtils.createSimpleType(Dynamic);
+        return DynamicTypeConstraint;
     }
   }
 
@@ -418,18 +435,20 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
   }
 
   /**
-   * Determines the type of a right side-only statement via its
-   * preceding operator operation.
+   * Determines the type constraint of a right side-only statement
+   * via its preceding operator operation.
    */
-  private inferTypeFromLeftOperation (operation: JavaSyntax.JavaOperation): TypeDefinition {
+  private inferTypeConstraintFromLeftOperation (operation: JavaSyntax.JavaOperation): ITypeConstraint {
     switch (operation) {
       case JavaSyntax.JavaOperation.NEGATE:
       case JavaSyntax.JavaOperation.DOUBLE_NOT:
-        return TypeUtils.createSimpleType(Primitive.BOOLEAN);
+        return BooleanTypeConstraint;
       case JavaSyntax.JavaOperation.INCREMENT:
       case JavaSyntax.JavaOperation.DECREMENT:
       case JavaSyntax.JavaOperation.BITWISE_COMPLEMENT:
-        return TypeUtils.createSimpleType(Primitive.NUMBER);
+        return NumberTypeConstraint;
+      default:
+        return DynamicTypeConstraint;
     }
   }
 
@@ -449,10 +468,10 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
   }
 
   private validateAsNonReturnStatement (): void {
-    const statementType = this.getStatementType(this.syntaxNode);
+    const statementTypeConstraint = this.getStatementTypeConstraint(this.syntaxNode);
     const { operator } = this.syntaxNode;
 
-    this.checkIfTypeMatchesExpected(statementType);
+    this.checkIfTypeConstraintMatchesExpected(statementTypeConstraint);
 
     if (this.hasRightSide()) {
       const { rightSide } = this.syntaxNode;
@@ -460,11 +479,11 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
       const expectation = isAssignment ? TypeExpectation.ASSIGNMENT : TypeExpectation.OPERAND;
 
       if (isAssignment) {
-        this.validateOwnAssignment();
+        this.validateLeftSideOfAssignment();
       }
 
       this.expectType({
-        type: statementType,
+        constraint: statementTypeConstraint,
         expectation
       });
 
@@ -487,7 +506,7 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
 
     const returnInstruction = this.syntaxNode.leftSide as JavaSyntax.IJavaInstruction;
     const { value: returnValue } = returnInstruction;
-    const lastExpectedReturnType = this.getLastExpectedTypeFor(TypeExpectation.RETURN);
+    const lastExpectedReturnTypeConstraint = this.getLastExpectedTypeConstraintFor(TypeExpectation.RETURN);
     const isMissingRequiredReturnValue = !returnValue && mustReturnValue;
     const isConstructorReturn = shouldAllowReturn && !shouldAllowReturnValue;
     const isDisallowedConstructorReturnValue = isConstructorReturn && returnValue;
@@ -495,7 +514,7 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
     returnInstruction.isConstructorReturn = isConstructorReturn;
 
     if (isMissingRequiredReturnValue) {
-      const returnTypeDescription = ValidatorUtils.getTypeDescription(lastExpectedReturnType);
+      const returnTypeDescription = ValidatorUtils.getTypeConstraintDescription(lastExpectedReturnTypeConstraint);
 
       this.report(`Expected a '${returnTypeDescription}' return value`);
 
@@ -514,7 +533,7 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
       });
 
       this.expectType({
-        type: lastExpectedReturnType,
+        constraint: lastExpectedReturnTypeConstraint,
         expectation: TypeExpectation.RETURN
       });
 
@@ -541,7 +560,7 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
   private validateInstantiation (instantiation: JavaSyntax.IJavaInstantiation, constructorType: TypeDefinition): void {
     const { constructor, arguments: args } = instantiation;
     const constructorName = constructor.namespaceChain.join('.');
-    const constructorArgumentTypes = args.map(argument => this.getStatementType(argument));
+    const constructorArgumentTypeConstraints = args.map(argument => this.getStatementTypeConstraint(argument));
 
     if (constructorType instanceof ObjectType.Definition) {
       if (!constructorType.isConstructable) {
@@ -549,10 +568,10 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
       }
 
       if (constructorType.hasConstructors()) {
-        const constructorOverloadIndex = constructorType.getMatchingConstructorIndex(constructorArgumentTypes);
+        const constructorOverloadIndex = constructorType.getMatchingConstructorIndex(constructorArgumentTypeConstraints);
 
         if (constructorOverloadIndex === -1) {
-          const constructorArgumentDescriptions = constructorArgumentTypes.map(type => `'${ValidatorUtils.getTypeDescription(type)}'`);
+          const constructorArgumentDescriptions = constructorArgumentTypeConstraints.map(constraint => `'${ValidatorUtils.getTypeConstraintDescription(constraint)}'`);
 
           this.report(`Invalid constructor arguments ${constructorArgumentDescriptions.join(', ')}`);
         }
@@ -564,27 +583,42 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
     }
   }
 
-  private validateMemberAccess (member: IObjectMember): void {
+  private validateMemberAccess (member: IObjectMember, sourceTypeConstraint: ITypeConstraint): void {
     const { objectVisitor } = this.context;
-    const { name, originalObject } = member;
+    const { name, parent: parentTypeConstraint } = member;
+    const { typeDefinition: parentTypeDefinition } = parentTypeConstraint;
+
+    if (sourceTypeConstraint.isOriginal) {
+      const { typeDefinition } = sourceTypeConstraint as ObjectType.Constraint;
+
+      this.check(
+        member.isStatic,
+        `Instance member '${typeDefinition.name}.${member.name}' cannot be accessed on static class '${typeDefinition.name}'`
+      );
+    }
 
     switch (member.visibility) {
       case ObjectMemberVisibility.SELF:
         this.check(
-          objectVisitor.isInsideObject(originalObject),
-          `Private member '${name}' is only visible inside '${originalObject.name}'`
+          objectVisitor.isInsideObject(parentTypeDefinition),
+          `Private member '${name}' is only visible inside '${parentTypeDefinition.name}'`
         );
         break;
       case ObjectMemberVisibility.DERIVED:
         this.check(
-          objectVisitor.isInsideObject(originalObject) || objectVisitor.isInsideSubtypeOf(originalObject),
-          `Protected member '${name}' is only visible inside '${originalObject.name}' and its subclasses`
+          objectVisitor.isInsideObject(parentTypeDefinition) || objectVisitor.isInsideSubtypeOf(parentTypeDefinition),
+          `Protected member '${name}' is only visible inside '${parentTypeDefinition.name}' and its subclasses`
         );
         break;
     }
   }
 
-  private validateOwnAssignment (): void {
+  /**
+   * Validates the current statement as the left side of an
+   * assignment operation. Only a small range of statements
+   * can actually be assigned; otherwise we report an error.
+   */
+  private validateLeftSideOfAssignment (): void {
     const { leftSide, operator } = this.syntaxNode;
 
     this.focusToken(operator.token);
@@ -601,7 +635,7 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
           `Cannot reassign final value '${value}'`
         );
 
-        break;
+        return;
       case JavaSyntax.JavaSyntaxNode.PROPERTY_CHAIN:
         const { properties } = leftSide as JavaSyntax.IJavaPropertyChain;
         const lastProperty = properties[properties.length - 1];
@@ -611,13 +645,14 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
             !this.lastPropertyIsFinal,
             `Cannot reassign final member '${lastProperty}'`
           );
-        } else {
-          this.report('Invalid assignment');
+
+          return;
         }
 
         break;
       default:
-        this.report('Invalid assignment');
     }
+
+    this.report('Invalid assignment');
   }
 }

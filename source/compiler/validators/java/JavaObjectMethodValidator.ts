@@ -3,13 +3,13 @@ import JavaBlockValidator from './JavaBlockValidator';
 import { Implements } from 'trampoline-framework';
 import { JavaConstants } from '../../../parser/java/java-constants';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
-import { ObjectCategory, TypeDefinition, Void } from '../../symbol-resolvers/common/types';
+import { ObjectCategory, Void, ITypeConstraint } from '../../symbol-resolvers/common/types';
 import { TypeExpectation } from '../common/types';
 import { ValidatorUtils } from '../common/validator-utils';
 import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
 
 export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyntax.IJavaObjectMethod> {
-  private ownReturnTypeDefinition: TypeDefinition;
+  private ownReturnTypeConstraint: ITypeConstraint;
 
   @Implements public validate (): void {
     const { type, name, isAbstract, isConstructor, block } = this.syntaxNode;
@@ -19,7 +19,7 @@ export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyn
 
     this.focusToken(type.token);
 
-    this.ownReturnTypeDefinition = this.getReturnTypeDefinition();
+    this.ownReturnTypeConstraint = this.getReturnTypeConstraint();
 
     if (isConstructor) {
       this.check(
@@ -59,14 +59,18 @@ export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyn
     }
   }
 
-  private getReturnTypeDefinition (): TypeDefinition {
+  private getReturnTypeConstraint (): ITypeConstraint {
     const { type } = this.syntaxNode;
     const { symbolDictionary } = this.context;
-    const returnType = this.findTypeDefinition(type.namespaceChain);
+    const returnTypeConstraint = this.findOriginalTypeConstraint(type.namespaceChain);
 
-    return type.arrayDimensions > 0
-      ? TypeUtils.createArrayType(symbolDictionary, returnType, type.arrayDimensions)
-      : returnType;
+    if (type.arrayDimensions > 0) {
+      return TypeUtils.createArrayTypeConstraint(symbolDictionary, returnTypeConstraint, type.arrayDimensions);
+    } else {
+      return {
+        typeDefinition: returnTypeConstraint.typeDefinition
+      };
+    }
   }
 
   private validateMethodBody (): void {
@@ -76,25 +80,23 @@ export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyn
 
     this.setFlags({
       shouldAllowReturnValue: !isConstructor,
-      mustReturnValue: !isConstructor && !ValidatorUtils.isSimpleTypeOf(Void, this.ownReturnTypeDefinition),
+      mustReturnValue: !isConstructor && !ValidatorUtils.isSimpleTypeOf(Void, this.ownReturnTypeConstraint.typeDefinition),
       shouldAllowReturn: true,
       shouldAllowInstanceKeywords: !isStatic
     });
 
     this.expectType({
-      type: this.ownReturnTypeDefinition,
+      constraint: this.ownReturnTypeConstraint,
       expectation: TypeExpectation.RETURN
     });
 
     scopeManager.enterScope();
 
     parameters.forEach(({ type: parameterType, name: parameterName, isFinal }) => {
-      const typeDefinition = this.findTypeDefinition(parameterType.namespaceChain);
+      const { typeDefinition } = this.findOriginalTypeConstraint(parameterType.namespaceChain);
 
       scopeManager.addToScope(parameterName, {
-        signature: {
-          definition: typeDefinition
-        },
+        constraint: { typeDefinition },
         isConstant: isFinal
       });
     });

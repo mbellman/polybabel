@@ -13,8 +13,9 @@ export default class JavaInterfaceValidator extends AbstractValidator<JavaSyntax
   @Implements public validate (): void {
     const { name, constructors } = this.syntaxNode;
     const { objectVisitor } = this.context;
+    const { typeDefinition } = this.findTypeConstraintByName(name) as ObjectType.Constraint;
 
-    this.ownTypeDefinition = this.findTypeDefinitionByName(name) as ObjectType.Definition;
+    this.ownTypeDefinition = typeDefinition;
 
     objectVisitor.visitObject(this.ownTypeDefinition);
 

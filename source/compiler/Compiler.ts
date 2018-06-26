@@ -30,9 +30,9 @@ export default class Compiler {
 
     this.syntaxTreeMap[filename] = syntaxTree;
 
-    const { SymbolResolver, NativeTypeMap } = LanguageSpecification[syntaxTree.language];
+    const { SymbolResolver, TypeConstraintMap } = LanguageSpecification[syntaxTree.language];
 
-    new SymbolResolver(this.removeExtension(filename), this.symbolDictionary, NativeTypeMap).resolve(syntaxTree);
+    new SymbolResolver(this.removeExtension(filename), this.symbolDictionary, TypeConstraintMap).resolve(syntaxTree);
   }
 
   public addError (filename: string, reportedError: IValidatorError): void {
@@ -46,8 +46,8 @@ export default class Compiler {
       return;
     }
 
-    const { Validator, Translator, NativeTypeMap } = LanguageSpecification[syntaxTree.language];
-    const validatorContext = new ValidatorContext(this.removeExtension(filename), this.symbolDictionary, NativeTypeMap);
+    const { Validator, Translator, TypeConstraintMap } = LanguageSpecification[syntaxTree.language];
+    const validatorContext = new ValidatorContext(this.removeExtension(filename), this.symbolDictionary, TypeConstraintMap);
     const validator = new Validator(validatorContext, syntaxTree);
 
     validator.validate();
