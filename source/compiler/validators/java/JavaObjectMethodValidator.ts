@@ -19,7 +19,7 @@ export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyn
 
     this.focusToken(type.token);
 
-    this.ownReturnTypeConstraint = this.getReturnTypeConstraint();
+    this.ownReturnTypeConstraint = this.createTypeConstraint(type.namespaceChain, type.arrayDimensions);
 
     if (isConstructor) {
       this.check(
@@ -59,18 +59,6 @@ export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyn
     }
   }
 
-  private getReturnTypeConstraint (): ITypeConstraint {
-    const { type } = this.syntaxNode;
-    const { symbolDictionary } = this.context;
-    const { typeDefinition } = this.findOriginalTypeConstraint(type.namespaceChain);
-
-    if (type.arrayDimensions > 0) {
-      return TypeUtils.createArrayTypeConstraint(symbolDictionary, { typeDefinition }, type.arrayDimensions);
-    } else {
-      return { typeDefinition };
-    }
-  }
-
   private validateMethodBody (): void {
     const { isConstructor, isStatic, parameters, block } = this.syntaxNode;
     const { scopeManager } = this.context;
@@ -91,10 +79,10 @@ export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyn
     scopeManager.enterScope();
 
     parameters.forEach(({ type: parameterType, name: parameterName, isFinal }) => {
-      const { typeDefinition } = this.findOriginalTypeConstraint(parameterType.namespaceChain);
+      const parameterTypeConstraint = this.createTypeConstraint(parameterType.namespaceChain, parameterType.arrayDimensions);
 
       scopeManager.addToScope(parameterName, {
-        constraint: { typeDefinition },
+        constraint: parameterTypeConstraint,
         isConstant: isFinal
       });
     });

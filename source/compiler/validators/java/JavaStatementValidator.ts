@@ -1,6 +1,6 @@
 import AbstractValidator from '../common/AbstractValidator';
 import { ArrayType } from '../../symbol-resolvers/common/array-type';
-import { BooleanTypeConstraint, DynamicTypeConstraint, NullTypeConstraint, NumberTypeConstraint, StringTypeConstraint } from '../../native-type-constraints/common';
+import { BooleanTypeConstraint, DynamicTypeConstraint, NullTypeConstraint, NumberTypeConstraint, StringTypeConstraint, VoidTypeConstraint } from '../../native-type-constraints/common';
 import { FunctionType } from '../../symbol-resolvers/common/function-type';
 import { Implements } from 'trampoline-framework';
 import { IObjectMember, ITypeConstraint, ObjectMemberVisibility, TypeDefinition } from '../../symbol-resolvers/common/types';
@@ -312,6 +312,12 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
   }
 
   private getStatementTypeConstraint (statement: JavaSyntax.IJavaStatement): ITypeConstraint {
+    if (!statement) {
+      return {
+        typeDefinition: DynamicTypeConstraint.typeDefinition
+      };
+    }
+
     const { isParenthetical, leftSide, operator } = statement;
 
     if (isParenthetical) {
@@ -364,15 +370,14 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
       }
       case JavaSyntax.JavaSyntaxNode.VARIABLE_DECLARATION: {
         const { type, name, isFinal } = javaSyntaxNode as JavaSyntax.IJavaVariableDeclaration;
-        const { typeDefinition } = this.findOriginalTypeConstraint(type.namespaceChain);
-        const constraint: ITypeConstraint = { typeDefinition };
+        const variableTypeConstraint = this.createTypeConstraint(type.namespaceChain, type.arrayDimensions);
 
         this.context.scopeManager.addToScope(name, {
-          constraint,
+          constraint: variableTypeConstraint,
           isConstant: isFinal
         });
 
-        return constraint;
+        return variableTypeConstraint;
       }
       case JavaSyntax.JavaSyntaxNode.STATEMENT: {
         return this.getStatementTypeConstraint(javaSyntaxNode as JavaSyntax.IJavaStatement);
@@ -584,7 +589,7 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
         this.reportNonConstructableInstantiation(constructorName);
       }
 
-      if (constructorType.hasConstructors()) {
+      if (constructorType.hasConstructors() || args.length > 0) {
         const constructorOverloadIndex = constructorType.getMatchingConstructorIndex(constructorArgumentTypeConstraints);
 
         if (constructorOverloadIndex === -1) {

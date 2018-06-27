@@ -1,14 +1,14 @@
 import AbstractValidator from '../common/AbstractValidator';
+import JavaStatementValidator from './JavaStatementValidator';
 import { Implements } from 'trampoline-framework';
+import { ITypeConstraint } from '../../symbol-resolvers/common/types';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
 import { TypeExpectation } from '../common/types';
-import JavaStatementValidator from './JavaStatementValidator';
-import { TypeDefinition, ITypeConstraint } from '../../symbol-resolvers/common/types';
 import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
 
 export default class JavaObjectFieldValidator extends AbstractValidator<JavaSyntax.IJavaObjectField> {
   @Implements public validate (): void {
-    const { value, isAbstract, isStatic } = this.syntaxNode;
+    const { type, value, isAbstract, isStatic } = this.syntaxNode;
     const parentObjectTypeDefinition = this.context.objectVisitor.getCurrentVisitedObject();
 
     if (isAbstract) {
@@ -30,22 +30,12 @@ export default class JavaObjectFieldValidator extends AbstractValidator<JavaSynt
       });
 
       this.expectType({
-        constraint: this.getFieldTypeConstraint(),
+        constraint: this.createTypeConstraint(type.namespaceChain, type.arrayDimensions),
         expectation: TypeExpectation.ASSIGNMENT
       });
 
       this.validateNodeWith(JavaStatementValidator, value);
       this.resetExpectedType();
     }
-  }
-
-  private getFieldTypeConstraint (): ITypeConstraint {
-    const { type } = this.syntaxNode;
-    const { symbolDictionary } = this.context;
-    const typeConstraint = this.findOriginalTypeConstraint(type.namespaceChain);
-
-    return type.arrayDimensions > 0
-      ? TypeUtils.createArrayTypeConstraint(symbolDictionary, typeConstraint, type.arrayDimensions)
-      : typeConstraint;
   }
 }

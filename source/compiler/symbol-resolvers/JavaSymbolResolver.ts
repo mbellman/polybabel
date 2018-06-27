@@ -1,7 +1,7 @@
 import AbstractSymbolResolver from './common/AbstractSymbolResolver';
 import { FunctionType } from './common/function-type';
 import { Implements } from 'trampoline-framework';
-import { IObjectMember, ISymbol, ObjectCategory, ObjectMemberVisibility, TypeDefinition, ITypeConstraint } from './common/types';
+import { IObjectMember, ISymbol, ObjectCategory, ObjectMemberVisibility, ITypeConstraint } from './common/types';
 import { JavaSyntax } from '../../parser/java/java-syntax';
 import { ObjectType } from './common/object-type';
 import { TypeUtils } from './common/type-utils';
@@ -53,7 +53,10 @@ export default class JavaSymbolResolver extends AbstractSymbolResolver {
   }
 
   /**
-   * @todo @description
+   * Creates a native or otherwise tentative type constraint from
+   * a Java type syntax node, used to determine type constraints
+   * of fields, methods, function parameters, etc. while building
+   * out symbol type definitions.
    */
   private javaTypeToConstraint (type: JavaSyntax.IJavaType): ITypeConstraint {
     const { namespaceChain, arrayDimensions } = type;

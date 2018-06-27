@@ -107,15 +107,15 @@ export default abstract class AbstractSymbolResolver {
    * @see createSymbolIdentifier()
    * @see SymbolDictionary
    */
-  protected getPossibleSymbolIdentifiers (symbolNameReference: string): SymbolIdentifier[] {
-    const outerName = symbolNameReference.split('.', 1).shift();
+  protected getPossibleSymbolIdentifiers (symbolName: string): SymbolIdentifier[] {
+    const outerName = symbolName.split('.', 1).shift();
     const isImportedSymbol = outerName in this.importToSourceFileMap;
 
     if (isImportedSymbol) {
       // If the symbol name is the same as, or has its outer name from
       // an import, the symbol identifier is that of the corresponding
       // symbol resolved within its import source file
-      return [ this.importToSourceFileMap[outerName] + symbolNameReference ];
+      return [ this.importToSourceFileMap[outerName] + symbolName ];
     } else {
       return this.namespaceStack
         .map((namespace, index) => {
@@ -127,11 +127,11 @@ export default abstract class AbstractSymbolResolver {
             .slice(0, this.namespaceStack.length - index)
             .join('.');
 
-          return `${this.file}${possibleEnclosingNamespace}.${symbolNameReference}`;
+          return `${this.file}${possibleEnclosingNamespace}.${symbolName}`;
         })
         // As a last resort, we consider that the symbol could be
         // somewhere within the file scope
-        .concat(this.file + symbolNameReference);
+        .concat(this.file + symbolName);
     }
   }
 

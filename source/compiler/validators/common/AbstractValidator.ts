@@ -71,6 +71,17 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     );
   }
 
+  protected createTypeConstraint (namespaceChain: string[], arrayDimensions: number): ITypeConstraint {
+    const { symbolDictionary } = this.context;
+    const { typeDefinition } = this.findOriginalTypeConstraint(namespaceChain);
+
+    if (arrayDimensions > 0) {
+      return TypeUtils.createArrayTypeConstraint(symbolDictionary, { typeDefinition }, arrayDimensions);
+    } else {
+      return { typeDefinition };
+    }
+  }
+
   protected enterNamespace (name: string): void {
     this.context.namespaceStack.push(name);
   }
