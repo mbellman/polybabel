@@ -31,7 +31,7 @@ import { ValidatorUtils } from '../common/validator-utils';
  * statements, we need to ensure that the statement type matches that
  * expected.
  */
-export default class JavaStatementValidator extends AbstractValidator<JavaSyntax.IJavaStatement> {
+export default class JavaExpressionStatementValidator extends AbstractValidator<JavaSyntax.IJavaStatement> {
   /**
    * Determines whether the last member on a property chain is final.
    * Assignment validation depends on characteristics of the statement's
@@ -435,6 +435,7 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
         return this.getPropertyChainTypeConstraint(javaSyntaxNode as JavaSyntax.IJavaPropertyChain);
       }
       default:
+        this.report(`Invalid statement`);
         return DynamicTypeConstraint;
     }
   }
@@ -509,7 +510,7 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
         expectation
       });
 
-      this.validateNodeWith(JavaStatementValidator, rightSide);
+      this.validateNodeWith(JavaExpressionStatementValidator, rightSide);
       this.resetExpectedType();
     } else if (operator) {
       // TODO: Validate that statements with ++ and --
@@ -559,7 +560,7 @@ export default class JavaStatementValidator extends AbstractValidator<JavaSyntax
         expectation: TypeExpectation.RETURN
       });
 
-      this.validateNodeWith(JavaStatementValidator, returnValue);
+      this.validateNodeWith(JavaExpressionStatementValidator, returnValue);
       this.resetExpectedType();
 
       this.setFlags({

@@ -1,7 +1,9 @@
+import AbstractValidator from '../common/AbstractValidator';
+import JavaExpressionStatementValidator from './JavaExpressionStatementValidator';
+import JavaForLoopValidator from './JavaForLoopValidator';
+import JavaIfElseValidator from './JavaIfElseValidator';
 import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
-import AbstractValidator from '../common/AbstractValidator';
-import JavaStatementValidator from './JavaStatementValidator';
 
 export default class JavaBlockValidator extends AbstractValidator<JavaSyntax.IJavaBlock> {
   @Implements public validate (): void {
@@ -15,11 +17,27 @@ export default class JavaBlockValidator extends AbstractValidator<JavaSyntax.IJa
     });
 
     nodes.forEach(statementNode => {
+      const { leftSide } = statementNode;
+
       this.setFlags({
         shouldAllowAnyType: true
       });
 
-      this.validateNodeWith(JavaStatementValidator, statementNode);
+      if (leftSide) {
+        switch (leftSide.node) {
+          case JavaSyntax.JavaSyntaxNode.IF_ELSE:
+            this.validateNodeWith(JavaIfElseValidator, leftSide as JavaSyntax.IJavaIfElse);
+            break;
+          case JavaSyntax.JavaSyntaxNode.FOR_LOOP:
+            this.validateNodeWith(JavaForLoopValidator, leftSide as JavaSyntax.IJavaForLoop);
+            break;
+          default:
+            this.validateNodeWith(JavaExpressionStatementValidator, statementNode);
+            break;
+        }
+      } else {
+        this.validateNodeWith(JavaExpressionStatementValidator, statementNode);
+      }
     });
 
     this.setFlags({

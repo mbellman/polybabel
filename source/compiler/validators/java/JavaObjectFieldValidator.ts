@@ -1,10 +1,8 @@
 import AbstractValidator from '../common/AbstractValidator';
-import JavaStatementValidator from './JavaStatementValidator';
+import JavaExpressionStatementValidator from './JavaExpressionStatementValidator';
 import { Implements } from 'trampoline-framework';
-import { ITypeConstraint } from '../../symbol-resolvers/common/types';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
 import { TypeExpectation } from '../common/types';
-import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
 
 export default class JavaObjectFieldValidator extends AbstractValidator<JavaSyntax.IJavaObjectField> {
   @Implements public validate (): void {
@@ -34,7 +32,7 @@ export default class JavaObjectFieldValidator extends AbstractValidator<JavaSynt
         expectation: TypeExpectation.ASSIGNMENT
       });
 
-      this.validateNodeWith(JavaStatementValidator, value);
+      this.validateNodeWith(JavaExpressionStatementValidator, value);
       this.resetExpectedType();
     }
   }
