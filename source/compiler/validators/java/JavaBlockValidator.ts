@@ -2,6 +2,7 @@ import AbstractValidator from '../common/AbstractValidator';
 import JavaExpressionStatementValidator from './JavaExpressionStatementValidator';
 import JavaForLoopValidator from './JavaForLoopValidator';
 import JavaIfElseValidator from './JavaIfElseValidator';
+import JavaWhileLoopValidator from './JavaWhileLoopValidator';
 import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
 
@@ -30,6 +31,9 @@ export default class JavaBlockValidator extends AbstractValidator<JavaSyntax.IJa
             break;
           case JavaSyntax.JavaSyntaxNode.FOR_LOOP:
             this.validateNodeWith(JavaForLoopValidator, leftSide as JavaSyntax.IJavaForLoop);
+            break;
+          case JavaSyntax.JavaSyntaxNode.WHILE_LOOP:
+            this.validateNodeWith(JavaWhileLoopValidator, leftSide as JavaSyntax.IJavaWhileLoop);
             break;
           default:
             this.validateNodeWith(JavaExpressionStatementValidator, statementNode);

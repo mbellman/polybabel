@@ -1,12 +1,10 @@
 import AbstractValidator from '../common/AbstractValidator';
 import JavaBlockValidator from './JavaBlockValidator';
 import JavaExpressionStatementValidator from './JavaExpressionStatementValidator';
-import { DynamicTypeConstraint } from '../../native-type-constraints/common';
 import { Implements } from 'trampoline-framework';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
 import { TypeExpectation } from '../common/types';
-import { ArrayType } from '../../symbol-resolvers/common/array-type';
-import { ITypeConstraint } from '../../symbol-resolvers/common/types';
+import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
 
 export default class JavaForLoopValidator extends AbstractValidator<JavaSyntax.IJavaForLoop> {
   @Implements public validate (): void {
@@ -15,9 +13,12 @@ export default class JavaForLoopValidator extends AbstractValidator<JavaSyntax.I
     if (isEnhanced) {
       this.validateNodeWith(JavaExpressionStatementValidator, statements[0]);
 
+      const { symbolDictionary, lastCheckedTypeConstraint } = this.context;
+      const collectionTypeConstraint = TypeUtils.createArrayTypeConstraint(symbolDictionary, lastCheckedTypeConstraint, 1);
+
       this.expectType({
         expectation: TypeExpectation.STATEMENT,
-        constraint: this.creatArrayTypeConstraint(this.context.lastCheckedTypeConstraint)
+        constraint: collectionTypeConstraint
       });
 
       this.validateNodeWith(JavaExpressionStatementValidator, statements[1]);
@@ -34,15 +35,5 @@ export default class JavaForLoopValidator extends AbstractValidator<JavaSyntax.I
     }
 
     this.validateNodeWith(JavaBlockValidator, block);
-  }
-
-  private creatArrayTypeConstraint ({ typeDefinition }: ITypeConstraint): ITypeConstraint {
-    const arrayTypeConstraint = new ArrayType.Definer(this.context.symbolDictionary);
-
-    arrayTypeConstraint.defineElementTypeConstraint({ typeDefinition });
-
-    return {
-      typeDefinition: arrayTypeConstraint
-    };
   }
 }

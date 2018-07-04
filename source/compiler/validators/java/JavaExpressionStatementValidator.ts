@@ -320,12 +320,18 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
 
     const { isParenthetical, leftSide, operator } = statement;
 
-    if (isParenthetical) {
-      return this.getStatementTypeConstraint(leftSide as JavaSyntax.IJavaStatement);
-    } else if (!!leftSide) {
-      return this.getSyntaxNodeTypeConstraint(leftSide);
+    if (!!leftSide) {
+      if (isParenthetical && leftSide.node === JavaSyntax.JavaSyntaxNode.STATEMENT) {
+        return this.getStatementTypeConstraint(leftSide as JavaSyntax.IJavaStatement);
+      } else {
+        return this.getSyntaxNodeTypeConstraint(leftSide);
+      }
     } else if (operator) {
       return this.inferTypeConstraintFromLeftOperation(operator.operation);
+    } else {
+      return {
+        typeDefinition: DynamicTypeConstraint.typeDefinition
+      };
     }
   }
 
@@ -505,7 +511,10 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
     if (this.hasRightSide()) {
       const { rightSide } = this.syntaxNode;
       const isAssignment = operator.operation === JavaSyntax.JavaOperation.ASSIGN;
-      const expectation = isAssignment ? TypeExpectation.ASSIGNMENT : TypeExpectation.OPERAND;
+
+      const expectation = isAssignment
+        ? TypeExpectation.ASSIGNMENT
+        : TypeExpectation.OPERAND;
 
       if (isAssignment) {
         this.validateLeftSideOfAssignment();
