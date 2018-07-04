@@ -434,6 +434,11 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
       case JavaSyntax.JavaSyntaxNode.PROPERTY_CHAIN: {
         return this.getPropertyChainTypeConstraint(javaSyntaxNode as JavaSyntax.IJavaPropertyChain);
       }
+      case JavaSyntax.JavaSyntaxNode.INSTRUCTION: {
+        return {
+          typeDefinition: DynamicTypeConstraint.typeDefinition
+        };
+      }
       default:
         this.report(`Invalid statement`);
         return DynamicTypeConstraint;

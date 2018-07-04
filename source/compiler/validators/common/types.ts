@@ -24,13 +24,14 @@ export interface IValidatorError extends IParserError { }
  * statements/expressions altogether. For example, assignment
  * and operand type expectations constrain the set of valid
  * statements/expressions to those which a language allows
- * to be assigned or operated on.
+ * to be assigned or operated on (e.g. only expressions).
  */
 export const enum TypeExpectation {
   RETURN = 'return type',
   ASSIGNMENT = 'assignment type',
   OPERAND = 'operand type',
-  ARGUMENT = 'argument type'
+  ARGUMENT = 'argument type',
+  STATEMENT = 'statement type'
 }
 
 /**

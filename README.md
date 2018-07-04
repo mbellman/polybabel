@@ -23,7 +23,7 @@ Polybabel's emphasis on idiomatic programming means the standard libraries and A
 #### Supported features:
 * Parsing ✔
 * Translation ✔
-* Validation - 35%?
+* Validation - 45%?
 * * Package validation ✔
 * * Import validation ✔
 * * Class extension validation - 75%?
@@ -36,7 +36,7 @@ Polybabel's emphasis on idiomatic programming means the standard libraries and A
 * * Statement type verification - 70%?
 * * Expression statement validation - 80%
 * * Access modifier validation ✔
-* * Control structure validation - 0%
+* * Control structure validation - 10%
 #### Remaining items:
 * Parsing
 * * Comma-separated statement support
