@@ -52,6 +52,8 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
   }
 
   protected checkIfTypeConstraintMatchesExpected (constraint: ITypeConstraint): void {
+    this.context.lastCheckedTypeConstraint = constraint;
+
     if (this.context.flags.shouldAllowAnyType) {
       this.setFlags({
         shouldAllowAnyType: false

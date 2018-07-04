@@ -20,12 +20,17 @@ export default class JavaForLoopTranslator extends AbstractTranslator<JavaSyntax
     const { name: iteratorValueName } = statements[0].leftSide as JavaSyntax.IJavaVariableDeclaration;
     const collection = statements[1];
 
-    this.emitNodeWith(JavaStatementTranslator, collection)
-      .emit(`.forEach(function (${iteratorValueName}) {`)
+    this.emit('var __collection = ')
+      .emitNodeWith(JavaStatementTranslator, collection)
+      .emit(';')
+      .newline()
+      .emit('for (var i = 0; i < __collection.length; i++) {')
       .enterBlock()
+      .emit(`var ${iteratorValueName} = __collection[i];`)
+      .newline()
       .emitNodeWith(JavaBlockTranslator, block)
       .exitBlock()
-      .emit('});');
+      .emit('}');
   }
 
   private emitPlainForLoop (): void {

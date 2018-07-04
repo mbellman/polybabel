@@ -440,7 +440,8 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
         };
       }
       default:
-        this.report(`Invalid statement`);
+        this.report(`Invalid expression`);
+
         return DynamicTypeConstraint;
     }
   }

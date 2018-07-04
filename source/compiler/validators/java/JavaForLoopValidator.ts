@@ -13,19 +13,21 @@ export default class JavaForLoopValidator extends AbstractValidator<JavaSyntax.I
     const { statements, block, isEnhanced } = this.syntaxNode;
 
     if (isEnhanced) {
-      // TODO: Validate that the second statement in an enhanced for loop
-      // is an array type with an element type matching that of the first
       this.validateNodeWith(JavaExpressionStatementValidator, statements[0]);
 
       this.expectType({
         expectation: TypeExpectation.STATEMENT,
-        constraint: this.createDynamicArrayTypeConstraint()
+        constraint: this.creatArrayTypeConstraint(this.context.lastCheckedTypeConstraint)
       });
 
       this.validateNodeWith(JavaExpressionStatementValidator, statements[1]);
     } else {
       statements.forEach(statement => {
         if (statement) {
+          this.setFlags({
+            shouldAllowAnyType: true
+          });
+
           this.validateNodeWith(JavaExpressionStatementValidator, statement);
         }
       });
@@ -34,12 +36,10 @@ export default class JavaForLoopValidator extends AbstractValidator<JavaSyntax.I
     this.validateNodeWith(JavaBlockValidator, block);
   }
 
-  private createDynamicArrayTypeConstraint (): ITypeConstraint {
+  private creatArrayTypeConstraint ({ typeDefinition }: ITypeConstraint): ITypeConstraint {
     const arrayTypeConstraint = new ArrayType.Definer(this.context.symbolDictionary);
 
-    arrayTypeConstraint.defineElementTypeConstraint({
-      typeDefinition: DynamicTypeConstraint.typeDefinition
-    });
+    arrayTypeConstraint.defineElementTypeConstraint({ typeDefinition });
 
     return {
       typeDefinition: arrayTypeConstraint

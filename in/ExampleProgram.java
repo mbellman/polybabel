@@ -8,6 +8,12 @@ public final class ExampleProgram {
     console.log('This is an example.');
 
     IExampleInterface exampleInterface = ExampleProgram.getExample();
+
+    String[] names;
+
+    for (String name : names) {
+
+    }
   }
 
   public static IExampleInterface getExample () {

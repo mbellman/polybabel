@@ -15,6 +15,7 @@ export default class ValidatorContext {
   public errors: IValidatorError[] = [];
   public expectedTypeConstraintStack: IExpectedTypeConstraint[] = [];
   public flags: Partial<IValidatorContextFlags> = {};
+  public lastCheckedTypeConstraint: ITypeConstraint;
   public namespaceStack: string[] = [];
   public nativeTypeConstraintMap: IHashMap<ITypeConstraint>;
   public objectVisitor: ObjectVisitor = new ObjectVisitor();
