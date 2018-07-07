@@ -1,20 +1,20 @@
-import { BooleanTypeConstraint, NumberTypeConstraint, ObjectTypeConstraint, StringTypeConstraint, VoidTypeConstraint } from './common';
+import { GlobalTypeConstraintMap, VoidTypeConstraint } from './global';
 import { IHashMap } from 'trampoline-framework';
 import { ITypeConstraint } from '../symbol-resolvers/common/types';
 import { JavaConstants } from '../../parser/java/java-constants';
 
 export const JavaTypeConstraintMap: IHashMap<ITypeConstraint> = {
-  [JavaConstants.Type.STRING]: StringTypeConstraint,
-  [JavaConstants.Type.CHAR]: StringTypeConstraint,
-  [JavaConstants.Type.INT]: NumberTypeConstraint,
-  [JavaConstants.Type.INTEGER]: NumberTypeConstraint,
-  [JavaConstants.Type.NUMBER]: NumberTypeConstraint,
-  [JavaConstants.Type.FLOAT]: NumberTypeConstraint,
-  [JavaConstants.Type.DOUBLE]: NumberTypeConstraint,
-  [JavaConstants.Type.LONG]: NumberTypeConstraint,
-  [JavaConstants.Type.SHORT]: NumberTypeConstraint,
+  [JavaConstants.Type.STRING]: GlobalTypeConstraintMap.String,
+  [JavaConstants.Type.CHAR]: GlobalTypeConstraintMap.String,
+  [JavaConstants.Type.INT]: GlobalTypeConstraintMap.Number,
+  [JavaConstants.Type.INTEGER]: GlobalTypeConstraintMap.Number,
+  [JavaConstants.Type.NUMBER]: GlobalTypeConstraintMap.Number,
+  [JavaConstants.Type.FLOAT]: GlobalTypeConstraintMap.Number,
+  [JavaConstants.Type.DOUBLE]: GlobalTypeConstraintMap.Number,
+  [JavaConstants.Type.LONG]: GlobalTypeConstraintMap.Number,
+  [JavaConstants.Type.SHORT]: GlobalTypeConstraintMap.Number,
   [JavaConstants.Type.VOID]: VoidTypeConstraint,
-  [JavaConstants.Type.BOOLEAN_UC]: BooleanTypeConstraint,
-  [JavaConstants.Type.BOOLEAN_LC]: BooleanTypeConstraint,
-  [JavaConstants.Type.OBJECT]: ObjectTypeConstraint
+  [JavaConstants.Type.BOOLEAN_UC]: GlobalTypeConstraintMap.Boolean,
+  [JavaConstants.Type.BOOLEAN_LC]: GlobalTypeConstraintMap.Boolean,
+  [JavaConstants.Type.OBJECT]: GlobalTypeConstraintMap.Object
 };

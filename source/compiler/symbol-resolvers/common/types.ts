@@ -93,7 +93,8 @@ export enum Primitive {
   NUMBER = 'number',
   BOOLEAN = 'boolean',
   REGEX = 'regex',
-  OBJECT = 'object literal',
+  ARRAY = 'array',
+  OBJECT = 'object',
   NULL = 'null'
 }
 

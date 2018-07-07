@@ -19,6 +19,7 @@ export namespace ObjectType {
     public readonly isExtensible: boolean;
     public readonly name: string;
     public readonly requiresImplementation: boolean;
+    public readonly shouldOverload: boolean;
     protected constructors: IObjectMember<FunctionType.Constraint>[] = [];
     protected genericParameters: string[] = [];
     protected objectMemberMap: IHashMap<IObjectMember> = {};
@@ -125,7 +126,7 @@ export namespace ObjectType {
     public getMatchingMethodMember (methodName: string, argumentTypeConstraints: ITypeConstraint[]): IObjectMember<FunctionType.Constraint> {
       const methodOverloads = this.overloadedMethodMap[methodName];
 
-      if (methodOverloads) {
+      if (methodOverloads && this.overloadedMethodMap.hasOwnProperty(methodName)) {
         for (const methodOverload of methodOverloads) {
           const methodParameterTypeConstraints = methodOverload.constraint.typeDefinition.getParameterTypeConstraints();
 
@@ -260,6 +261,7 @@ export namespace ObjectType {
     public isExtensible: boolean;
     public name: string;
     public requiresImplementation: boolean;
+    public shouldOverload: boolean = true;
 
     private ownTypeConstraint: ObjectType.Constraint = {
       typeDefinition: this,

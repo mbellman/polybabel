@@ -16,25 +16,25 @@ export default class JavaInstantiationTranslator extends AbstractTranslator<Java
     } else if (arrayAllocationSize || arrayLiteral) {
       this.emitArrayInstantiation();
     } else {
-      this.emitRegularInstantiation();
+      this.emitConstructorCall();
     }
   }
 
   private emitAnonymousObject (): void {
-    const { anonymousObjectBody, overloadIndex, arguments: args } = this.syntaxNode;
+    const { anonymousObjectBody, arguments: args } = this.syntaxNode;
     const { members } = anonymousObjectBody;
     const constructorName = this.getConstructorName();
 
-    this.emit('(function(Ctor){')
+    this.emit('(function(){')
       .enterBlock()
-      .emit(`var instance = typeof Ctor === \'function\'`)
+      .emit(`var instance = typeof ${constructorName} === \'function\'`)
       .enterBlock()
       // Anonymous class extension
-      .emit('? new Ctor()')
-      .emitPossibleOverloadedConstructorCall()
+      .emit('? ')
+      .emitConstructorCall()
       .newline()
       // Anonymous interface implementation
-      .emit(': Object.create(Ctor);')
+      .emit(`: Object.create(${constructorName});`)
       .exitBlock()
       .emitNodes(
         members,
@@ -45,7 +45,7 @@ export default class JavaInstantiationTranslator extends AbstractTranslator<Java
       )
       .emit('return instance;')
       .exitBlock()
-      .emit(`})(${constructorName})`);
+      .emit(`})()`);
   }
 
   private emitAnonymousObjectClass (classNode: JavaSyntax.IJavaClass): this {
@@ -136,24 +136,24 @@ export default class JavaInstantiationTranslator extends AbstractTranslator<Java
     );
   }
 
-  private emitPossibleOverloadedConstructorCall (): this {
+  private emitConstructorCall (): this {
     const { constructor, overloadIndex } = this.syntaxNode;
-    const lastConstructorNamespace = constructor.namespaceChain[constructor.namespaceChain.length - 1];
+    const constructorName = this.getConstructorName();
+
+    this.emit(`new ${constructorName}(`);
 
     if (overloadIndex >= 0) {
-      this.emit(`.${lastConstructorNamespace}_${overloadIndex}(`)
+      const lastConstructorNamespace = constructor.namespaceChain[constructor.namespaceChain.length - 1];
+
+      this.emit(`).${lastConstructorNamespace}_${overloadIndex}(`)
         .emitConstructorArguments()
+        .emit(')');
+    } else {
+      this.emitConstructorArguments()
         .emit(')');
     }
 
     return this;
-  }
-
-  private emitRegularInstantiation (): this {
-    const constructorName = this.getConstructorName();
-
-    return this.emit(`new ${constructorName}()`)
-      .emitPossibleOverloadedConstructorCall();
   }
 
   private getConstructorName (): string {

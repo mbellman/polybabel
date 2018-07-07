@@ -1,9 +1,8 @@
 import ValidatorContext from './ValidatorContext';
 import { Callback } from '../../../system/types';
-import { Constructor, IConstructable } from 'trampoline-framework';
-import { Dynamic, IObjectMember, IScopedReference, ITypeConstraint, TypeDefinition } from '../../symbol-resolvers/common/types';
-import { DynamicTypeConstraint } from '../../native-type-constraints/common';
-import { GlobalTypeConstraintMap } from '../../native-type-constraints/global';
+import { Constructor, IConstructable, IHashMap } from 'trampoline-framework';
+import { Dynamic, IObjectMember, IScopedReference, ITypeConstraint } from '../../symbol-resolvers/common/types';
+import { DynamicTypeConstraint, GlobalTypeConstraintMap } from '../../native-type-constraints/global';
 import { IExpectedTypeConstraint, IValidatorContextFlags, IValidatorError, TypeExpectation } from './types';
 import { ISyntaxNode } from '../../../parser/common/syntax-types';
 import { IToken } from '../../../tokenizer/types';
@@ -236,7 +235,7 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
       return symbol.constraint;
     }
 
-    const globalTypeConstraint = GlobalTypeConstraintMap[name];
+    const globalTypeConstraint = (GlobalTypeConstraintMap as IHashMap<ITypeConstraint>)[name];
 
     if (globalTypeConstraint) {
       // If the name is a global type constraint (i.e. native

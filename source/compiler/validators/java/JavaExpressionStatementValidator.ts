@@ -1,6 +1,6 @@
 import AbstractValidator from '../common/AbstractValidator';
 import { ArrayType } from '../../symbol-resolvers/common/array-type';
-import { BooleanTypeConstraint, DynamicTypeConstraint, NullTypeConstraint, NumberTypeConstraint, StringTypeConstraint, VoidTypeConstraint } from '../../native-type-constraints/common';
+import { DynamicTypeConstraint, GlobalTypeConstraintMap, NullTypeConstraint } from '../../native-type-constraints/global';
 import { FunctionType } from '../../symbol-resolvers/common/function-type';
 import { Implements } from 'trampoline-framework';
 import { IObjectMember, ITypeConstraint, ObjectMemberVisibility, TypeDefinition } from '../../symbol-resolvers/common/types';
@@ -288,10 +288,10 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
 
     switch (literal.type) {
       case JavaSyntax.JavaLiteralType.NUMBER:
-        constraint = NumberTypeConstraint;
+        constraint = GlobalTypeConstraintMap.Number;
         break;
       case JavaSyntax.JavaLiteralType.STRING:
-        constraint = StringTypeConstraint;
+        constraint = GlobalTypeConstraintMap.String;
         break;
       case JavaSyntax.JavaLiteralType.KEYWORD:
         const isBooleanKeyword = (
@@ -300,7 +300,9 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
         );
 
         // The only valid keyword literals are 'true', 'false', and 'null'
-        constraint = isBooleanKeyword ? BooleanTypeConstraint : NullTypeConstraint;
+        constraint = isBooleanKeyword
+          ? GlobalTypeConstraintMap.Boolean
+          : NullTypeConstraint;
         break;
       default:
         constraint = DynamicTypeConstraint;
@@ -471,12 +473,12 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
     switch (operation) {
       case JavaSyntax.JavaOperation.NEGATE:
       case JavaSyntax.JavaOperation.DOUBLE_NOT:
-        constraint = BooleanTypeConstraint;
+        constraint = GlobalTypeConstraintMap.Boolean;
         break;
       case JavaSyntax.JavaOperation.INCREMENT:
       case JavaSyntax.JavaOperation.DECREMENT:
       case JavaSyntax.JavaOperation.BITWISE_COMPLEMENT:
-        constraint = NumberTypeConstraint;
+        constraint = GlobalTypeConstraintMap.Number;
         break;
       default:
         constraint = DynamicTypeConstraint;
@@ -614,7 +616,9 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
           this.report(`Invalid constructor arguments ${constructorArgumentDescriptions.join(', ')}`);
         }
 
-        instantiation.overloadIndex = constructorOverloadIndex;
+        if (constructorType.shouldOverload) {
+          instantiation.overloadIndex = constructorOverloadIndex;
+        }
       }
     } else {
       this.reportNonConstructor(constructorName);
