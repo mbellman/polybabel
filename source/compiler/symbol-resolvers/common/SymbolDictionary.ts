@@ -1,7 +1,6 @@
-import { Dynamic, ISymbol, SymbolIdentifier, ITypeConstraint } from './types';
 import { IHashMap } from 'trampoline-framework';
+import { ISymbol, ITypeConstraint, SymbolIdentifier, Dynamic } from './types';
 import { TypeUtils } from './type-utils';
-import { DynamicTypeConstraint } from '../../native-type-constraints/common';
 
 /**
  * A symbol dictionary containing type definitions for the
@@ -67,7 +66,9 @@ export default class SymbolDictionary {
     return {
       identifier: name,
       name,
-      constraint: DynamicTypeConstraint
+      constraint: {
+        typeDefinition: TypeUtils.createSimpleType(Dynamic)
+      }
     };
   }
 }

@@ -154,7 +154,7 @@ export namespace ObjectType {
     public getObjectMember (memberName: string): IObjectMember {
       const objectMember = this.objectMemberMap[memberName];
 
-      if (objectMember) {
+      if (objectMember && this.objectMemberMap.hasOwnProperty(memberName)) {
         this.ensureConstraintHasDefinition(objectMember.constraint);
 
         return objectMember;
