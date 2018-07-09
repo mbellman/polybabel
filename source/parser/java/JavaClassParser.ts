@@ -16,6 +16,7 @@ export default class JavaClassParser extends AbstractParser<JavaSyntax.IJavaClas
       name: null,
       extended: [],
       implemented: [],
+      constructors: [],
       members: [],
       instanceInitializers: [],
       staticInitializers: []

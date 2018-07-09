@@ -67,7 +67,8 @@ export default class SymbolDictionary {
       identifier: name,
       name,
       constraint: {
-        typeDefinition: TypeUtils.createSimpleType(Dynamic)
+        typeDefinition: TypeUtils.createSimpleType(Dynamic),
+        isOriginal: true
       }
     };
   }

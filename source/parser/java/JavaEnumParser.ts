@@ -25,6 +25,9 @@ export default class JavaEnumParser extends AbstractParser<JavaSyntax.IJavaClass
       node: JavaSyntax.JavaSyntaxNode.CLASS,
       access: JavaSyntax.JavaAccessModifier.PACKAGE,
       name: null,
+      extended: [],
+      implemented: [],
+      constructors: [],
       members: [],
       instanceInitializers: [],
       staticInitializers: []

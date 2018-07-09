@@ -99,12 +99,12 @@ export default class JavaParser extends AbstractParser<JavaSyntax.IJavaSyntaxTre
    * nodes list, merging the current modifiable attributes
    * onto the object if they exist.
    */
-  private addJavaObjectNode (object: JavaSyntax.IJavaObject): void {
+  private addJavaObjectNode (objectNode: JavaSyntax.IJavaObject): void {
     if (this.currentObjectModifiable) {
       const { access, isFinal, isAbstract, isStatic } = this.currentObjectModifiable;
 
-      object = {
-        ...object,
+      objectNode = {
+        ...objectNode,
         access,
         isFinal,
         isStatic,
@@ -113,12 +113,12 @@ export default class JavaParser extends AbstractParser<JavaSyntax.IJavaSyntaxTre
     }
 
     if (this.currentAnnotations.length > 0) {
-      object.annotations = this.currentAnnotations;
+      objectNode.annotations = this.currentAnnotations;
 
       this.currentAnnotations = [];
     }
 
-    this.parsed.nodes.push(object);
+    this.parsed.nodes.push(objectNode);
 
     this.currentObjectModifiable = null;
   }

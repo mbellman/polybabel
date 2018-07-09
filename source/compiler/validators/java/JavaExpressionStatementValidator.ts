@@ -620,7 +620,7 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
           instantiation.overloadIndex = constructorOverloadIndex;
         }
       }
-    } else {
+    } else if (!TypeValidation.isDynamic(constructorType)) {
       this.reportNonConstructor(constructorName);
     }
   }

@@ -1,17 +1,9 @@
 import AbstractParser from '../common/AbstractParser';
 import JavaAnnotationParser from './JavaAnnotationParser';
 import JavaBlockParser from './JavaBlockParser';
-import JavaClassParser from './JavaClassParser';
-import JavaEnumParser from './JavaEnumParser';
-import JavaInterfaceParser from './JavaInterfaceParser';
-import JavaModifiableParser from './JavaModifiableParser';
 import JavaObjectMemberParser from './JavaObjectMemberParser';
 import JavaObjectMethodParser from './JavaObjectMethodParser';
-import JavaStatementParser from './JavaStatementParser';
-import JavaTypeParser from './JavaTypeParser';
-import JavaVariableDeclarationParser from './statement-parsers/JavaVariableDeclarationParser';
 import { Implements } from 'trampoline-framework';
-import { INamed, ITyped } from '../common/syntax-types';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { JavaUtils } from './java-utils';

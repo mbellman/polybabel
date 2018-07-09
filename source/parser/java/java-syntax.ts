@@ -162,7 +162,7 @@ export namespace JavaSyntax {
    * an array of its members.
    */
   export interface IJavaObjectBody extends IJavaSyntaxNode {
-    constructors?: IJavaObjectMethod[];
+    constructors: IJavaObjectMethod[];
     members: JavaObjectMember[];
     instanceInitializers: IJavaBlock[];
     staticInitializers: IJavaBlock[];
@@ -175,8 +175,8 @@ export namespace JavaSyntax {
    */
   export interface IJavaObject extends IJavaModifiable, INamed, IJavaObjectBody {
     genericParameters?: IJavaType[];
-    extended?: IJavaType[];
-    implemented?: IJavaType[];
+    extended: IJavaType[];
+    implemented: IJavaType[];
     annotations?: IJavaAnnotation[];
   }
 
