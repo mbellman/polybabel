@@ -96,8 +96,8 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
 
         if (superObjectMember.requiresImplementation && !this.isAbstractClass()) {
           this.check(
-            this.ownTypeDefinition.hasOwnObjectMember(memberName),
-            `Class '${this.syntaxNode.name}' must implement abstract member '${supertypeName}.${memberName}'`
+            this.ownTypeDefinition.hasEquivalentMember(superObjectMember),
+            `Class '${this.syntaxNode.name}' does not correctly implement abstract member '${supertypeName}.${memberName}'`
           );
         }
 

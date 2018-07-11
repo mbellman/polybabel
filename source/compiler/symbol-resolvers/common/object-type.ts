@@ -152,15 +152,28 @@ export namespace ObjectType {
       return null;
     }
 
+    /**
+     * @todo Change to getMember()
+     */
     public getObjectMember (memberName: string): IObjectMember {
+      const ownMember = this.getOwnMember(memberName);
+
+      if (ownMember) {
+        return ownMember;
+      } else if (this.superTypeConstraints.length > 0) {
+        return this.getSuperObjectMember(memberName);
+      }
+
+      return null;
+    }
+
+    public getOwnMember (memberName: string): IObjectMember {
       const objectMember = this.objectMemberMap[memberName];
 
       if (objectMember && this.objectMemberMap.hasOwnProperty(memberName)) {
         this.ensureConstraintHasDefinition(objectMember.constraint);
 
         return objectMember;
-      } else if (this.superTypeConstraints.length > 0) {
-        return this.getSuperObjectMember(memberName);
       }
 
       return null;
@@ -174,8 +187,11 @@ export namespace ObjectType {
       return this.constructors.length > 0;
     }
 
+    /**
+     * @todo Change to hasOwnEquivalentMember
+     */
     public hasEquivalentMember (objectMember: IObjectMember): boolean {
-      const ownMember = this.getObjectMember(objectMember.name);
+      const ownMember = this.getOwnMember(objectMember.name);
 
       return (
         !!ownMember &&
@@ -189,6 +205,9 @@ export namespace ObjectType {
       return !!this.getObjectMember(memberName);
     }
 
+    /**
+     * @todo Change to hasOwnMember
+     */
     public hasOwnObjectMember (memberName: string): boolean {
       return memberName in this.objectMemberMap;
     }
