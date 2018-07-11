@@ -167,12 +167,11 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
 
   private getPropertyChainTypeConstraint (propertyChain: JavaSyntax.IJavaPropertyChain): ITypeConstraint {
     const { token: propertyChainToken, properties } = propertyChain;
-
-    this.focusToken(propertyChainToken);
-
     const firstProperty = properties[0];
     let currentLookupTypeConstraint: ITypeConstraint;
     let propertyIndex = 0;
+
+    this.focusToken(propertyChainToken);
 
     currentLookupTypeConstraint = this.getSyntaxNodeTypeConstraint(firstProperty);
 
@@ -190,95 +189,115 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
       const { typeDefinition: lookupTypeDefinition } = currentLookupTypeConstraint;
       const previousLookupTypeConstraint = currentLookupTypeConstraint;
 
-      if (!(lookupTypeDefinition instanceof ObjectType.Definition)) {
-        this.report(`'${ValidatorUtils.getTypeConstraintDescription(currentLookupTypeConstraint)}' is not an object`);
+      this.focusToken(incomingProperty.token);
+
+      if (lookupTypeDefinition instanceof ObjectType.Definition) {
+        switch (incomingProperty.node) {
+          case JavaSyntax.JavaSyntaxNode.REFERENCE: {
+            // The next lookup type after a reference property
+            // is the type of the member it accesses
+            const { value } = incomingProperty;
+
+            currentMember = lookupTypeDefinition.getObjectMember(value);
+
+            if (!currentMember) {
+              this.reportUnknownMember(lookupTypeDefinition.name, value);
+
+              return DynamicTypeConstraint;
+            } else if (currentMember.isStatic && !previousLookupTypeConstraint.isOriginal) {
+              // Static members accessed on instances must be prefixed
+              // appropriately to ensure proper value resolution
+              incomingProperty.value = `constructor.${value}`;
+            }
+
+            currentLookupTypeConstraint = currentMember.constraint;
+            break;
+          }
+          case JavaSyntax.JavaSyntaxNode.FUNCTION_CALL: {
+            // The next lookup type after a function call
+            // property is its return type
+            const { name: functionName } = incomingProperty;
+
+            currentMember = lookupTypeDefinition.getObjectMember(functionName);
+
+            if (!currentMember) {
+              this.reportUnknownMember(lookupTypeDefinition.name, functionName);
+
+              return DynamicTypeConstraint;
+            }
+
+            currentLookupTypeConstraint = this.getFunctionCallReturnTypeConstraint(incomingProperty, lookupTypeDefinition);
+
+            if (currentMember.isStatic && !previousLookupTypeConstraint.isOriginal) {
+              // Static function properties accessed on instances must be
+              // prefixed appropriately to ensure proper value resolution
+              incomingProperty.name = `constructor.${incomingProperty.name}`;
+            }
+
+            break;
+          }
+          case JavaSyntax.JavaSyntaxNode.INSTANTIATION: {
+            // The next lookup type after an instantiation
+            // property is its constructor type
+            const { constructor } = incomingProperty;
+            const constructorName = constructor.namespaceChain.join('.');
+
+            this.focusToken(constructor.token);
+
+            currentMember = lookupTypeDefinition.getObjectMember(constructorName);
+
+            if (!currentMember) {
+              this.reportUnknownMember(lookupTypeDefinition.name, constructorName);
+
+              return DynamicTypeConstraint;
+            }
+
+            this.validateInstantiation(incomingProperty, currentMember.constraint.typeDefinition);
+
+            currentLookupTypeConstraint = currentMember.constraint;
+            break;
+          }
+          default: {
+            return DynamicTypeConstraint;
+          }
+        }
+
+        this.validateMemberAccess(currentMember, previousLookupTypeConstraint);
+      } else if (
+        lookupTypeDefinition instanceof ArrayType.Definition &&
+        incomingProperty.node === JavaSyntax.JavaSyntaxNode.STATEMENT
+      ) {
+        // Array types can only be followed by a property if they are
+        // numerically-indexed element accessors
+        //
+        // TODO: Support native Array methods (requires architectural
+        // support for generics)
+        const statementTypeConstraint = this.getStatementTypeConstraint(incomingProperty);
+        const { typeDefinition } = currentLookupTypeConstraint;
+        const isArrayIndexProperty = TypeValidation.typeConstraintMatches(statementTypeConstraint, GlobalTypeConstraintMap.Number);
+
+        if (isArrayIndexProperty) {
+          currentLookupTypeConstraint = (typeDefinition as ArrayType.Definition).getElementTypeConstraint();
+        } else {
+          const indexTypeDescription = ValidatorUtils.getTypeConstraintDescription(statementTypeConstraint);
+
+          this.report(`Invalid array index type '${indexTypeDescription}'`);
+
+          return DynamicTypeConstraint;
+        }
+      } else {
+        this.report(`'${ValidatorUtils.getTypeConstraintDescription(currentLookupTypeConstraint)}' does not have any properties`);
 
         return DynamicTypeConstraint;
       }
 
-      this.focusToken(incomingProperty.token);
-
-      switch (incomingProperty.node) {
-        case JavaSyntax.JavaSyntaxNode.REFERENCE: {
-          // The next lookup type after a reference property
-          // is the type of the member it accesses
-          const { value } = incomingProperty;
-
-          currentMember = lookupTypeDefinition.getObjectMember(value);
-
-          if (!currentMember) {
-            this.reportUnknownMember(lookupTypeDefinition.name, value);
-
-            return DynamicTypeConstraint;
-          } else if (currentMember.isStatic && !previousLookupTypeConstraint.isOriginal) {
-            // Static members accessed on instances must be prefixed
-            // appropriately to ensure proper value resolution
-            incomingProperty.value = `constructor.${value}`;
-          }
-
-          currentLookupTypeConstraint = currentMember.constraint;
-          break;
-        }
-        case JavaSyntax.JavaSyntaxNode.FUNCTION_CALL: {
-          // The next lookup type after a function call
-          // property is its return type
-          const { name: functionName } = incomingProperty;
-
-          currentMember = lookupTypeDefinition.getObjectMember(functionName);
-
-          if (!currentMember) {
-            this.reportUnknownMember(lookupTypeDefinition.name, functionName);
-
-            return DynamicTypeConstraint;
-          }
-
-          currentLookupTypeConstraint = this.getFunctionCallReturnTypeConstraint(incomingProperty, lookupTypeDefinition);
-
-          if (currentMember.isStatic && !previousLookupTypeConstraint.isOriginal) {
-            // Static function properties accessed on instances must be
-            // prefixed appropriately to ensure proper value resolution
-            incomingProperty.name = `constructor.${incomingProperty.name}`;
-          }
-
-          break;
-        }
-        case JavaSyntax.JavaSyntaxNode.INSTANTIATION: {
-          // The next lookup type after an instantiation
-          // property is its constructor type
-          const { constructor } = incomingProperty;
-          const constructorName = constructor.namespaceChain.join('.');
-
-          this.focusToken(constructor.token);
-
-          currentMember = lookupTypeDefinition.getObjectMember(constructorName);
-
-          if (!currentMember) {
-            this.reportUnknownMember(lookupTypeDefinition.name, constructorName);
-
-            return DynamicTypeConstraint;
-          }
-
-          this.validateInstantiation(incomingProperty, currentMember.constraint.typeDefinition);
-
-          currentLookupTypeConstraint = currentMember.constraint;
-          break;
-        }
-        case JavaSyntax.JavaSyntaxNode.STATEMENT: {
-          // TODO: Number indexes -> array element type
-          //
-          // We can't know what the computed property name will be,
-          // and since Java doesn't have index types, we just return
-          // a dynamic type as a fallback
-          return DynamicTypeConstraint;
-        }
-      }
-
-      this.validateMemberAccess(currentMember, previousLookupTypeConstraint);
-
       incomingProperty = properties[++propertyIndex];
     }
 
-    this.lastPropertyIsFinal = currentMember.isConstant;
+    this.lastPropertyIsFinal = (
+      !!currentMember &&
+      currentMember.isConstant
+    );
 
     return currentLookupTypeConstraint;
   }

@@ -16,6 +16,7 @@ public final class ExampleProgram {
 
     IExampleInterface exampleInterface = ExampleProgram.getExample();
 
+    String firstArg = args[0];
     String[] names;
 
     for (String name : names) {
