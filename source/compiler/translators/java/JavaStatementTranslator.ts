@@ -60,7 +60,7 @@ export default class JavaStatementTranslator extends AbstractTranslator<JavaSynt
         this.emitNodeWith(JavaInstructionTranslator, leftSide as JavaSyntax.IJavaInstruction);
         break;
       case JavaSyntax.JavaSyntaxNode.REFERENCE:
-        this.emit((leftSide as JavaSyntax.IJavaReference).value);
+        this.emit((leftSide as JavaSyntax.IJavaReference).name);
         break;
       case JavaSyntax.JavaSyntaxNode.INSTANTIATION:
         this.emitNodeWith(JavaInstantiationTranslator, leftSide as JavaSyntax.IJavaInstantiation);

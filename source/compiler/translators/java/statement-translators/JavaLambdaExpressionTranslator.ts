@@ -32,15 +32,7 @@ export default class JavaLambdaExpressionTranslator extends AbstractTranslator<J
 
     return this.emitNodes(
       parameters,
-      parameter => {
-        const isVariableDeclaration = parameter.node === JavaSyntax.JavaSyntaxNode.VARIABLE_DECLARATION;
-
-        this.emit(
-          isVariableDeclaration
-            ? (parameter as JavaSyntax.IJavaVariableDeclaration).name
-            : (parameter as JavaSyntax.IJavaReference).value
-        );
-      },
+      parameter => this.emit(parameter.name),
       () => this.emit(', ')
     );
   }

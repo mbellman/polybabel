@@ -145,7 +145,7 @@ export default class JavaPropertyChainParser extends AbstractParser<JavaSyntax.I
   private parseReferenceProperty (): void {
     this.parsed.properties.push({
       node: JavaSyntax.JavaSyntaxNode.REFERENCE,
-      value: this.currentToken.value,
+      name: this.currentToken.value,
       token: this.currentToken
     });
   }

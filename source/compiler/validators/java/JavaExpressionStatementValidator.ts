@@ -210,18 +210,18 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
           case JavaSyntax.JavaSyntaxNode.REFERENCE: {
             // The next lookup type after a reference property
             // is the type of the member it accesses
-            const { value } = incomingProperty;
+            const { name } = incomingProperty;
 
-            currentMember = lookupTypeDefinition.getObjectMember(value);
+            currentMember = lookupTypeDefinition.getObjectMember(name);
 
             if (!currentMember) {
-              this.reportUnknownMember(lookupTypeDefinition.name, value);
+              this.reportUnknownMember(lookupTypeDefinition.name, name);
 
               return DynamicTypeConstraint;
             } else if (currentMember.isStatic && !previousLookupTypeConstraint.isOriginal) {
               // Static members accessed on instances must be prefixed
               // appropriately to ensure proper value resolution
-              incomingProperty.value = `constructor.${value}`;
+              incomingProperty.name = `constructor.${name}`;
             }
 
             currentLookupTypeConstraint = currentMember.constraint;
@@ -394,18 +394,18 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
     switch (javaSyntaxNode.node) {
       case JavaSyntax.JavaSyntaxNode.REFERENCE: {
         const reference = javaSyntaxNode as JavaSyntax.IJavaReference;
-        const { value } = reference;
+        const { name } = reference;
         const currentVisitedObject = this.context.objectVisitor.getCurrentVisitedObject();
 
-        switch (value) {
+        switch (name) {
           case JavaConstants.Keyword.THIS:
-            this.validateInstanceKeyword(value);
+            this.validateInstanceKeyword(name);
 
             return {
               typeDefinition: currentVisitedObject
             };
           case JavaConstants.Keyword.SUPER:
-            this.validateInstanceKeyword(value);
+            this.validateInstanceKeyword(name);
 
             const superTypeConstraint = currentVisitedObject.getSuperTypeConstraintByIndex(0);
 
@@ -416,14 +416,14 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
 
             return superTypeConstraint || DynamicTypeConstraint;
           default:
-            const referenceMember = currentVisitedObject.getObjectMember(value);
-            const isInScope = this.context.scopeManager.isInScope(value);
+            const referenceMember = currentVisitedObject.getObjectMember(name);
+            const isInScope = this.context.scopeManager.isInScope(name);
 
             if (referenceMember && !isInScope) {
-              reference.value = this.getClassPrefixedMemberName(value, referenceMember.isStatic);
+              reference.name = this.getClassPrefixedMemberName(name, referenceMember.isStatic);
             }
 
-            return this.findTypeConstraintByName(value);
+            return this.findTypeConstraintByName(name);
         }
       }
       case JavaSyntax.JavaSyntaxNode.VARIABLE_DECLARATION: {
@@ -719,12 +719,12 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
       case JavaSyntax.JavaSyntaxNode.VARIABLE_DECLARATION:
         return;
       case JavaSyntax.JavaSyntaxNode.REFERENCE:
-        const { value } = leftSide as JavaSyntax.IJavaReference;
-        const referenceOrMember = this.findReferenceOrMember(value);
+        const { name } = leftSide as JavaSyntax.IJavaReference;
+        const referenceOrMember = this.findReferenceOrMember(name);
 
         this.check(
           referenceOrMember ? !referenceOrMember.isConstant : true,
-          `Cannot reassign final value '${value}'`
+          `Cannot reassign final value '${name}'`
         );
 
         return;

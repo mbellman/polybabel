@@ -41,7 +41,7 @@ export default class JavaTryCatchTranslator extends AbstractTranslator<JavaSynta
     // catch statement only uses one catch, we need to maintain
     // a reference to the first one so we can alias the alternate
     // names using locally-scoped variables.
-    const firstExceptionName = exceptionReferences[0].value;
+    const { name: firstExceptionName } = exceptionReferences[0];
 
     return this
       .emit(` catch (${firstExceptionName}) {`)
@@ -50,7 +50,7 @@ export default class JavaTryCatchTranslator extends AbstractTranslator<JavaSynta
       .emitNodes(
         exceptionReferences,
         exceptionReference => {
-          const exceptionName = exceptionReference.value;
+          const { name: exceptionName } = exceptionReference;
           const hasUniqueExceptionName = exceptionName !== firstExceptionName;
 
           if (hasUniqueExceptionName) {
@@ -64,7 +64,7 @@ export default class JavaTryCatchTranslator extends AbstractTranslator<JavaSynta
         catchBlocks,
         (catchBlock, index) => {
           const exceptions = exceptionSets[index];
-          const exceptionName = exceptionReferences[index].value;
+          const { name: exceptionName } = exceptionReferences[index];
 
           this.emit(index === 0 ? 'if (' : ' else if (')
             // Multiple exception types may have been piped together

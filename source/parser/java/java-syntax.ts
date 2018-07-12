@@ -251,7 +251,7 @@ export namespace JavaSyntax {
   /**
    * A reference to a Java variable, object member, or object.
    */
-  export interface IJavaReference extends IJavaSyntaxNode, IValued<string> {
+  export interface IJavaReference extends IJavaSyntaxNode, INamed<string> {
     node: JavaSyntaxNode.REFERENCE;
   }
 
@@ -374,7 +374,12 @@ export namespace JavaSyntax {
   export interface IJavaInstruction extends IJavaSyntaxNode, IValued<IJavaStatement> {
     node: JavaSyntaxNode.INSTRUCTION;
     type: JavaInstructionType;
-    // Determined during validation
+    /**
+     * Determines whether this is a return statement within a
+     * Java class constructor, which needs a special translation
+     * due to the way constructor overloads are handled. This
+     * value is computed during validation and not parsing.
+     */
     isConstructorReturn?: boolean;
   }
 

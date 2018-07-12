@@ -8,13 +8,13 @@ export default class JavaReferenceParser extends AbstractParser<JavaSyntax.IJava
   @Implements protected getDefault (): JavaSyntax.IJavaReference {
     return {
       node: JavaSyntax.JavaSyntaxNode.REFERENCE,
-      value: null
+      name: null
     };
   }
 
   @Expect(TokenUtils.isWord)
   protected onReference (): void {
-    this.parsed.value = this.currentToken.value;
+    this.parsed.name = this.currentToken.value;
 
     this.finish();
   }

@@ -2,6 +2,7 @@ import AbstractTranslator from '../../common/AbstractTranslator';
 import JavaBlockTranslator from '../JavaBlockTranslator';
 import JavaStatementTranslator from '../JavaStatementTranslator';
 import { Implements } from 'trampoline-framework';
+import { ISyntaxNode, INamed } from '../../../../parser/common/syntax-types';
 import { JavaSyntax } from '../../../../parser/java/java-syntax';
 
 export default class JavaForLoopTranslator extends AbstractTranslator<JavaSyntax.IJavaForLoop> {
@@ -17,8 +18,12 @@ export default class JavaForLoopTranslator extends AbstractTranslator<JavaSyntax
 
   private emitEnhancedForLoop (): void {
     const { statements, block } = this.syntaxNode;
-    const { name: iteratorValueName } = statements[0].leftSide as JavaSyntax.IJavaVariableDeclaration;
-    const collection = statements[1];
+    const [ iteratorValue, collection ] = statements;
+
+    const { name: iteratorValueName } = (
+      iteratorValue.leftSide as JavaSyntax.IJavaVariableDeclaration | JavaSyntax.IJavaReference ||
+      {} as INamed
+    );
 
     this.emit('var __collection = ')
       .emitNodeWith(JavaStatementTranslator, collection)

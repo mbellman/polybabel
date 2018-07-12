@@ -100,7 +100,7 @@ export default class JavaImportParser extends AbstractParser<JavaSyntax.IJavaImp
       terminator: '}'
     });
 
-    this.parsed.nonDefaultImports = nonDefaultImportReferences.map(({ value }) => value);
+    this.parsed.nonDefaultImports = nonDefaultImportReferences.map(({ name }) => name);
   }
 
   @Match('}')

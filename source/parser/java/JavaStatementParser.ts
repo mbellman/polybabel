@@ -174,7 +174,7 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
       // namespace chain.
       const { namespaceChain, genericTypes, arrayDimensions } = lastProperty as JavaSyntax.IJavaType;
       const referenceProperties = propertyChain.properties.slice(0, -1) as JavaSyntax.IJavaReference[];
-      const namespaces = referenceProperties.map(({ value }) => value);
+      const namespaces = referenceProperties.map(({ name }) => name);
       const typeName = namespaceChain[0];
 
       // Variable name must be a word! Normally this would be

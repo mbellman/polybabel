@@ -16,7 +16,7 @@ export default class JavaPropertyChainTranslator extends AbstractTranslator<Java
 
       switch (property.node) {
         case JavaSyntax.JavaSyntaxNode.REFERENCE:
-          this.emit(property.value);
+          this.emit(property.name);
           break;
         case JavaSyntax.JavaSyntaxNode.FUNCTION_CALL:
           this.emitNodeWith(JavaFunctionCallTranslator, property);
