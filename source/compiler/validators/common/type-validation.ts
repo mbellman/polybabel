@@ -1,8 +1,9 @@
 import AbstractTypeDefinition from '../../symbol-resolvers/common/AbstractTypeDefinition';
 import { ArrayType } from '../../symbol-resolvers/common/array-type';
-import { Dynamic, ISimpleType, TypeDefinition, ITypeConstraint } from '../../symbol-resolvers/common/types';
+import { Dynamic, ISimpleType, TypeDefinition, ITypeConstraint, Primitive } from '../../symbol-resolvers/common/types';
 import { FunctionType } from '../../symbol-resolvers/common/function-type';
 import { ObjectType } from '../../symbol-resolvers/common/object-type';
+import { NullTypeConstraint } from '../../native-type-constraints/global';
 
 export namespace TypeValidation {
   /**
@@ -19,8 +20,16 @@ export namespace TypeValidation {
    * Determines whether a provided type definition corresponds
    * to a dynamic type.
    */
-  export function isDynamic (typeDefinition: TypeDefinition): boolean {
+  export function isDynamicType (typeDefinition: TypeDefinition): boolean {
     return (typeDefinition as ISimpleType).type === Dynamic;
+  }
+
+  /**
+   * Determines whether a provided type definition corresponds
+   * to a null primitive type.
+   */
+  export function isNullType (typeDefinition: TypeDefinition): boolean {
+    return (typeDefinition as ISimpleType).type === Primitive.NULL;
   }
 
   /**
@@ -64,7 +73,7 @@ export namespace TypeValidation {
    * constraint C:
    *
    *  1. S and C are identical, or have identical type definitions where S is not an original type
-   *  2. C's type definition is dynamic
+   *  2. C's type definition is dynamic or S's type definition is null
    *  3. S and C are constraints of equal simple types
    *  4. S and C are both object type constraints, and S subtypes C (e.g. has a supertype identical to C)
    *  5. S and C are both function type constraints, and S and C share parameter type and return type constraints
@@ -88,9 +97,13 @@ export namespace TypeValidation {
       return true;
     }
 
-    if (isDynamic(comparison.typeDefinition)) {
-      // If the comparison's type definition is dynamic, the
-      // source automatically matches the comparison (#2)
+    if (
+      isDynamicType(comparison.typeDefinition) ||
+      isNullType(source.typeDefinition)
+    ) {
+      // If the comparison's type definition is dynamic or the
+      // source type definition is null, the source automatically
+      // matches the comparison (#2)
       return true;
     }
 

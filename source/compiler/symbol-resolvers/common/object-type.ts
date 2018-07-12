@@ -309,7 +309,7 @@ export namespace ObjectType {
       overloadMember.parent = this.ownTypeConstraint;
 
       const { name } = overloadMember;
-      const existingMember = this.objectMemberMap[name] as IObjectMember<FunctionType.Constraint>;
+      const existingMember = this.getObjectMember(name) as IObjectMember<FunctionType.Constraint>;
 
       if (!existingMember) {
         return;

@@ -1,6 +1,5 @@
 import GlobalTypeFactory from './javascript/GlobalTypeFactory';
 import { GlobalType } from './javascript/types';
-import { IHashMap } from 'trampoline-framework';
 import { ITypeConstraint, Primitive, Void, Dynamic } from '../symbol-resolvers/common/types';
 import { TypeUtils } from '../symbol-resolvers/common/type-utils';
 

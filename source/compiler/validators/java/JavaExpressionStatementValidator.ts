@@ -90,9 +90,6 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
     return `${prefix}.${name}`;
   }
 
-  /**
-   * @todo
-   */
   private getFunctionCallReturnTypeConstraint (functionCall: JavaSyntax.IJavaFunctionCall, sourceObjectType?: ObjectType.Definition): ITypeConstraint {
     this.focusToken(functionCall.token);
 
@@ -192,7 +189,7 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
 
     currentLookupTypeConstraint = this.getSyntaxNodeTypeConstraint(firstProperty);
 
-    if (TypeValidation.isDynamic(currentLookupTypeConstraint.typeDefinition)) {
+    if (TypeValidation.isDynamicType(currentLookupTypeConstraint.typeDefinition)) {
       // We can't verify whether any of the additional properties are
       // valid or what their type constraints are, so we simply return
       // a dynamic type constraint
@@ -673,7 +670,7 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
           instantiation.overloadIndex = constructorOverloadIndex;
         }
       }
-    } else if (!TypeValidation.isDynamic(constructorType)) {
+    } else if (!TypeValidation.isDynamicType(constructorType)) {
       this.reportNonConstructor(constructorName);
     }
   }
@@ -746,8 +743,7 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
 
         break;
       default:
+        this.report('Invalid assignment');
     }
-
-    this.report('Invalid assignment');
   }
 }
