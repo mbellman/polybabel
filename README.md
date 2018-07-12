@@ -18,27 +18,30 @@ Polybabel's emphasis on idiomatic programming means the standard libraries and A
 * * Translation ✔
 * * Line error preview/reporting ✔
 * Interoperability between languages - 70%
+* Generic type support - 0%
 
 ### Java
 #### Supported features:
 * Parsing ✔
 * Translation ✔
-* Validation - 50%?
+* Validation - 60%?
 * * Package validation ✔
 * * Import validation ✔
-* * Class extension validation - 75%?
-* * Class implementation validation - 75%?
-* * Interface validation - 5%
+* * Class extension validation - 85%?
+* * Class implementation validation ✔
+* * Interface validation - 50%
 * * Constructor overloads ✔
 * * Class field validation ✔
-* * Class method validation - 80%?
+* * Class method validation ✔
 * * Class method overloads ✔
-* * Statement type verification - 70%?
-* * Expression statement validation - 80%
+* * Statement type verification - 85%?
+* * Expression statement validation - 85%
+* * Cast validation ✔
 * * Access modifier validation ✔
 * * Control structure validation - 20%
 #### Remaining items:
 * Parsing
+* * Fix parsing issues with expressions of the form: i++ < j
 * * Comma-separated statement support
 
 ### Python

@@ -14,7 +14,7 @@ public final class ExampleProgram {
   public static void main (String[] args) {
     console.log('This is an example.');
 
-    IExampleInterface exampleInterface = ExampleProgram.getExample();
+    ExampleImplementation example = (ExampleImplementation) ExampleProgram.getExample();
 
     String firstArg = args[0];
     String[] names;

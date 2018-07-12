@@ -12,24 +12,41 @@ import { TypeValidation } from '../common/type-validation';
 import { ValidatorUtils } from '../common/validator-utils';
 
 /**
- * Validates Java statements. The fundamental qualifications for
- * 'valid' Java statements are that they:
+ * Validates Java expression statements, e.g. those which can potentially
+ * be written on either side of a parent statement. These include:
  *
- *  1. Have a type corresponding to the current expected type if any
+ *  - Function calls
+ *  - Instantiations
+ *  - Instructions
+ *  - Literals
+ *  - Property chains
+ *  - References
+ *  - Variable declarations
+ *  - Lambda expressions (@todo)
  *
- *  2. Don't involve invalid property chain access where applicable
+ * While it would be ideal to have individual validator classes for each
+ * of these expression types, property chains complicate the matter. For
+ * purposes of optimization, expressions are validated in the same pass
+ * as their type constraints are determined, which makes expression
+ * validation a two-fold procedure. Since function calls and instantiations
+ * include argument type constraint and overload checks in their validation
+ * requirements, function calls and instantiations as properties in a
+ * property chain also require these validations. However, an isolated
+ * JavaFunctionCallValidator or JavaInstantiationValidator would neither
+ * be capable of, nor would its name nominally imply, validation as part
+ * of a property chain, without information being unnaturally relayed
+ * between the parent JavaPropertyChainValidator and child validators.
+ * Thus there would either be a significant degree of code duplication,
+ * or there would have to be a mechanism of 'preloading' a validator
+ * with type constraint and contextual information about the syntax
+ * node being validated, and enabling broader communication and control
+ * between parent and child validators, muddling their responsibilities.
  *
- *  3. Aren't located in an invalid spot (e.g. full statements where
- *     only expressions are allowed). Since the Java parser does not
- *     distinguish between statements and expressions in that it only
- *     identifies statement syntax nodes, we have to validate their
- *     type and proper use here.
- *
- * When invoked directly from a block, Java statement validation allows
- * the type of the incoming statement to be any type. However, in the
- * case of return statements or recursively validated operand/assigned
- * statements, we need to ensure that the statement type matches that
- * expected.
+ * While tricky to maintain and incorporating a lot of complex validation
+ * logic, a unified 'expression statement validator' avoids the need
+ * for contrived changes to the AbstractValidator API and/or problems
+ * associated with designing individual validators to handle property
+ * chain-specific scenarios.
  */
 export default class JavaExpressionStatementValidator extends AbstractValidator<JavaSyntax.IJavaStatement> {
   /**
@@ -339,13 +356,30 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
       };
     }
 
-    const { isParenthetical, leftSide, operator } = statement;
+    const { isParenthetical, leftSide, operator, cast } = statement;
 
     if (!!leftSide) {
-      if (isParenthetical && leftSide.node === JavaSyntax.JavaSyntaxNode.STATEMENT) {
-        return this.getStatementTypeConstraint(leftSide as JavaSyntax.IJavaStatement);
+      const isParentheticalStatement = (
+        isParenthetical && leftSide.node === JavaSyntax.JavaSyntaxNode.STATEMENT
+      );
+
+      const statementTypeConstraint = isParentheticalStatement
+        ? this.getStatementTypeConstraint(leftSide as JavaSyntax.IJavaStatement)
+        : this.getSyntaxNodeTypeConstraint(leftSide);
+
+      if (cast) {
+        const castTypeConstraint = {
+          typeDefinition: this.findOriginalTypeConstraint(cast.namespaceChain).typeDefinition
+        };
+
+        this.check(
+          TypeValidation.typeConstraintMatches(castTypeConstraint, statementTypeConstraint),
+          `Cannot cast '${ValidatorUtils.getTypeConstraintDescription(statementTypeConstraint)}' to '${ValidatorUtils.getTypeConstraintDescription(castTypeConstraint)}'`
+        );
+
+        return castTypeConstraint;
       } else {
-        return this.getSyntaxNodeTypeConstraint(leftSide);
+        return statementTypeConstraint;
       }
     } else if (operator) {
       return this.inferTypeConstraintFromLeftOperation(operator.operation);
@@ -662,13 +696,13 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
       case ObjectMemberVisibility.SELF:
         this.check(
           objectVisitor.isInsideObject(parentTypeDefinition),
-          `Private member '${name}' is only visible inside '${parentTypeDefinition.name}'`
+          `Private member '${name}' is only accessible inside '${parentTypeDefinition.name}'`
         );
         break;
       case ObjectMemberVisibility.DERIVED:
         this.check(
           objectVisitor.isInsideObject(parentTypeDefinition) || objectVisitor.isInsideSubtypeOf(parentTypeDefinition),
-          `Protected member '${name}' is only visible inside '${parentTypeDefinition.name}' and its subclasses`
+          `Protected member '${name}' is only accessible inside '${parentTypeDefinition.name}' and its subclasses`
         );
         break;
     }
