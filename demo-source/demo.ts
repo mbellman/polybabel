@@ -7,6 +7,14 @@ import { js_beautify } from 'js-beautify';
 import { Language } from '../source/system/constants';
 import { LanguageSpecification } from '../source/language-specifications';
 
+/**
+ * @internal
+ */
+interface IOptions {
+  shouldIgnoreValidationErrors?: boolean;
+  shouldShowSyntaxTree?: boolean;
+}
+
 @Wired @Automated class Demo {
   private static readonly EDITOR_CONTENT_LOCALSTORAGE_KEY = 'polybabel-demo-editor-content';
   private static readonly FILE_NAME = 'demo';
@@ -18,12 +26,8 @@ import { LanguageSpecification } from '../source/language-specifications';
   private compilationStartTime: number;
   private demoLanguage: string;
   private editor: CodeMirror.EditorFromTextArea;
+  private options: IOptions = {};
   private outputBlock: HTMLElement = document.querySelector('.output-block');
-
-  private options: IHashMap<boolean> = {
-    showSyntaxTree: false
-  };
-
   private preview: CodeMirror.EditorFromTextArea;
   private recompilationTimer: number;
 
@@ -52,6 +56,8 @@ import { LanguageSpecification } from '../source/language-specifications';
 
     options.forEach(option => {
       option.addEventListener('change', this.onChangeOption);
+
+      this.options[option.name as keyof IOptions] = option.checked;
     });
 
     // Try to load in saved editor content from a previous session
@@ -96,15 +102,15 @@ import { LanguageSpecification } from '../source/language-specifications';
     }
 
     this.compiler.add(Demo.FILE_NAME, syntaxTree);
-    this.compiler.compileFile(Demo.FILE_NAME);
+    this.compiler.compileFile(Demo.FILE_NAME, this.options.shouldIgnoreValidationErrors);
 
     // Post-compilation output
-    if (this.compiler.hasErrors()) {
+    if (this.compiler.hasErrors() && !this.options.shouldIgnoreValidationErrors) {
       this.showCompilerErrors();
     } else {
       this.outputTotalCompilationTime();
 
-      if (this.options.showSyntaxTree) {
+      if (this.options.shouldShowSyntaxTree) {
         this.showSyntaxTree(syntaxTree);
       } else {
         const code = this.compiler.getCompiledCode('demo');
@@ -131,7 +137,7 @@ import { LanguageSpecification } from '../source/language-specifications';
   @Bound private onChangeOption (e: UIEvent): void {
     const checkbox = e.currentTarget as HTMLInputElement;
 
-    this.options[checkbox.name] = checkbox.checked;
+    this.options[checkbox.name as keyof IOptions] = checkbox.checked;
 
     this.compile();
   }

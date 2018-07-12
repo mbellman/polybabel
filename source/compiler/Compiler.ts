@@ -39,7 +39,7 @@ export default class Compiler {
     this.errors.push([ filename, reportedError ]);
   }
 
-  public compileFile (filename: string): void {
+  public compileFile (filename: string, shouldIgnoreValidationErrors: boolean = false): void {
     const syntaxTree = this.syntaxTreeMap[filename];
 
     if (!syntaxTree) {
@@ -52,7 +52,7 @@ export default class Compiler {
 
     validator.validate();
 
-    if (validator.hasErrors()) {
+    if (validator.hasErrors() && !shouldIgnoreValidationErrors) {
       validator.forErrors(reportedError => this.addError(filename, reportedError));
     } else {
       const translation = new Translator(syntaxTree).getTranslation();
