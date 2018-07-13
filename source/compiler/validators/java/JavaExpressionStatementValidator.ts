@@ -162,31 +162,35 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
       const isSuperConstructorCall = functionName === JavaConstants.Keyword.SUPER;
 
       if (isOwnConstructorCall) {
-        // @todo Refactor this and the similar procedure in validateInstantiation()
-        if (currentVisitedObject.hasConstructors() || args.length > 0) {
-          const constructorOverloadIndex = currentVisitedObject.getMatchingConstructorIndex(argumentTypeConstraints);
+        const constructorOverloadIndex = this.safelyGetConstructorOverloadIndex(currentVisitedObject, argumentTypeConstraints);
+        const isOverloaded = typeof constructorOverloadIndex === 'number';
 
-          if (constructorOverloadIndex === -1) {
-            const constructorArgumentDescriptions = argumentTypeConstraints.map(constraint => `'${ValidatorUtils.getTypeConstraintDescription(constraint)}'`);
-
-            this.report(`Invalid constructor arguments ${constructorArgumentDescriptions.join(', ')}`);
-          } else {
-            functionCall.name = `this.${currentVisitedObject.name}_${constructorOverloadIndex}`;
-          }
+        if (isOverloaded) {
+          functionCall.name = `this.${currentVisitedObject.name}_${constructorOverloadIndex}`;
         }
 
         return {
           typeDefinition: currentVisitedObject
         };
       } else if (isSuperConstructorCall) {
-        const superObject = currentVisitedObject.getSuperTypeConstraintByIndex(0);
+        const { typeDefinition: superObject } = (
+          currentVisitedObject.getSuperTypeConstraintByIndex(0) as ObjectType.Constraint ||
+          {} as ObjectType.Constraint
+        );
 
         if (superObject) {
-          // @todo
+          const constructorOverloadIndex = this.safelyGetConstructorOverloadIndex(superObject, argumentTypeConstraints);
+          const isOverloaded = typeof constructorOverloadIndex === 'number';
+
+          if (isOverloaded) {
+            functionCall.name = `this.${superObject.name}_${constructorOverloadIndex}`;
+          }
 
           return {
-            typeDefinition: superObject.typeDefinition
+            typeDefinition: superObject
           };
+        } else {
+          this.report(`'${currentVisitedObject.name}' does not have any super types`);
         }
       }
     }
@@ -596,6 +600,26 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
     );
   }
 
+  /**
+   * @todo Move into AbstractValidator
+   * @todo @description
+   */
+  private safelyGetConstructorOverloadIndex (objectType: ObjectType.Definition, argumentTypeConstraints: ITypeConstraint[]): number {
+    let constructorOverloadIndex: number = null;
+
+    if (objectType.hasConstructors() || argumentTypeConstraints.length > 0) {
+      constructorOverloadIndex = objectType.getMatchingConstructorIndex(argumentTypeConstraints);
+
+      if (constructorOverloadIndex === null) {
+        const constructorArgumentDescriptions = argumentTypeConstraints.map(constraint => `'${ValidatorUtils.getTypeConstraintDescription(constraint)}'`);
+
+        this.report(`Invalid constructor arguments ${constructorArgumentDescriptions.join(', ')}`);
+      }
+    }
+
+    return constructorOverloadIndex;
+  }
+
   private validateAsNonReturnStatement (): void {
     const statementTypeConstraint = this.getStatementTypeConstraint(this.syntaxNode);
     const { operator } = this.syntaxNode;
@@ -711,18 +735,10 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
         this.reportNonConstructableInstantiation(constructorName);
       }
 
-      if (constructorType.hasConstructors() || args.length > 0) {
-        const constructorOverloadIndex = constructorType.getMatchingConstructorIndex(constructorArgumentTypeConstraints);
+      const constructorOverloadIndex = this.safelyGetConstructorOverloadIndex(constructorType, constructorArgumentTypeConstraints);
 
-        if (constructorOverloadIndex === -1) {
-          const constructorArgumentDescriptions = constructorArgumentTypeConstraints.map(constraint => `'${ValidatorUtils.getTypeConstraintDescription(constraint)}'`);
-
-          this.report(`Invalid constructor arguments ${constructorArgumentDescriptions.join(', ')}`);
-        }
-
-        if (constructorType.shouldOverload) {
-          instantiation.overloadIndex = constructorOverloadIndex;
-        }
+      if (constructorType.shouldOverload) {
+        instantiation.overloadIndex = constructorOverloadIndex;
       }
     } else if (!TypeValidation.isDynamicType(constructorType)) {
       this.reportNonConstructor(constructorName);

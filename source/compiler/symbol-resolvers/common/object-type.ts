@@ -98,7 +98,7 @@ export namespace ObjectType {
      * a set of instantiation argument types and returns its index.
      * If the provided argument types match no explicit constructor
      * constraints, or if arguments are specified when no explicit
-     * constructors exist, we return -1 to indicate an erroneous
+     * constructors exist, we return null to indicate an erroneous
      * instantiation.
      */
     public getMatchingConstructorIndex (argumentTypeConstraints: ITypeConstraint[]): number {
@@ -110,7 +110,7 @@ export namespace ObjectType {
         }
       }
 
-      return -1;
+      return null;
     }
 
     /**

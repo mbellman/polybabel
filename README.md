@@ -44,8 +44,7 @@ Polybabel's emphasis on idiomatic programming means the standard libraries and A
 * * Fix parsing issues with expressions of the form: i++ < j
 * * Comma-separated statement support
 * Validation
-* * Allow calls to this() or super() in constructors
-* * Ensure that boolean operators convert statement types to booleans
+* * Ensure that boolean operators convert statement types
 
 ### Python
 Pending initial work.

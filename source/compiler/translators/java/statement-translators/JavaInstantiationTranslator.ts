@@ -139,10 +139,11 @@ export default class JavaInstantiationTranslator extends AbstractTranslator<Java
   private emitConstructorCall (): this {
     const { constructor, overloadIndex } = this.syntaxNode;
     const constructorName = this.getConstructorName();
+    const isOverloaded = typeof overloadIndex === 'number';
 
     this.emit(`new ${constructorName}(`);
 
-    if (overloadIndex >= 0) {
+    if (isOverloaded) {
       const lastConstructorNamespace = constructor.namespaceChain[constructor.namespaceChain.length - 1];
 
       this.emit(`).${lastConstructorNamespace}_${overloadIndex}(`)
