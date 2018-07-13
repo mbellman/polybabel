@@ -155,6 +155,42 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
       return constraint.typeDefinition.getReturnTypeConstraint();
     }
 
+    // @todo @description
+    if (this.isInsideConstructor()) {
+      const currentVisitedObject = this.context.objectVisitor.getCurrentVisitedObject();
+      const isOwnConstructorCall = functionName === JavaConstants.Keyword.THIS;
+      const isSuperConstructorCall = functionName === JavaConstants.Keyword.SUPER;
+
+      if (isOwnConstructorCall) {
+        // @todo Refactor this and the similar procedure in validateInstantiation()
+        if (currentVisitedObject.hasConstructors() || args.length > 0) {
+          const constructorOverloadIndex = currentVisitedObject.getMatchingConstructorIndex(argumentTypeConstraints);
+
+          if (constructorOverloadIndex === -1) {
+            const constructorArgumentDescriptions = argumentTypeConstraints.map(constraint => `'${ValidatorUtils.getTypeConstraintDescription(constraint)}'`);
+
+            this.report(`Invalid constructor arguments ${constructorArgumentDescriptions.join(', ')}`);
+          } else {
+            functionCall.name = `this.${currentVisitedObject.name}_${constructorOverloadIndex}`;
+          }
+        }
+
+        return {
+          typeDefinition: currentVisitedObject
+        };
+      } else if (isSuperConstructorCall) {
+        const superObject = currentVisitedObject.getSuperTypeConstraintByIndex(0);
+
+        if (superObject) {
+          // @todo
+
+          return {
+            typeDefinition: superObject.typeDefinition
+          };
+        }
+      }
+    }
+
     // If we get to this point, the function call constraint was incorrect,
     // so an error is guaranteed. However, we still need to determine the
     // cause of the error to accurately report it.
@@ -539,6 +575,12 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
     };
   }
 
+  private isInsideConstructor (): boolean {
+    const { shouldAllowReturn, shouldAllowReturnValue } = this.context.flags;
+
+    return shouldAllowReturn && !shouldAllowReturnValue;
+  }
+
   private isReturnStatement (): boolean {
     const { leftSide } = this.syntaxNode;
 
@@ -598,7 +640,7 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
   }
 
   private validateAsReturnStatement (): void {
-    const { shouldAllowReturn, shouldAllowReturnValue, mustReturnValue } = this.context.flags;
+    const { shouldAllowReturn, mustReturnValue } = this.context.flags;
 
     if (!shouldAllowReturn) {
       this.report('Unexpected return');
@@ -610,7 +652,7 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
     const { value: returnValue } = returnInstruction;
     const lastExpectedReturnTypeConstraint = this.getLastExpectedTypeConstraintFor(TypeExpectation.RETURN);
     const isMissingRequiredReturnValue = !returnValue && mustReturnValue;
-    const isConstructorReturn = shouldAllowReturn && !shouldAllowReturnValue;
+    const isConstructorReturn = this.isInsideConstructor();
     const isDisallowedConstructorReturnValue = isConstructorReturn && !!returnValue;
 
     returnInstruction.isConstructorReturn = isConstructorReturn;
@@ -618,7 +660,7 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
     if (isMissingRequiredReturnValue) {
       const returnTypeDescription = ValidatorUtils.getTypeConstraintDescription(lastExpectedReturnTypeConstraint);
 
-      this.report(`Expected a '${returnTypeDescription}' return value`);
+      this.report(`Expected a return type of '${returnTypeDescription}'`);
 
       return;
     }
