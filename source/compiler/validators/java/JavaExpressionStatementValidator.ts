@@ -562,7 +562,13 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
 
     if (this.hasRightSide()) {
       const { rightSide } = this.syntaxNode;
-      const isAssignment = operator.operation === JavaSyntax.JavaOperation.ASSIGN;
+      const { operation } = operator;
+      const isAssignment = operation === JavaSyntax.JavaOperation.ASSIGN;
+
+      const isBooleanNegation = (
+        operation === JavaSyntax.JavaOperation.NEGATE ||
+        operation === JavaSyntax.JavaOperation.DOUBLE_NOT
+      );
 
       const expectation = isAssignment
         ? TypeExpectation.ASSIGNMENT
@@ -576,6 +582,12 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
         constraint: statementTypeConstraint,
         expectation
       });
+
+      if (isBooleanNegation) {
+        this.setFlags({
+          shouldAllowAnyType: true
+        });
+      }
 
       this.validateNodeWith(JavaExpressionStatementValidator, rightSide);
       this.resetExpectedType();

@@ -146,7 +146,7 @@ export default class JavaOperatorParser extends AbstractParser<JavaSyntax.IJavaO
    * operator matching only the initial operator of a given
    * matcher, e.g. the initial operator followed by any token
    * not explicitly matched. Set after parsing the operator
-   * token stream in parseJavaOperation().
+   * token stream in parseOperation().
    */
   private isDefaultOperator: boolean = false;
 
@@ -158,7 +158,7 @@ export default class JavaOperatorParser extends AbstractParser<JavaSyntax.IJavaO
   }
 
   @Override protected onFirstToken (): void {
-    const operator = this.parseJavaOperation();
+    const operator = this.parseOperation();
 
     if (operator === null) {
       this.throw('Invalid operator');
@@ -199,7 +199,7 @@ export default class JavaOperatorParser extends AbstractParser<JavaSyntax.IJavaO
     );
   }
 
-  private parseJavaOperation (): JavaSyntax.JavaOperation {
+  private parseOperation (): JavaSyntax.JavaOperation {
     const possibleOperatorMatchers = JavaOperatorParser.OperatorMatcherMap[this.currentToken.value] || [];
 
     for (const [ tokenMatches, operation ] of possibleOperatorMatchers) {

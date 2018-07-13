@@ -45,6 +45,7 @@ Polybabel's emphasis on idiomatic programming means the standard libraries and A
 * * Comma-separated statement support
 * Validation
 * * Allow calls to this() or super() in constructors
+* * Ensure that boolean operators convert statement types to booleans
 
 ### Python
 Pending initial work.
