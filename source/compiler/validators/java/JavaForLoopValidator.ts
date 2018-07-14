@@ -33,7 +33,7 @@ export default class JavaForLoopValidator extends AbstractValidator<JavaSyntax.I
       const collectionTypeConstraint = TypeUtils.createArrayTypeConstraint(symbolDictionary, lastCheckedTypeConstraint, 1);
 
       this.expectType({
-        expectation: TypeExpectation.STATEMENT,
+        expectation: TypeExpectation.EXPRESSION,
         constraint: collectionTypeConstraint
       });
 

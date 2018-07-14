@@ -18,6 +18,9 @@ public final class ExampleProgram {
 
     String firstArg = args[0];
     String[] names;
+    int age = 25;
+
+    age++;
 
     for (String name : names) {
       String firstChar = name.charAt(0);

@@ -31,7 +31,7 @@ export const enum TypeExpectation {
   ASSIGNMENT = 'assignment type',
   OPERAND = 'operand type',
   ARGUMENT = 'argument type',
-  STATEMENT = 'statement type'
+  EXPRESSION = 'expression type'
 }
 
 /**

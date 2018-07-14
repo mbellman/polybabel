@@ -7,9 +7,6 @@ import { ObjectType } from '../../symbol-resolvers/common/object-type';
 export default class JavaInterfaceValidator extends AbstractValidator<JavaSyntax.IJavaInterface> {
   private ownTypeDefinition: ObjectType.Definition;
 
-  /**
-   * @todo
-   */
   @Implements public validate (): void {
     const { name, constructors } = this.syntaxNode;
     const { objectVisitor } = this.context;

@@ -2,7 +2,7 @@ import AbstractValidator from '../common/AbstractValidator';
 import { ArrayType } from '../../symbol-resolvers/common/array-type';
 import { DynamicTypeConstraint, GlobalTypeConstraintMap, NullTypeConstraint } from '../../native-type-constraints/global';
 import { FunctionType } from '../../symbol-resolvers/common/function-type';
-import { Implements } from 'trampoline-framework';
+import { Implements, IHashMap } from 'trampoline-framework';
 import { IObjectMember, ITypeConstraint, ObjectMemberVisibility, TypeDefinition } from '../../symbol-resolvers/common/types';
 import { JavaConstants } from '../../../parser/java/java-constants';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
@@ -49,6 +49,57 @@ import { ValidatorUtils } from '../common/validator-utils';
  * chain-specific scenarios.
  */
 export default class JavaExpressionStatementValidator extends AbstractValidator<JavaSyntax.IJavaStatement> {
+  /**
+   * A map of Java operations to the type constraints expected as their
+   * operands. Null values indicate that the expected type constraint
+   * should be the current expected as denoted by the validator context.
+   */
+  private static ExpectedOperandMap: IHashMap<ITypeConstraint> = {
+    [JavaSyntax.JavaOperation.ADD]: GlobalTypeConstraintMap.Number,
+    [JavaSyntax.JavaOperation.ASSIGN]: null,
+    [JavaSyntax.JavaOperation.BITWISE_AND]: GlobalTypeConstraintMap.Number,
+    [JavaSyntax.JavaOperation.BITWISE_COMPLEMENT]: GlobalTypeConstraintMap.Number,
+    [JavaSyntax.JavaOperation.BITWISE_EXCLUSIVE_OR]: GlobalTypeConstraintMap.Number,
+    [JavaSyntax.JavaOperation.BITWISE_INCLUSIVE_OR]: GlobalTypeConstraintMap.Number,
+    [JavaSyntax.JavaOperation.CONDITIONAL_AND]: GlobalTypeConstraintMap.Boolean,
+    [JavaSyntax.JavaOperation.CONDITIONAL_OR]: GlobalTypeConstraintMap.Boolean,
+    [JavaSyntax.JavaOperation.DECREMENT]: GlobalTypeConstraintMap.Number,
+    [JavaSyntax.JavaOperation.DIVIDE]: GlobalTypeConstraintMap.Number,
+    [JavaSyntax.JavaOperation.DOUBLE_NOT]: DynamicTypeConstraint,
+    [JavaSyntax.JavaOperation.ELVIS]: null,
+    [JavaSyntax.JavaOperation.EQUAL_TO]: null,
+    [JavaSyntax.JavaOperation.GREATER_THAN]: GlobalTypeConstraintMap.Number,
+    [JavaSyntax.JavaOperation.GREATER_THAN_OR_EQUAL_TO]: GlobalTypeConstraintMap.Number,
+    [JavaSyntax.JavaOperation.INCREMENT]: GlobalTypeConstraintMap.Number,
+    [JavaSyntax.JavaOperation.INSTANCEOF]: DynamicTypeConstraint,
+    [JavaSyntax.JavaOperation.LESS_THAN]: GlobalTypeConstraintMap.Number,
+    [JavaSyntax.JavaOperation.LESS_THAN_OR_EQUAL_TO]: GlobalTypeConstraintMap.Number,
+    [JavaSyntax.JavaOperation.MULTIPLY]: GlobalTypeConstraintMap.Number,
+    [JavaSyntax.JavaOperation.NEGATE]: DynamicTypeConstraint,
+    [JavaSyntax.JavaOperation.NOT_EQUAL_TO]: DynamicTypeConstraint,
+    [JavaSyntax.JavaOperation.REMAINDER]: GlobalTypeConstraintMap.Number,
+    [JavaSyntax.JavaOperation.SIGNED_LEFT_SHIFT]: GlobalTypeConstraintMap.Number,
+    [JavaSyntax.JavaOperation.SIGNED_RIGHT_SHIFT]: GlobalTypeConstraintMap.Number,
+    [JavaSyntax.JavaOperation.SUBTRACT]: GlobalTypeConstraintMap.Number,
+    [JavaSyntax.JavaOperation.UNSIGNED_RIGHT_SHIFT]: GlobalTypeConstraintMap.Number
+  };
+
+  /**
+   * A set of operations which, present between two expressions, automatically
+   * designates their parent statement as having a boolean type constraint.
+   * We keep the list in hash map form for faster lookups.
+   */
+  private static BooleanOperationMap: IHashMap<any> = {
+    [JavaSyntax.JavaOperation.CONDITIONAL_AND]: null,
+    [JavaSyntax.JavaOperation.CONDITIONAL_OR]: null,
+    [JavaSyntax.JavaOperation.GREATER_THAN]: null,
+    [JavaSyntax.JavaOperation.GREATER_THAN_OR_EQUAL_TO]: null,
+    [JavaSyntax.JavaOperation.LESS_THAN]: null,
+    [JavaSyntax.JavaOperation.LESS_THAN_OR_EQUAL_TO]: null,
+    [JavaSyntax.JavaOperation.EQUAL_TO]: null,
+    [JavaSyntax.JavaOperation.NOT_EQUAL_TO]: null
+  };
+
   /**
    * Determines whether the last member on a property chain is final.
    * Assignment validation depends on characteristics of the statement's
@@ -233,7 +284,7 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
       // We can't verify whether any of the additional properties are
       // valid or what their type constraints are, so we simply return
       // a dynamic type constraint
-      return DynamicTypeConstraint;
+      return ValidatorUtils.getNonOriginalTypeConstraint(DynamicTypeConstraint);
     }
 
     let incomingProperty = properties[++propertyIndex];
@@ -381,42 +432,74 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
         constraint = DynamicTypeConstraint;
     }
 
-    return {
-      typeDefinition: constraint.typeDefinition
-    };
+    return ValidatorUtils.getNonOriginalTypeConstraint(constraint);
   }
 
   private getStatementTypeConstraint (statement: JavaSyntax.IJavaStatement): ITypeConstraint {
     if (!statement) {
-      return {
-        typeDefinition: DynamicTypeConstraint.typeDefinition
-      };
+      return DynamicTypeConstraint;
     }
 
     const { isParenthetical, leftSide, operator, cast } = statement;
 
     if (!!leftSide) {
       const isParentheticalStatement = (
-        isParenthetical && leftSide.node === JavaSyntax.JavaSyntaxNode.STATEMENT
+        isParenthetical &&
+        leftSide.node === JavaSyntax.JavaSyntaxNode.STATEMENT
       );
 
-      const statementTypeConstraint = isParentheticalStatement
+      const leftSideTypeConstraint = isParentheticalStatement
         ? this.getStatementTypeConstraint(leftSide as JavaSyntax.IJavaStatement)
         : this.getSyntaxNodeTypeConstraint(leftSide);
 
+      if (operator) {
+        // While we have the left side type constraint in scope,
+        // and if it is part of an operation, we have to validate
+        // that its type constraint matches that expected for
+        // the operator
+        const { shouldAllowAnyType } = this.context.flags;
+
+        const expectedOperandTypeConstraint = (
+          ValidatorUtils.getNonOriginalTypeConstraint(JavaExpressionStatementValidator.ExpectedOperandMap[operator.operation]) || (
+            this.expectsType()
+              ? this.getCurrentExpectedTypeConstraint().constraint
+              : DynamicTypeConstraint
+          )
+        );
+
+        this.expectType({
+          constraint: expectedOperandTypeConstraint,
+          expectation: TypeExpectation.OPERAND
+        });
+
+        this.checkIfTypeConstraintMatchesExpected(leftSideTypeConstraint);
+        this.resetExpectedType();
+        this.setFlags({ shouldAllowAnyType });
+      }
+
       if (cast) {
-        const castTypeConstraint = {
-          typeDefinition: this.findOriginalTypeConstraint(cast.namespaceChain).typeDefinition
-        };
+        const originalCastTypeConstraint = this.findOriginalTypeConstraint(cast.namespaceChain);
+        const castTypeConstraint = ValidatorUtils.getNonOriginalTypeConstraint(originalCastTypeConstraint);
+
+        const isValidCast = (
+          // Downcast
+          TypeValidation.typeConstraintMatches(castTypeConstraint, leftSideTypeConstraint) ||
+          // Upcast
+          TypeValidation.typeConstraintMatches(leftSideTypeConstraint, castTypeConstraint)
+        );
 
         this.check(
-          TypeValidation.typeConstraintMatches(castTypeConstraint, statementTypeConstraint),
-          `Cannot cast '${ValidatorUtils.getTypeConstraintDescription(statementTypeConstraint)}' to '${ValidatorUtils.getTypeConstraintDescription(castTypeConstraint)}'`
+          isValidCast,
+          `Cannot cast '${ValidatorUtils.getTypeConstraintDescription(leftSideTypeConstraint)}' to '${ValidatorUtils.getTypeConstraintDescription(castTypeConstraint)}'`
         );
 
         return castTypeConstraint;
+      } else if (operator && this.isBooleanOperation(operator.operation)) {
+        return {
+          typeDefinition: GlobalTypeConstraintMap.Boolean.typeDefinition
+        };
       } else {
-        return statementTypeConstraint;
+        return leftSideTypeConstraint;
       }
     } else if (operator) {
       return this.inferTypeConstraintFromLeftOperation(operator.operation);
@@ -431,6 +514,12 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
    * Returns the type of a Java syntax node.
    */
   private getSyntaxNodeTypeConstraint (javaSyntaxNode: JavaSyntax.IJavaSyntaxNode): ITypeConstraint {
+    if (!javaSyntaxNode) {
+      return {
+        typeDefinition: DynamicTypeConstraint.typeDefinition
+      };
+    }
+
     switch (javaSyntaxNode.node) {
       case JavaSyntax.JavaSyntaxNode.REFERENCE: {
         const reference = javaSyntaxNode as JavaSyntax.IJavaReference;
@@ -568,6 +657,8 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
       case JavaSyntax.JavaOperation.INCREMENT:
       case JavaSyntax.JavaOperation.DECREMENT:
       case JavaSyntax.JavaOperation.BITWISE_COMPLEMENT:
+      case JavaSyntax.JavaOperation.ADD:
+      case JavaSyntax.JavaOperation.SUBTRACT:
         constraint = GlobalTypeConstraintMap.Number;
         break;
       default:
@@ -577,6 +668,25 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
     return {
       typeDefinition: constraint.typeDefinition
     };
+  }
+
+  private isBooleanOperation (operation: JavaSyntax.JavaOperation): boolean {
+    return operation in JavaExpressionStatementValidator.BooleanOperationMap;
+  }
+
+  private isIncrementOrDecrement (): boolean {
+    const { operator } = this.syntaxNode;
+
+    if (operator) {
+      const { operation } = operator;
+
+      return (
+        operation === JavaSyntax.JavaOperation.INCREMENT ||
+        operation === JavaSyntax.JavaOperation.DECREMENT
+      );
+    }
+
+    return false;
   }
 
   private isInsideConstructor (): boolean {
@@ -626,40 +736,32 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
 
     this.checkIfTypeConstraintMatchesExpected(statementTypeConstraint);
 
+    if (this.isIncrementOrDecrement()) {
+      this.validateIncrementOrDecrement();
+    }
+
     if (this.hasRightSide()) {
       const { rightSide } = this.syntaxNode;
       const { operation } = operator;
       const isAssignment = operation === JavaSyntax.JavaOperation.ASSIGN;
+      const rightSideExpectation = isAssignment ? TypeExpectation.ASSIGNMENT : TypeExpectation.OPERAND;
 
-      const isBooleanNegation = (
-        operation === JavaSyntax.JavaOperation.NEGATE ||
-        operation === JavaSyntax.JavaOperation.DOUBLE_NOT
+      const expectedOperandTypeConstraint = (
+        ValidatorUtils.getNonOriginalTypeConstraint(JavaExpressionStatementValidator.ExpectedOperandMap[operation]) ||
+        statementTypeConstraint
       );
-
-      const expectation = isAssignment
-        ? TypeExpectation.ASSIGNMENT
-        : TypeExpectation.OPERAND;
 
       if (isAssignment) {
         this.validateLeftSideOfAssignment();
       }
 
       this.expectType({
-        constraint: statementTypeConstraint,
-        expectation
+        constraint: expectedOperandTypeConstraint,
+        expectation: rightSideExpectation
       });
-
-      if (isBooleanNegation) {
-        this.setFlags({
-          shouldAllowAnyType: true
-        });
-      }
 
       this.validateNodeWith(JavaExpressionStatementValidator, rightSide);
       this.resetExpectedType();
-    } else if (operator) {
-      // TODO: Validate that statements with ++ and --
-      // operators are references and number types
     }
   }
 
@@ -673,11 +775,11 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
     }
 
     const returnInstruction = this.syntaxNode.leftSide as JavaSyntax.IJavaInstruction;
-    const { value: returnValue } = returnInstruction;
+    const { value: returnValueStatement } = returnInstruction;
     const lastExpectedReturnTypeConstraint = this.getLastExpectedTypeConstraintFor(TypeExpectation.RETURN);
-    const isMissingRequiredReturnValue = !returnValue && mustReturnValue;
+    const isMissingRequiredReturnValue = !returnValueStatement && mustReturnValue;
     const isConstructorReturn = this.isInsideConstructor();
-    const isDisallowedConstructorReturnValue = isConstructorReturn && !!returnValue;
+    const isDisallowedConstructorReturnValue = isConstructorReturn && !!returnValueStatement;
 
     returnInstruction.isConstructorReturn = isConstructorReturn;
 
@@ -695,7 +797,7 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
       return;
     }
 
-    if (returnValue) {
+    if (returnValueStatement) {
       this.setFlags({
         shouldAllowReturn: false
       });
@@ -705,7 +807,7 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
         expectation: TypeExpectation.RETURN
       });
 
-      this.validateNodeWith(JavaExpressionStatementValidator, returnValue);
+      this.validateNodeWith(JavaExpressionStatementValidator, returnValueStatement);
       this.resetExpectedType();
 
       this.setFlags({
@@ -716,6 +818,29 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
     this.setFlags({
       didReturnInCurrentBlock: true
     });
+  }
+
+  /**
+   * The ++ and -- operators require special validations asserting that
+   * their operands are Java reference nodes.
+   */
+  private validateIncrementOrDecrement (): void {
+    const { leftSide, rightSide } = this.syntaxNode;
+    const hasRightSide = this.hasRightSide();
+
+    const hasValidOperands = (
+      (!!leftSide ? leftSide.node === JavaSyntax.JavaSyntaxNode.REFERENCE : true) &&
+      (this.hasRightSide() ? rightSide.leftSide.node === JavaSyntax.JavaSyntaxNode.REFERENCE : true)
+    );
+
+    if (hasRightSide) {
+      this.focusToken(rightSide.leftSide.token);
+    }
+
+    this.check(
+      hasValidOperands,
+      `Invalid non-reference operand`
+    );
   }
 
   private validateInstanceKeyword (keyword: string): void {

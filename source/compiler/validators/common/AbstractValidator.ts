@@ -61,8 +61,7 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
       return;
     }
 
-    const { expectedTypeConstraintStack } = this.context;
-    const { constraint: expectedTypeconstraint, expectation } = expectedTypeConstraintStack[expectedTypeConstraintStack.length - 1];
+    const { constraint: expectedTypeconstraint, expectation } = this.getCurrentExpectedTypeConstraint();
     const typeDescription = ValidatorUtils.getTypeConstraintDescription(constraint);
     const expectedTypeDescription = ValidatorUtils.getTypeConstraintDescription(expectedTypeconstraint);
 
@@ -250,6 +249,12 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
 
   protected focusToken (token: IToken): void {
     this.focusedToken = token || this.focusedToken;
+  }
+
+  protected getCurrentExpectedTypeConstraint (): IExpectedTypeConstraint {
+    const { expectedTypeConstraintStack } = this.context;
+
+    return expectedTypeConstraintStack[expectedTypeConstraintStack.length - 1];
   }
 
   protected getCurrentNamespace (): string {

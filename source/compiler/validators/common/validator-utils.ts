@@ -29,6 +29,16 @@ export namespace ValidatorUtils {
     );
   }
 
+  export function getNonOriginalTypeConstraint (typeConstraint: ITypeConstraint): ITypeConstraint {
+    if (typeConstraint) {
+      return {
+        typeDefinition: typeConstraint.typeDefinition
+      };
+    }
+
+    return null;
+  }
+
   export function getTypeConstraintDescription ({ typeDefinition, isOriginal }: ITypeConstraint): string {
     let description = isOriginal ? 'Type: ' : '';
 
