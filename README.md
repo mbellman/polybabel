@@ -41,6 +41,7 @@ Polybabel's emphasis on idiomatic programming means the standard libraries and A
 * * Control structure validation - 20%?
 #### Upcoming:
 * Parsing
+* * Support order of operations
 * * Fix parsing issues with expressions of the form: i++ < j
 * * Comma-separated statement support
 

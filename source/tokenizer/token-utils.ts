@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import { Callback } from '../system/types';
+import { IS_BROWSER } from '../system/constants';
 import { IToken, TokenType } from './types';
 import { TokenPredicate } from '../parser/common/parser-types';
 
@@ -114,9 +115,11 @@ export namespace TokenUtils {
       const isFocusedToken = currentToken === token;
       const { value } = currentToken;
 
-      linePreview += isFocusedToken
-        ? `${chalk.red(value)}`
-        : value;
+      linePreview += isFocusedToken ? (
+        IS_BROWSER
+          ? `<span style='color: red'>${value}</span>`
+          : `${chalk.red(value)}`
+      ) : value;
 
       currentToken = currentToken.nextToken;
 

@@ -7,3 +7,5 @@ export const enum Language {
   RUBY = 'Ruby',
   C_SHARP = 'C#'
 }
+
+export const IS_BROWSER = typeof window !== 'undefined';

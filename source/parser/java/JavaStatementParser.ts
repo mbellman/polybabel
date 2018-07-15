@@ -18,7 +18,7 @@ import JavaTryCatchParser from './statement-parsers/JavaTryCatchParser';
 import JavaTypeParser from './JavaTypeParser';
 import JavaVariableDeclarationParser from './statement-parsers/JavaVariableDeclarationParser';
 import JavaWhileLoopParser from './statement-parsers/JavaWhileLoopParser';
-import { Constructor, Implements, Override } from 'trampoline-framework';
+import { Constructor, Implements, Override, IHashMap } from 'trampoline-framework';
 import { JavaConstants } from './java-constants';
 import { JavaSyntax } from './java-syntax';
 import { JavaUtils } from './java-utils';
@@ -231,8 +231,29 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
       this.parseTernary();
     } else {
       // Handle as a normal left-side/right-side operation
-      this.parsed.operator = this.parseNextWith(JavaOperatorParser);
-      this.parsed.rightSide = this.parseNextWith(JavaStatementParser);
+      const operator = this.parseNextWith(JavaOperatorParser);
+      const rightSide = this.parseNextWith(JavaStatementParser);
+
+      if (JavaUtils.isPriorityOperation(operator.operation)) {
+        const { leftSide: rightSideLeftOperand, operator: nextOperator, rightSide: rightSideRightOperand } = rightSide;
+
+        const priorityStatement: JavaSyntax.IJavaStatement = {
+          node: JavaSyntax.JavaSyntaxNode.STATEMENT,
+          leftSide: this.parsed.leftSide,
+          operator,
+          rightSide: {
+            node: JavaSyntax.JavaSyntaxNode.STATEMENT,
+            leftSide: rightSideLeftOperand
+          }
+        };
+
+        this.parsed.leftSide = priorityStatement;
+        this.parsed.operator = nextOperator;
+        this.parsed.rightSide = rightSideRightOperand;
+      } else {
+        this.parsed.operator = operator;
+        this.parsed.rightSide = rightSide;
+      }
 
       this.assert(
         this.hasParsedSide(),
@@ -356,7 +377,7 @@ export default class JavaStatementParser extends AbstractParser<JavaSyntax.IJava
     // in a circular reference and infinite recursion during
     // translation. A shallow copy suffices since we don't
     // change any deeper properties.
-    const condition = Object.assign({}, this.parsed);
+    const condition = { ...this.parsed };
     const left = this.parseNextWith(JavaStatementParser);
 
     this.eat(':');

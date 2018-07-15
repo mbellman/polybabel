@@ -112,6 +112,11 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
    */
   private lastPropertyIsFinal: boolean = false;
 
+  /**
+   * @todo @description
+   */
+  private leftSideTypeConstraint: ITypeConstraint;
+
   @Implements public validate (): void {
     const { didReturnInCurrentBlock, didReportUnreachableCode } = this.context.flags;
 
@@ -448,7 +453,7 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
         leftSide.node === JavaSyntax.JavaSyntaxNode.STATEMENT
       );
 
-      const leftSideTypeConstraint = isParentheticalStatement
+      this.leftSideTypeConstraint = isParentheticalStatement
         ? this.getStatementTypeConstraint(leftSide as JavaSyntax.IJavaStatement)
         : this.getSyntaxNodeTypeConstraint(leftSide);
 
@@ -460,11 +465,8 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
         const { shouldAllowAnyType } = this.context.flags;
 
         const expectedOperandTypeConstraint = (
-          ValidatorUtils.getNonOriginalTypeConstraint(JavaExpressionStatementValidator.ExpectedOperandMap[operator.operation]) || (
-            this.expectsType()
-              ? this.getCurrentExpectedTypeConstraint().constraint
-              : DynamicTypeConstraint
-          )
+          ValidatorUtils.getNonOriginalTypeConstraint(JavaExpressionStatementValidator.ExpectedOperandMap[operator.operation]) ||
+          this.leftSideTypeConstraint
         );
 
         this.expectType({
@@ -472,7 +474,7 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
           expectation: TypeExpectation.OPERAND
         });
 
-        this.checkIfTypeConstraintMatchesExpected(leftSideTypeConstraint);
+        this.checkIfTypeConstraintMatchesExpected(this.leftSideTypeConstraint);
         this.resetExpectedType();
         this.setFlags({ shouldAllowAnyType });
       }
@@ -483,14 +485,14 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
 
         const isValidCast = (
           // Downcast
-          TypeValidation.typeConstraintMatches(castTypeConstraint, leftSideTypeConstraint) ||
+          TypeValidation.typeConstraintMatches(castTypeConstraint, this.leftSideTypeConstraint) ||
           // Upcast
-          TypeValidation.typeConstraintMatches(leftSideTypeConstraint, castTypeConstraint)
+          TypeValidation.typeConstraintMatches(this.leftSideTypeConstraint, castTypeConstraint)
         );
 
         this.check(
           isValidCast,
-          `Cannot cast '${ValidatorUtils.getTypeConstraintDescription(leftSideTypeConstraint)}' to '${ValidatorUtils.getTypeConstraintDescription(castTypeConstraint)}'`
+          `Cannot cast '${ValidatorUtils.getTypeConstraintDescription(this.leftSideTypeConstraint)}' to '${ValidatorUtils.getTypeConstraintDescription(castTypeConstraint)}'`
         );
 
         return castTypeConstraint;
@@ -499,7 +501,7 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
           typeDefinition: GlobalTypeConstraintMap.Boolean.typeDefinition
         };
       } else {
-        return leftSideTypeConstraint;
+        return this.leftSideTypeConstraint;
       }
     } else if (operator) {
       return this.inferTypeConstraintFromLeftOperation(operator.operation);
@@ -748,7 +750,7 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
 
       const expectedOperandTypeConstraint = (
         ValidatorUtils.getNonOriginalTypeConstraint(JavaExpressionStatementValidator.ExpectedOperandMap[operation]) ||
-        statementTypeConstraint
+        this.leftSideTypeConstraint
       );
 
       if (isAssignment) {

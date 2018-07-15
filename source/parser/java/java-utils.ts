@@ -1,7 +1,8 @@
 import { IToken } from '../../tokenizer/types';
 import { JavaConstants } from './java-constants';
+import { JavaSyntax } from './java-syntax';
 import { ParserUtils } from '../common/parser-utils';
-import { TokenMatch, TokenMatcherType, TokenPredicate } from '../common/parser-types';
+import { TokenMatch } from '../common/parser-types';
 import { TokenUtils } from '../../tokenizer/token-utils';
 
 export namespace JavaUtils {
@@ -53,13 +54,32 @@ export namespace JavaUtils {
    *
    * @internal
    */
-  const ValidReferencePrecedingWords: string[] = [
+  const ValidReferencePrecedingWords: TokenMatch = [
     JavaConstants.Operator.INSTANCEOF,
     JavaConstants.Keyword.RETURN,
     JavaConstants.Keyword.THROW,
     JavaConstants.Keyword.CASE,
     JavaConstants.Keyword.ASSERT,
     JavaConstants.Keyword.ELSE
+  ];
+
+  /**
+   * A list of operations which designate their immediate
+   * operands as an automatic left/right-side pair, taking
+   * priority over the existing recursive structure of the
+   * statement.
+   *
+   * @see isPriorityOperation()
+   * @internal
+   */
+  const PriorityOperations: JavaSyntax.JavaOperation[] = [
+    JavaSyntax.JavaOperation.ADD,
+    JavaSyntax.JavaOperation.SUBTRACT,
+    JavaSyntax.JavaOperation.MULTIPLY,
+    JavaSyntax.JavaOperation.DIVIDE,
+    JavaSyntax.JavaOperation.REMAINDER,
+    JavaSyntax.JavaOperation.INCREMENT,
+    JavaSyntax.JavaOperation.DECREMENT
   ];
 
   /**
@@ -203,6 +223,29 @@ export namespace JavaUtils {
       token.value === JavaConstants.Keyword.STATIC &&
       token.nextTextToken.value === '{'
     );
+  }
+
+  /**
+   * Determines whether a Java operator operation should
+   * take priority over the next in a statement with multiple
+   * operands, e.g. '1 + 2 > 5'. Normally, Java statements
+   * are parsed recursively in such a way that the above
+   * statement would be parsed into a node effectively
+   * equivalent to '1 + (2 > 5)'. In select cases, we want
+   * to retroactively transform the statement node so it
+   * associates operands based on priority, e.g. using
+   * the previous example, '(1 + 2) > 5'.
+   *
+   * @example
+   *
+   *  a + b
+   *  a - b
+   *  a * b
+   *  a / b
+   *  a % b
+   */
+  export function isPriorityOperation (operation: JavaSyntax.JavaOperation): boolean {
+    return PriorityOperations.indexOf(operation) > -1;
   }
 
   /**
