@@ -2,7 +2,7 @@ import AbstractParser from './AbstractParser';
 import { Callback } from '../../system/types';
 import { Constructor } from 'trampoline-framework';
 import { ISyntaxNode } from './syntax-types';
-import { IToken } from '../../tokenizer/types';
+import { IToken, ITokenRange } from '../../tokenizer/types';
 
 /**
  * A string, regex pattern, or token predicate function to match
@@ -107,5 +107,5 @@ export interface IParseSequenceConfiguration<V extends ISyntaxNode> {
  */
 export interface IParserError {
   message: string;
-  token?: IToken;
+  tokenRange?: ITokenRange;
 }

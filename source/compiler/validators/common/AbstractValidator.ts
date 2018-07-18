@@ -5,7 +5,7 @@ import { Dynamic, IObjectMember, IScopedReference, ITypeConstraint } from '../..
 import { DynamicTypeConstraint, GlobalTypeConstraintMap } from '../../native-type-constraints/global';
 import { IExpectedTypeConstraint, IValidatorContextFlags, IValidatorError, TypeExpectation } from './types';
 import { ISyntaxNode } from '../../../parser/common/syntax-types';
-import { IToken } from '../../../tokenizer/types';
+import { IToken, ITokenRange } from '../../../tokenizer/types';
 import { ObjectType } from '../../symbol-resolvers/common/object-type';
 import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
 import { TypeValidation } from './type-validation';
@@ -14,12 +14,12 @@ import { ValidatorUtils } from './validator-utils';
 export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxNode> {
   protected context: ValidatorContext;
   protected syntaxNode: S;
-  private focusedToken: IToken;
+  private focusedTokenRange: ITokenRange;
 
   public constructor (context: ValidatorContext, syntaxNode: S) {
     this.context = context;
     this.syntaxNode = syntaxNode;
-    this.focusedToken = syntaxNode.token;
+    this.focusedTokenRange = syntaxNode.tokenRange;
   }
 
   public forErrors (callback: Callback<IValidatorError>): void {
@@ -247,8 +247,8 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
     return DynamicTypeConstraint;
   }
 
-  protected focusToken (token: IToken): void {
-    this.focusedToken = token || this.focusedToken;
+  protected focusTokenRange (tokenRange: ITokenRange): void {
+    this.focusedTokenRange = tokenRange || this.focusedTokenRange;
   }
 
   protected getCurrentExpectedTypeConstraint (): IExpectedTypeConstraint {
@@ -284,7 +284,7 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
   protected report (message: string): void {
     this.context.errors.push({
       message,
-      token: this.focusedToken
+      tokenRange: this.focusedTokenRange
     });
   }
 
@@ -342,7 +342,7 @@ export default abstract class AbstractValidator<S extends ISyntaxNode = ISyntaxN
   protected validateNodeWith <T extends ISyntaxNode, N extends T>(Validator: Constructor<AbstractValidator<T>>, syntaxNode: N): void {
     const validator = new (Validator as IConstructable<AbstractValidator>)(this.context, syntaxNode);
 
-    this.focusToken(syntaxNode.token);
+    this.focusTokenRange(syntaxNode.tokenRange);
 
     try {
       validator.validate();

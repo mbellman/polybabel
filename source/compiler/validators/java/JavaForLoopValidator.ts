@@ -20,7 +20,7 @@ export default class JavaForLoopValidator extends AbstractValidator<JavaSyntax.I
         iteratorNode === JavaSyntax.JavaSyntaxNode.REFERENCE
       );
 
-      this.focusToken(iteratorValue.token);
+      this.focusTokenRange(iteratorValue.tokenRange);
 
       this.check(
         isValidIteratorValue,

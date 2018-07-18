@@ -12,7 +12,7 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
 
   private error: IParserError = {
     message: null,
-    token: null
+    tokenRange: null
   };
 
   private isFinished: boolean = false;
@@ -58,6 +58,11 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
   public parse (token: IToken): S {
     this.currentToken = token;
 
+    this.parsed.tokenRange = {
+      start: token,
+      end: null
+    };
+
     try {
       this.stream();
     } catch ({ message }) {
@@ -65,8 +70,6 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
       // the current file's parsing stream
       this.throw(message);
     }
-
-    this.parsed.token = token;
 
     return this.parsed;
   }
@@ -257,7 +260,11 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
   protected throw (message: string): void {
     if (!this.error.message) {
       this.error.message = message;
-      this.error.token = this.currentToken;
+
+      this.error.tokenRange = {
+        start: this.currentToken,
+        end: this.currentToken
+      };
     }
 
     throw new Error();
@@ -401,6 +408,8 @@ export default abstract class AbstractParser<S extends ISyntaxNode = ISyntaxNode
         this.next();
       }
     }
+
+    this.parsed.tokenRange.end = this.currentToken;
 
     if (this.isFinished) {
       // Advance the token stream after finishing so as

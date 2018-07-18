@@ -17,7 +17,7 @@ export default class JavaInterfaceValidator extends AbstractValidator<JavaSyntax
     objectVisitor.visitObject(this.ownTypeDefinition);
 
     if (constructors.length > 0) {
-      this.focusToken(constructors[0].type.token);
+      this.focusTokenRange(constructors[0].type.tokenRange);
       this.report(`Interface '${name}' cannot have any constructors`);
     }
 

@@ -24,6 +24,15 @@ export interface IToken {
 }
 
 /**
+ * A range of continguous tokens, bounded by a start and end
+ * token.
+ */
+export interface ITokenRange {
+  start: IToken;
+  end: IToken;
+}
+
+/**
  * A function which attempts to extract a token from a specific
  * {input} string starting from an {offset}.
  */

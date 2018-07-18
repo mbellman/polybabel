@@ -66,11 +66,13 @@ export default class Compiler {
   }
 
   public forEachError (handler: CompilerErrorHandler): void {
-    this.errors.forEach(([ filename, { message, token } ]) => {
-      const line = token ? token.line : 0;
+    this.errors.forEach(([ filename, { message, tokenRange } ]) => {
+      const line = tokenRange
+        ? tokenRange.start.line
+        : 0;
 
-      const linePreview = token
-        ? TokenUtils.createLinePreview(token)
+      const linePreview = tokenRange
+        ? TokenUtils.createLinePreview(tokenRange)
         : '';
 
       handler(filename, message, line, linePreview);

@@ -147,7 +147,7 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
   }
 
   private getFunctionCallReturnTypeConstraint (functionCall: JavaSyntax.IJavaFunctionCall, sourceObjectType?: ObjectType.Definition): ITypeConstraint {
-    this.focusToken(functionCall.token);
+    this.focusTokenRange(functionCall.tokenRange);
 
     const { name: functionName, arguments: args } = functionCall;
     const argumentTypeConstraints = args.map(argument => this.getStatementTypeConstraint(argument));
@@ -276,12 +276,12 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
   }
 
   private getPropertyChainTypeConstraint (propertyChain: JavaSyntax.IJavaPropertyChain): ITypeConstraint {
-    const { token: propertyChainToken, properties } = propertyChain;
+    const { tokenRange: propertyChainTokenRange, properties } = propertyChain;
     const firstProperty = properties[0];
     let currentLookupTypeConstraint: ITypeConstraint;
     let propertyIndex = 0;
 
-    this.focusToken(propertyChainToken);
+    this.focusTokenRange(propertyChainTokenRange);
 
     currentLookupTypeConstraint = this.getSyntaxNodeTypeConstraint(firstProperty);
 
@@ -299,7 +299,7 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
       const { typeDefinition: lookupTypeDefinition } = currentLookupTypeConstraint;
       const previousLookupTypeConstraint = currentLookupTypeConstraint;
 
-      this.focusToken(incomingProperty.token);
+      this.focusTokenRange(incomingProperty.tokenRange);
 
       if (lookupTypeDefinition instanceof ObjectType.Definition) {
         switch (incomingProperty.node) {
@@ -352,7 +352,7 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
             const { constructor } = incomingProperty;
             const constructorName = constructor.namespaceChain.join('.');
 
-            this.focusToken(constructor.token);
+            this.focusTokenRange(constructor.tokenRange);
 
             currentMember = lookupTypeDefinition.getObjectMember(constructorName);
 
@@ -595,7 +595,7 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
         const { constructor } = instantiation;
         const isArrayInstantiation = !!instantiation.arrayAllocationSize || !!instantiation.arrayLiteral;
 
-        this.focusToken(constructor.token);
+        this.focusTokenRange(constructor.tokenRange);
 
         const constructorTypeConstraint = this.findOriginalTypeConstraint(constructor.namespaceChain);
 
@@ -836,7 +836,7 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
     );
 
     if (hasRightSide) {
-      this.focusToken(rightSide.leftSide.token);
+      this.focusTokenRange(rightSide.leftSide.tokenRange);
     }
 
     this.check(
@@ -910,7 +910,7 @@ export default class JavaExpressionStatementValidator extends AbstractValidator<
   private validateLeftSideOfAssignment (): void {
     const { leftSide, operator } = this.syntaxNode;
 
-    this.focusToken(operator.token);
+    this.focusTokenRange(operator.tokenRange);
 
     switch (leftSide.node) {
       case JavaSyntax.JavaSyntaxNode.VARIABLE_DECLARATION:

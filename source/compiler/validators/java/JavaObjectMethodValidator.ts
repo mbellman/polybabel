@@ -1,12 +1,11 @@
 import AbstractValidator from '../common/AbstractValidator';
 import JavaBlockValidator from './JavaBlockValidator';
 import { Implements } from 'trampoline-framework';
+import { ITypeConstraint, ObjectCategory, Void } from '../../symbol-resolvers/common/types';
 import { JavaConstants } from '../../../parser/java/java-constants';
 import { JavaSyntax } from '../../../parser/java/java-syntax';
-import { ObjectCategory, Void, ITypeConstraint } from '../../symbol-resolvers/common/types';
 import { TypeExpectation } from '../common/types';
 import { ValidatorUtils } from '../common/validator-utils';
-import { TypeUtils } from '../../symbol-resolvers/common/type-utils';
 
 export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyntax.IJavaObjectMethod> {
   private ownReturnTypeConstraint: ITypeConstraint;
@@ -17,7 +16,7 @@ export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyn
     const isInterfaceMethod = parentObjectTypeDefinition.category === ObjectCategory.INTERFACE;
     const identifier = `${parentObjectTypeDefinition.name}.${name}`;
 
-    this.focusToken(type.token);
+    this.focusTokenRange(type.tokenRange);
 
     this.ownReturnTypeConstraint = this.createTypeConstraint(type.namespaceChain, type.arrayDimensions);
 
@@ -29,9 +28,16 @@ export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyn
     }
 
     if (isAbstract) {
-      const abstractKeywordToken = ValidatorUtils.findKeywordToken(JavaConstants.Keyword.ABSTRACT, type.token, token => token.previousTextToken);
+      const abstractKeywordToken = ValidatorUtils.findKeywordToken(
+        JavaConstants.Keyword.ABSTRACT,
+        type.tokenRange.start,
+        token => token.previousTextToken
+      );
 
-      this.focusToken(abstractKeywordToken);
+      this.focusTokenRange({
+        start: abstractKeywordToken,
+        end: abstractKeywordToken
+      });
 
       this.check(
         parentObjectTypeDefinition.requiresImplementation,
@@ -91,7 +97,7 @@ export default class JavaObjectMethodValidator extends AbstractValidator<JavaSyn
     this.resetExpectedType();
 
     if (lastStatement && isConstructor) {
-      this.focusToken(lastStatement.token);
+      this.focusTokenRange(lastStatement.tokenRange);
 
       this.check(
         // TODO turn this into a utility/create java-validator-utils

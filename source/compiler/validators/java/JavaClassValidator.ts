@@ -47,7 +47,7 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
 
   private validateImplementations (implementations: JavaSyntax.IJavaType[]): void {
     for (const implementation of implementations) {
-      this.focusToken(implementation.token);
+      this.focusTokenRange(implementation.tokenRange);
 
       const { typeDefinition: interfaceTypeDefinition } = this.findOriginalTypeConstraint(implementation.namespaceChain) as ObjectType.Constraint;
       const interfaceName = implementation.namespaceChain.join('.');
@@ -68,7 +68,7 @@ export default class JavaClassValidator extends AbstractValidator<JavaSyntax.IJa
   }
 
   private validateSuperclass (superclass: JavaSyntax.IJavaType): void {
-    this.focusToken(superclass.token);
+    this.focusTokenRange(superclass.tokenRange);
 
     const { typeDefinition: superTypeDefinition } = this.findOriginalTypeConstraint(superclass.namespaceChain) as ObjectType.Constraint;
     const supertypeName = superclass.namespaceChain.join('.');

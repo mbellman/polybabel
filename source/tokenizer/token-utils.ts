@@ -1,7 +1,6 @@
-import chalk from 'chalk';
 import { Callback } from '../system/types';
 import { IS_BROWSER } from '../system/constants';
-import { IToken, TokenType } from './types';
+import { IToken, TokenType, ITokenRange } from './types';
 import { TokenPredicate } from '../parser/common/parser-types';
 
 export namespace TokenUtils {
@@ -90,42 +89,55 @@ export namespace TokenUtils {
 
   /**
    * Generates a preview of the portion of a line of code
-   * surrounding a provided token. End of line or EOF tokens
-   * automatically terminate the start or end of the preview.
+   * surrounding the start and end of a provided token range.
+   * End of line or EOF tokens automatically terminate the
+   * start or end of the preview.
    */
-  export function createLinePreview (token: IToken, range: number = 10): string {
-    const DOUBLE_RANGE = 2 * range;
+  export function createLinePreview ({ start: startingFocusedToken, end: endingFocusedToken }: ITokenRange, buffer: number = 10): string {
     let linePreview = '';
-    let currentToken = token;
     let tokenCounter = 0;
+    let startingToken = startingFocusedToken;
+    let endingToken = endingFocusedToken;
+    let currentToken: IToken;
 
-    while (tokenCounter++ < range) {
-      const { previousToken } = currentToken;
+    while (tokenCounter++ < buffer) {
+      const { previousToken } = startingToken;
 
       if (!previousToken || isNewline(previousToken)) {
         break;
       }
 
-      currentToken = currentToken.previousToken;
+      startingToken = startingToken.previousToken;
     }
 
     tokenCounter = 0;
 
-    while (tokenCounter++ < DOUBLE_RANGE) {
-      const isFocusedToken = currentToken === token;
-      const { value } = currentToken;
-
-      linePreview += isFocusedToken ? (
-        IS_BROWSER
-          ? `<span style='color: red'>${value}</span>`
-          : `${chalk.red(value)}`
-      ) : value;
-
-      currentToken = currentToken.nextToken;
-
-      if (isEOF(currentToken) || isNewline(currentToken)) {
+    while (tokenCounter++ < buffer) {
+      if (!endingToken || isNewline(endingToken.nextToken) || isEOF(endingToken)) {
         break;
       }
+
+      endingToken = endingToken.nextToken;
+    }
+
+    currentToken = startingToken;
+
+    while (currentToken !== endingToken) {
+      if (currentToken === startingFocusedToken) {
+        linePreview += IS_BROWSER
+          ? '<span style="color: red">'
+          : '\u001b[31m';
+      }
+
+      linePreview += currentToken.value;
+
+      if (currentToken === endingFocusedToken) {
+        linePreview += IS_BROWSER
+          ? '</span>'
+          : '\u001b[0m';
+      }
+
+      currentToken = currentToken.nextToken;
     }
 
     return linePreview.trim();

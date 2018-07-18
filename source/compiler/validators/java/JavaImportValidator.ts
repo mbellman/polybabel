@@ -4,10 +4,10 @@ import { JavaSyntax } from '../../../parser/java/java-syntax';
 
 export default class JavaImportValidator extends AbstractValidator<JavaSyntax.IJavaImport> {
   @Implements public validate (): void {
-    const { token, defaultImport, nonDefaultImports, paths } = this.syntaxNode;
+    const { tokenRange, defaultImport, nonDefaultImports, paths } = this.syntaxNode;
     const sourceFile = paths.join('/');
 
-    this.focusToken(token);
+    this.focusTokenRange(tokenRange);
 
     if (defaultImport) {
       this.handleImportName(defaultImport, sourceFile);
